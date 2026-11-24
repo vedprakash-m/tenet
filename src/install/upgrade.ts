@@ -9,6 +9,7 @@ import { decodeJson, pointerValue, sha256Bytes } from "./manifest.js";
 import { applyPlan, planWriteSet, readPendingPlan, resumePendingPlan } from "./writes.js";
 import type {
   InstallManifest,
+  LocalManifest,
   ManifestCreated,
   ManifestKey,
   PendingWrite,
@@ -30,6 +31,21 @@ async function currentManifest(cwd: string): Promise<InstallManifest | null> {
     if ((error as NodeJS.ErrnoException).code === "TN-PATH-ESCAPE") {
       throw Object.assign(error as Error, {
         finding: { code: "TN-PATH-ESCAPE", file: ".tenet/manifest.json" },
+      });
+    }
+    throw error;
+  }
+}
+
+async function currentLocalManifest(cwd: string): Promise<LocalManifest | null> {
+  try {
+    const filename = await confine(".tenet/manifest.local.json", cwd);
+    return JSON.parse(await readFile(filename, "utf8")) as LocalManifest;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    if ((error as NodeJS.ErrnoException).code === "TN-PATH-ESCAPE") {
+      throw Object.assign(error as Error, {
+        finding: { code: "TN-PATH-ESCAPE", file: ".tenet/manifest.local.json" },
       });
     }
     throw error;
@@ -173,8 +189,21 @@ export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResu
     );
   }
   const cwd = path.resolve(options.cwd ?? process.cwd());
-  const profileRoots = localProfileRoots(options.environment);
   const prior = await currentManifest(cwd);
+  const local = await currentLocalManifest(cwd);
+  const profileRoots = {
+    ...localProfileRoots(options.environment),
+    ...local?.profile_roots,
+  };
+  result.plan.local_keys = local?.keys.map(({ host, path: itemPath, pointer }) => ({
+    host,
+    path: itemPath,
+    pointer,
+  })) ?? [];
+  if (local) {
+    result.plan.created = [...new Set([...result.plan.created, ".tenet/manifest.local.json"])];
+    result.plan.created.sort();
+  }
   const pending = await readPendingPlan(cwd, options.environment?.localProfileRoot);
   if (pending) {
     const original = pending.upgrade;

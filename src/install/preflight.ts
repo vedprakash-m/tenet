@@ -469,6 +469,26 @@ export async function preflight(options: PreflightOptions = {}): Promise<Preflig
     ...(shimHosts === undefined ? {} : { windowsCommandShimRequired: shimHosts }),
   };
   for (const descriptor of descriptors) mergeHostPlan(hostPlan, await descriptor.planWrites(hostContext));
+  const candidateLocalKeys = sortedLocalKeys(hostPlan.local_keys);
+  const localHostDecision = options.answers?.allowLocalHosts;
+  const localHostsAuthorized =
+    options.localHosts === true ||
+    localHostDecision === true ||
+    environment.localProfileRoot !== undefined;
+  const localKeys = localHostsAuthorized ? candidateLocalKeys : [];
+  if (
+    candidateLocalKeys.length > 0 &&
+    !options.yes &&
+    localHostDecision === undefined &&
+    environment.localProfileRoot === undefined
+  ) {
+    prompts.push({
+      key: "localHosts",
+      question: "Edit local host settings outside the repository?",
+      default: false,
+      local_keys: candidateLocalKeys,
+    });
+  }
   const hosts = descriptors.map((descriptor) => ({ id: descriptor.id, capability: descriptor.capabilityLevel }))
     .sort((left, right) => compareUtf16(left.id, right.id));
 
@@ -476,7 +496,7 @@ export async function preflight(options: PreflightOptions = {}): Promise<Preflig
     "tenet.yaml",
     "tenet.lock",
     ".tenet/manifest.json",
-    ...(hostPlan.local_keys.length > 0 ? [".tenet/manifest.local.json"] : []),
+    ...(localKeys.length > 0 ? [".tenet/manifest.local.json"] : []),
     ...hostPlan.created,
   ];
   if (options.vendor) {
@@ -499,7 +519,7 @@ export async function preflight(options: PreflightOptions = {}): Promise<Preflig
     created: uniqueStrings(created),
     blocks: sortedBlocks(blocks),
     keys: sortedKeys(hostPlan.keys),
-    local_keys: sortedLocalKeys(hostPlan.local_keys),
+    local_keys: localKeys,
     hosts,
     ci_mode: ciMode,
     ci_reason: ciReason,

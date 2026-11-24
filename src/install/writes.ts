@@ -38,6 +38,7 @@ import type {
   WriteSet,
 } from "./types.js";
 import { localProfileRoot, localProfileRoots } from "./environment.js";
+import { releaseIntegrity } from "./integrity.js";
 
 export type WritePlanOptions = PreflightOptions & {
   force?: boolean;
@@ -123,26 +124,6 @@ function installedKitPath(): string {
   return fileURLToPath(new URL("../../kit/", import.meta.url));
 }
 
-function release(
-  options: WritePlanOptions,
-): { package: string; version: string; integrity: string } {
-  const environment = options.environment ?? {};
-  const registryPackage = environment.registry?.package ?? "@vedprakash-m/tenet";
-  const version = environment.installedVersion ?? process.env.npm_package_version ?? "0.0.0";
-  const integrity = environment.registry?.releases?.[version]?.integrity ??
-    process.env.TENET_INSTALL_INTEGRITY;
-  if (!integrity) {
-    const detail = `No registry integrity is available for ${registryPackage}@${version}.`;
-    const words = message("TN-LOCK-INVALID", { detail });
-    const finding = { ...fail("TN-LOCK-INVALID", words.message, words.fix), file: "tenet.lock" };
-    throw Object.assign(new Error(words.message), {
-      code: "TN-LOCK-INVALID",
-      finding,
-    });
-  }
-  return { package: registryPackage, version, integrity };
-}
-
 function taggingLine(runner: RunnerFact | null): string {
   switch (runner?.kind) {
     case "pytest":
@@ -158,7 +139,8 @@ function taggingLine(runner: RunnerFact | null): string {
   }
 }
 
-function documentsLine(): string {
+function documentsLine(oneFile: boolean): string {
+  if (oneFile) return "tenet/intent.md (L1)";
   return [
     "tenet/vision.md (L0)",
     "tenet/specs/prd.md (L1)",
@@ -182,12 +164,13 @@ async function agentsBlock(
   kitPath: string,
   version: string,
   runner: RunnerFact | null,
+  oneFile: boolean,
 ): Promise<string> {
   const template = await readFile(path.join(kitPath, "templates", "agents-block.md"), "utf8");
   const workingRules = (await readFile(path.join(kitPath, "practices", "default.md"), "utf8")).trimEnd();
   return templateBody(template, {
     version,
-    "documents with their levels": documentsLine(),
+    "documents with their levels": documentsLine(oneFile),
     prefix: "R",
     "tagging line for the detected runner": taggingLine(runner),
     "L0–L2 documents": "the L0–L2 documents listed above",
@@ -198,7 +181,7 @@ async function agentsBlock(
 
 async function pullRequestTemplate(kitPath: string, version: string): Promise<string> {
   const template = await readFile(path.join(kitPath, "templates", "pull-request.md"), "utf8");
-  let output = template.replaceAll("{version}", version).replaceAll("{records}", "tenet");
+  const output = template.replaceAll("{version}", version).replaceAll("{records}", "tenet");
   return `${output.replace(/\r\n/g, "\n").replace(/\n+$/, "")}\n`;
 }
 
@@ -415,7 +398,8 @@ function editReporter(source: string, jobName: string, testStep: number, runner:
         : flags;
       const block = /^\s+run:\s*[|>](?:[-+]?[0-9]*)?\s*(?:#.*)?$/.test(text);
       if (!block) {
-        updated[index]!.text = `${text}${commandFlags}`;
+        const target = updated[index];
+        if (target) target.text = `${text}${commandFlags}`;
         break;
       }
       const runIndent = indentationLength(text);
@@ -426,7 +410,8 @@ function editReporter(source: string, jobName: string, testStep: number, runner:
           const bodyFlags = /\b(?:npm|pnpm)\s+(?:run\s+)?test\b|\byarn\s+test\b/i.test(bodyText)
             ? ` -- ${flags.trim()}`
             : flags;
-          updated[body]!.text = `${bodyText}${bodyFlags}`;
+          const target = updated[body];
+          if (target) target.text = `${bodyText}${bodyFlags}`;
           return joinLines(updated);
         }
       }
@@ -576,7 +561,7 @@ function reusedKey(existing: InstallManifest | null, itemPath: string, pointer: 
 }
 
 async function validateLocalPath(itemPath: string, localProfileRoot: string | undefined): Promise<string> {
-  if (!localProfileRoot) pathError(itemPath);
+  if (!localProfileRoot || !path.isAbsolute(localProfileRoot) || !path.isAbsolute(itemPath)) pathError(itemPath);
   const root = path.resolve(localProfileRoot);
   const target = path.resolve(itemPath);
   const relative = path.relative(root, target);
@@ -645,7 +630,7 @@ export async function planWriteSet(
   }
   const cwd = path.resolve(options.cwd ?? preflight.facts.repository.cwd);
   const plan = clonePlan(preflight.plan);
-  const releaseInfo = release(options);
+  const releaseInfo = await releaseIntegrity(options);
   const kitPath = path.resolve(options.environment?.kitPath ?? installedKitPath());
   const allKitFiles = await kitFiles(kitPath);
   const digest = await kitDigest(allKitFiles);
@@ -660,6 +645,8 @@ export async function planWriteSet(
   const priorManifest = await managedManifest(cwd);
   const priorLocalManifest = await managedLocalManifest(cwd);
   const files = new Map<string, PlannedFile>();
+  const hasIntent = preflight.facts.repository.empty ||
+    (await fileState(path.join(cwd, "tenet", "intent.md"))).exists;
   files.set("tenet.lock", {
     path: "tenet.lock",
     content: jsonFile({
@@ -667,6 +654,7 @@ export async function planWriteSet(
       package: releaseInfo.package,
       version: releaseInfo.version,
       integrity: releaseInfo.integrity,
+      ...(releaseInfo.warning ? { "x-integrity-source": "local" } : {}),
       kit_sha256: digest,
     }),
   });
@@ -695,13 +683,13 @@ export async function planWriteSet(
     const purpose = preflight.facts.purpose ?? "Undecided · edit or run tenet onboard";
     files.set("tenet/intent.md", {
       path: "tenet/intent.md",
-      content: template
+      content: `${template
         .replaceAll("<owner>", owner)
         .replaceAll("<Project>", project)
         .replace("Checkout recovers cleanly from transient gateway timeouts for returning shoppers.",
           purpose)
         .replace(/\r\n/g, "\n")
-        .replace(/\n+$/, "") + "\n",
+        .replace(/\n+$/, "")}\n`,
     });
   }
   if (options.vendor) {
@@ -760,7 +748,10 @@ export async function planWriteSet(
     keys: [],
   };
   let writeIndex = 0;
-  const resolvedProfileRoots = localProfileRoots(options.environment);
+  const resolvedProfileRoots = {
+    ...localProfileRoots(options.environment),
+    ...priorLocalManifest?.profile_roots,
+  };
   const localWrites: PendingWrite[] = [];
   const localKeys: LocalManifestKey[] = [];
   for (const key of plan.local_keys) {
@@ -845,16 +836,21 @@ export async function planWriteSet(
     const source = state.text ?? "";
     let managed: ManagedBlock;
     if (block.path === "AGENTS.md") {
-      const replacement = await agentsBlock(kitPath, releaseInfo.version, preflight.facts.runner);
-      const result = replaceBlock(source, block.kind, replacement.trimEnd() + "\n");
+      const replacement = await agentsBlock(
+        kitPath,
+        releaseInfo.version,
+        preflight.facts.runner,
+        hasIntent,
+      );
+      const result = replaceBlock(source, block.kind, `${replacement.trimEnd()}\n`);
       managed = { replacement, target: result.content, previous: result.previous, prefixSep: result.prefixSep };
     } else if (block.path === ".gitignore") {
       const replacement = ignoreBlock(releaseInfo.version);
-      const result = replaceBlock(source, block.kind, replacement.trimEnd() + "\n");
+      const result = replaceBlock(source, block.kind, `${replacement.trimEnd()}\n`);
       managed = { replacement, target: result.content, previous: result.previous, prefixSep: result.prefixSep };
     } else if (block.path === ".gitattributes") {
       const replacement = attributesBlock(releaseInfo.version, managedPaths);
-      const result = replaceBlock(source, block.kind, replacement.trimEnd() + "\n");
+      const result = replaceBlock(source, block.kind, `${replacement.trimEnd()}\n`);
       managed = { replacement, target: result.content, previous: result.previous, prefixSep: result.prefixSep };
     } else if (block.path === ".github/pull_request_template.md") {
       const replacement = await pullRequestBlock(kitPath, releaseInfo.version);
@@ -874,7 +870,7 @@ export async function planWriteSet(
       block.path === ".github/copilot-instructions.md"
     ) {
       const replacement = hostPointerBlock(releaseInfo.version);
-      const result = replaceBlock(source, block.kind, replacement.trimEnd() + "\n");
+      const result = replaceBlock(source, block.kind, `${replacement.trimEnd()}\n`);
       managed = { replacement, target: result.content, previous: result.previous, prefixSep: result.prefixSep };
     } else if (block.path === preflight.facts.ci.selected?.workflow && plan.ci_mode === "existing-ci") {
       const template = await readFile(path.join(kitPath, "workflows", "existing-ci-step.yml"), "utf8");
@@ -902,10 +898,10 @@ export async function planWriteSet(
       path: block.path,
       kind: block.kind,
       marker: blockMarker(block.kind, releaseInfo.version),
-      previous_existed: currentIsInstalled
-        ? previousMetadata.previous_existed ?? state.exists
-        : state.exists,
-      previous_block: currentIsInstalled ? previousMetadata.previous_block ?? null : managed.previous,
+      previous_block: currentIsInstalled
+        ? previousMetadata.previous_block ??
+          (previousMetadata.previous_existed ? "" : null)
+        : managed.previous ?? (state.exists && state.text === "" ? "" : null),
       prefix_sep: currentIsInstalled ? previousMetadata.prefix_sep ?? "" : managed.prefixSep,
     });
     writes.push({
@@ -985,6 +981,7 @@ export async function planWriteSet(
     ...(options.environment?.localProfileRoot
       ? { localProfileRoot: options.environment.localProfileRoot }
       : {}),
+    ...(releaseInfo.warning ? { integrity_warning: releaseInfo.warning } : {}),
   };
 }
 
@@ -1001,7 +998,7 @@ async function confinedWritePath(write: PendingWrite, plan: WriteSet, pending: P
   });
 }
 
-function wroteItem(plan: WriteSet, write: PendingWrite): keyof InitWrote | "none" {
+function wroteItem(write: PendingWrite): keyof InitWrote | "none" {
   if (write.kind === "file") return "created";
   if (write.kind === "block") return "blocks";
   if (write.kind === "key") return "keys";
@@ -1010,7 +1007,7 @@ function wroteItem(plan: WriteSet, write: PendingWrite): keyof InitWrote | "none
 }
 
 function recordWrote(plan: WriteSet, write: PendingWrite, wrote: InitWrote): void {
-  const kind = wroteItem(plan, write);
+  const kind = wroteItem(write);
   if (kind === "created") wrote.created.push(write.path);
   else if (kind === "blocks") {
     const planned = plan.plan.blocks.find((item) => item.path === write.path);

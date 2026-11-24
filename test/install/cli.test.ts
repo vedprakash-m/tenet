@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { cp, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
@@ -61,6 +62,45 @@ function runWithoutIntegrity(repo: string, ...args: string[]) {
     result: unknown;
     errors: Array<{ code: string; message: string }>;
   } };
+}
+
+function runWithIntegrity(repo: string, integrity: string, ...args: string[]) {
+  const child = spawnSync(process.execPath, [cli, "--json", "--cwd", repo, ...args], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+    shell: false,
+    windowsHide: true,
+    env: { ...process.env, TENET_INSTALL_INTEGRITY: integrity },
+  });
+  return { child, envelope: JSON.parse(child.stdout) as {
+    ok: boolean;
+    errors: Array<{ code: string; message: string }>;
+  } };
+}
+
+async function packageIntegrity(): Promise<string> {
+  const files = new Set(["package.json", "LICENSE", "README.md"]);
+  async function visit(relative: string): Promise<void> {
+    const entries = await readdir(path.resolve(relative), { withFileTypes: true }).catch((error: unknown) => {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+      throw error;
+    });
+    for (const entry of entries ?? []) {
+      const item = `${relative}/${entry.name}`;
+      if (entry.isDirectory()) await visit(item);
+      else if (entry.isFile()) files.add(item);
+    }
+  }
+  for (const directory of ["dist", "kit", "pkg/migrations", "pkg/conformance", "pkg/hosts"]) {
+    await visit(directory);
+  }
+  const hash = createHash("sha512");
+  for (const relative of [...files].sort()) {
+    hash.update(relative);
+    hash.update("\0");
+    hash.update(await readFile(path.resolve(relative)));
+  }
+  return `sha512-${hash.digest("base64")}`;
 }
 
 async function tree(root: string): Promise<Record<string, string>> {
@@ -130,7 +170,7 @@ test("dist CLI reports canonical command usage failures", async (t) => {
   }
 });
 
-test("unpublished local versions return a registered lock error", async (t) => {
+test("unpublished local versions use exact local integrity and warn", async (t) => {
   const repo = await tmpRepo("install-no-registry-integrity");
   t.after(repo.cleanup);
   repo.git(["config", "user.name", "Fixture Owner"]);
@@ -139,11 +179,31 @@ test("unpublished local versions return a registered lock error", async (t) => {
   repo.git(["add", "README.md"]);
   repo.git(["commit", "-qm", "fixture"]);
   const output = runWithoutIntegrity(repo.path, "init", "--yes");
+  assert.equal(output.child.status, 0, output.child.stderr);
+  assert.equal(output.envelope.ok, true);
+  assert.match(output.child.stderr, /not on the registry.*local package integrity/i);
+  const lock = JSON.parse(await readFile(path.join(repo.path, "tenet.lock"), "utf8")) as {
+    integrity: string;
+    "x-integrity-source": string;
+  };
+  assert.equal(lock["x-integrity-source"], "local");
+  assert.equal(lock.integrity, await packageIntegrity());
+  assert.ok((output.envelope.result as { findings: Array<{ kind: string }> }).findings
+    .some(({ kind }) => kind === "local-integrity"));
+  const upgraded = runWithoutIntegrity(repo.path, "upgrade");
+  assert.equal(upgraded.child.status, 0, upgraded.child.stderr);
+  assert.match(upgraded.child.stderr, /not on the registry.*local package integrity/i);
+});
+
+test("malformed integrity overrides return TN-LOCK-INVALID", async (t) => {
+  const repo = await tmpRepo("install-invalid-integrity");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
+  const output = runWithIntegrity(repo.path, "not-an-sri", "init", "--yes");
   assert.equal(output.child.status, 1, output.child.stdout);
   assert.equal(output.envelope.ok, false);
   assert.equal(output.envelope.errors[0]?.code, "TN-LOCK-INVALID");
-  assert.match(output.envelope.errors[0]?.message ?? "", /registry integrity.*0\.0\.0/i);
-  assert.equal(await readFile(path.join(repo.path, "tenet.yaml"), "utf8").then(() => true, () => false), false);
+  assert.doesNotMatch(output.envelope.errors[0]?.message ?? "", /TN-INTERNAL/);
 });
 
 test("real node-service fixture initializes, is idempotent and removes exactly", async (t) => {
@@ -170,8 +230,8 @@ test("real node-service fixture initializes, is idempotent and removes exactly",
     HOME: home,
     USERPROFILE: home,
     APPDATA: path.join(home, "AppData", "Roaming"),
-    TENET_INSTALL_INTEGRITY: `sha512-${"A".repeat(86)}==`,
   };
+  delete env.TENET_INSTALL_INTEGRITY;
   const invoke = (...args: string[]) => {
     const child = spawnSync(process.execPath, [cli, "--json", "--cwd", repo.path, ...args], {
       cwd: process.cwd(),
@@ -191,6 +251,7 @@ test("real node-service fixture initializes, is idempotent and removes exactly",
   const first = invoke("init", "--yes");
   assert.equal(first.child.status, 0, first.child.stderr);
   assert.equal(first.envelope.ok, true);
+  assert.match(first.child.stderr, /local package integrity/i);
   assert.ok(Array.isArray((first.envelope.result.plan as { created: unknown[] }).created));
   assert.ok(((first.envelope.result.wrote as { created: unknown[] }).created).length > 0);
   assert.doesNotMatch(
@@ -211,4 +272,34 @@ test("real node-service fixture initializes, is idempotent and removes exactly",
   assert.equal(removed.child.status, 0, removed.child.stderr);
   assert.deepEqual(await tree(repo.path), original);
   assert.deepEqual(await tree(home), homeBefore);
+});
+
+test("init --yes --local-hosts authorizes and remove restores a local MCP entry", async (t) => {
+  const repo = await tmpRepo("install-local-host-cli");
+  t.after(repo.cleanup);
+  const home = path.join(path.dirname(repo.path), `home-${path.basename(repo.path)}`);
+  await mkdir(home, { recursive: true });
+  t.after(() => rm(home, { recursive: true, force: true }));
+  await repo.write("CLAUDE.md", "# Fixture\n");
+  repo.git(["add", "CLAUDE.md"]);
+  repo.git(["commit", "-qm", "fixture"]);
+  const env = {
+    ...process.env,
+    HOME: home,
+    USERPROFILE: home,
+    APPDATA: path.join(home, "AppData", "Roaming"),
+    TENET_INSTALL_INTEGRITY: `sha512-${"A".repeat(86)}==`,
+  };
+  const invoke = (...args: string[]) => spawnSync(
+    process.execPath,
+    [cli, "--json", "--cwd", repo.path, ...args],
+    { cwd: process.cwd(), encoding: "utf8", env, shell: false, windowsHide: true },
+  );
+  const first = invoke("init", "--yes", "--local-hosts");
+  assert.equal(first.status, 0, first.stderr);
+  const envelope = JSON.parse(first.stdout) as { result: { wrote: { local_keys: unknown[] } } };
+  assert.equal(envelope.result.wrote.local_keys.length, 1);
+  await readFile(path.join(home, ".claude.json"), "utf8");
+  assert.equal(invoke("remove").status, 0);
+  assert.deepEqual(await tree(home), {});
 });

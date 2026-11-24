@@ -11,5 +11,4 @@
 AGENTS.md text eol=lf
 tenet.lock text eol=lf
 tenet.yaml text eol=lf
-tenet/intent.md text eol=lf
 # tenet:end

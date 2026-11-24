@@ -153,7 +153,59 @@ test("init preflight text lists local host keys exactly", async () => {
   const request = context({ options: { "--yes": true } });
   await command.run?.(request);
   assert.match(request.captures.stdout.text(),
-    /Will edit locally: vscode: C:\/Users\/fixture\/AppData\/Roaming\/Code\/User\/mcp\.json\/servers\/tenet/);
+    /Will edit locally \(outside repository\): vscode: C:\/Users\/fixture\/AppData\/Roaming\/Code\/User\/mcp\.json\/servers\/tenet/);
+});
+
+test("init command asks before authorizing local host edits", async () => {
+  let received: Record<string, unknown> | undefined;
+  const candidate = {
+    host: "claude",
+    path: "C:/Users/fixture/.claude.json",
+    pointer: "/mcpServers/tenet",
+  };
+  const preflight = async (options: Record<string, unknown>) => ({
+    plan: {
+      ...plan,
+      local_keys: (options.answers as { allowLocalHosts?: boolean } | undefined)?.allowLocalHosts
+        ? [candidate]
+        : [],
+    },
+    findings: [],
+    diagnostics: [],
+    prompts: [{
+      key: "localHosts" as const,
+      question: "Edit local host settings outside the repository?",
+      default: false,
+      local_keys: [candidate],
+    }],
+    facts: {
+      repository: { cwd: ".", git: true, head: "abc", branch: "main", remote: null, forge: "none" as const, empty: false },
+      runner: null,
+      ci: { jobs: [], selected: null },
+      owners: [],
+      purpose: "fixture",
+      kind: "service",
+    },
+  });
+  const command = makeInitCommand({
+    terminal: true,
+    preflight: preflight as never,
+    init: async (options) => {
+      received = options;
+      return {
+        plan: { ...plan, local_keys: [] },
+        wrote: { created: [], blocks: [], keys: [], local_keys: [] },
+        findings: [],
+      };
+    },
+  });
+  const request = context({ stdin: Readable.from(["n\n", "\n"]) });
+  await command.run?.(request);
+  assert.ok(received);
+  assert.equal((received.answers as { allowLocalHosts?: boolean }).allowLocalHosts, false);
+  assert.equal((received?.localHosts as boolean), false);
+  assert.match(request.captures.stdout.text(), /Edit local host settings outside the repository\? \[y\/N\]/);
+  assert.match(request.captures.stdout.text(), /No local host settings changed/);
 });
 
 test("init command turns policy failures into canonical findings", async () => {

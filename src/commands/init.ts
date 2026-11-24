@@ -1,7 +1,7 @@
 import { createInterface } from "node:readline";
 import type { CommandContext, CommandSpec } from "../core/commands.js";
 import { message } from "../core/messages.js";
-import { errorFinding, fail, type Finding } from "../core/output.js";
+import { errorFinding, fail, version, type Finding } from "../core/output.js";
 import { init as runInit } from "../install/init.js";
 import { preflight as runPreflight } from "../install/preflight.js";
 import type { InitOptions, InitResult, PreflightAnswers, PreflightPrompt, ProjectKind } from "../install/types.js";
@@ -58,6 +58,7 @@ function answerBoolean(answer: string, fallback: boolean): boolean {
 
 function promptLabel(prompt: PreflightPrompt): string {
   if (prompt.key === "reporterEdit") return `${prompt.question} [y/N] `;
+  if (prompt.key === "localHosts") return `${prompt.question} [y/N] `;
   return `${prompt.question} `;
 }
 
@@ -80,7 +81,7 @@ function preflightText(result: Awaited<ReturnType<typeof runPreflight>>): string
       ...plan.keys.map(({ path, pointer }) => `${path}${pointer}`),
     ].join(", ")}`,
     ...(plan.local_keys.length > 0 ? [
-      `Will edit locally: ${plan.local_keys
+      `Will edit locally (outside repository): ${plan.local_keys
         .map(({ host, path, pointer }) => `${host}: ${path}${pointer}`)
         .join(", ")}`,
     ] : []),
@@ -110,8 +111,8 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
   return {
     name: "init",
     description: "Install Tenet in the current repository",
-    usage: "tenet init [--yes] [--vendor] [--force]",
-    options: ["--yes", "--vendor", "--force"],
+    usage: "tenet init [--yes] [--local-hosts] [--vendor] [--force]",
+    options: ["--yes", "--local-hosts", "--vendor", "--force"],
     async run(context) {
       if (context.args.length > 0) {
         return {
@@ -127,6 +128,8 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
         const options: InitOptions = {
           cwd: context.cwd,
           yes,
+          localHosts: context.options["--local-hosts"] === true,
+          offline: context.offline,
           vendor: context.options["--vendor"] === true,
           force: context.options["--force"] === true,
         };
@@ -151,8 +154,29 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
             prepared = await inspect({ ...options, answers });
             if (prepared.diagnostics.length > 0) return { findings: prepared.diagnostics };
           }
+          const localPrompt = prepared.prompts.find(({ key }) => key === "localHosts");
+          if (localPrompt) {
+            const available = localPrompt.local_keys ?? [];
+            if (available.length > 0) {
+              context.stdout.write(`Will edit locally (outside repository): ${available
+                .map(({ host, path, pointer }) => `${host}: ${path}${pointer}`)
+                .join(", ")}\n`);
+            }
+            const answer = await ask(promptLabel(localPrompt));
+            if (answer === null) return { findings: [noTty()] };
+            answers.allowLocalHosts = answerBoolean(answer, false);
+            prepared = await inspect({ ...options, answers });
+            if (prepared.diagnostics.length > 0) return { findings: prepared.diagnostics };
+            if (!answers.allowLocalHosts) {
+              context.stdout.write(
+                `No local host settings changed. To add one manually, install the Tenet MCP entry with command ` +
+                `"cmd /c npx -y @vedprakash-m/tenet@${version} mcp".\n`,
+              );
+            }
+          }
           context.stdout.write(`${preflightText(prepared)}\n`);
-          for (const prompt of prepared.prompts.filter(({ key }) => key !== "reporterEdit")) {
+          for (const prompt of prepared.prompts.filter(({ key }) =>
+            key !== "reporterEdit" && key !== "localHosts")) {
             const answer = await ask(promptLabel(prompt));
             if (answer === null) return { findings: [noTty()] };
             if (prompt.key === "purpose") {
@@ -178,6 +202,9 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
         }
 
         const value = await install({ ...options, answers });
+        for (const finding of value.findings) {
+          if (finding.kind === "local-integrity") context.stderr.write(`Warning: ${finding.message}\n`);
+        }
         if (!context.json) context.stdout.write(`${successText(value)}\n`);
         return { result: context.json ? value : null, findings: [] };
       } catch (error) {

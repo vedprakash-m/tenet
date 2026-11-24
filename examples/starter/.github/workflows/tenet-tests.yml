@@ -2,7 +2,7 @@
 name: Tenet tests
 on:
   pull_request: {types: [opened, synchronize, reopened, ready_for_review]}
-  push: {branches: [main]}
+  push: {branches: [r9/cp-0010]}
 permissions: {contents: read}
 concurrency: {group: "tenet-tests-${{ github.ref }}", cancel-in-progress: true}
 jobs:

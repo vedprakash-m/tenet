@@ -58,9 +58,6 @@
               "yaml"
             ]
           },
-          "previous_existed": {
-            "type": "boolean"
-          },
           "marker": {
             "type": "string",
             "minLength": 1
@@ -69,7 +66,6 @@
         "required": [
           "path",
           "kind",
-          "previous_existed",
           "marker"
         ]
       }

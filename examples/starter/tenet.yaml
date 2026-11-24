@@ -5,8 +5,8 @@ level: observe
 specs:
   id_prefix: R
 owners:
-  - id: ved
-    name: Ved
+  - id: ved-mishra
+    name: Ved Mishra
     roles:
       - owner
 checks:

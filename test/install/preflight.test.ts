@@ -170,7 +170,7 @@ test("preflight injects Windows shim requirements into detected hosts", async (t
   ]);
 });
 
-test("preflight derives production Windows hosts from USERPROFILE and APPDATA", async (t) => {
+test("preflight requires explicit consent before production Windows host edits", async (t) => {
   const repo = await tmpRepo("install-windows-host-roots");
   t.after(repo.cleanup);
   await repo.write("package.json", JSON.stringify({
@@ -199,12 +199,51 @@ test("preflight derives production Windows hosts from USERPROFILE and APPDATA", 
     yes: true,
     environment: { ...githubEnvironment, platform: "win32" },
   });
-  assert.deepEqual(result.plan?.local_keys.map(({ host, path: itemPath }) => ({ host, path: itemPath })), [
+  assert.deepEqual(result.plan?.local_keys, []);
+  assert.equal(result.plan?.created.includes(".tenet/manifest.local.json"), false);
+  const authorized = await preflight({
+    cwd: repo.path,
+    yes: true,
+    localHosts: true,
+    environment: { ...githubEnvironment, platform: "win32" },
+  });
+  assert.deepEqual(authorized.plan?.local_keys.map(({ host, path: itemPath }) => ({ host, path: itemPath })), [
     { host: "claude", path: `${home}/.claude.json` },
     { host: "vscode", path: `${appData}/Code/User/mcp.json` },
     { host: "cursor", path: `${appData}/Cursor/User/mcp.json` },
   ]);
-  assert.ok(result.plan?.created.includes(".tenet/manifest.local.json"));
+  assert.ok(authorized.plan?.created.includes(".tenet/manifest.local.json"));
+});
+
+test("interactive preflight exposes local host consent without authorizing it", async (t) => {
+  const repo = await tmpRepo("install-local-host-prompt");
+  t.after(repo.cleanup);
+  await repo.write(".claude/settings.json", "{}\n");
+  await commit(repo);
+  const root = path.join(repo.path, "profile").replaceAll("\\", "/");
+  const oldProfile = process.env.USERPROFILE;
+  const oldAppData = process.env.APPDATA;
+  process.env.USERPROFILE = root;
+  process.env.APPDATA = root;
+  t.after(() => {
+    if (oldProfile === undefined) delete process.env.USERPROFILE;
+    else process.env.USERPROFILE = oldProfile;
+    if (oldAppData === undefined) delete process.env.APPDATA;
+    else process.env.APPDATA = oldAppData;
+  });
+  const result = await preflight({
+    cwd: repo.path,
+    environment: {
+      ...githubEnvironment,
+      platform: "win32",
+      windowsCommandShimRequired: ["claude"],
+    },
+  });
+  assert.deepEqual(result.plan?.local_keys, []);
+  const prompt = result.prompts.find(({ key }) => key === "localHosts");
+  assert.deepEqual(prompt?.local_keys, [
+    { host: "claude", path: `${root}/.claude.json`, pointer: "/mcpServers/tenet" },
+  ]);
 });
 
 test("Windows profile planning never falls back to the real home directory", async () => {

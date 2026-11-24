@@ -65,7 +65,7 @@ test("replay evaluates a materialized fixture and leaves semantic scores for peo
   await assert.rejects(readFile(path.join(result.scratch, "node-service", "key.json")), { code: "ENOENT" });
   const draft = await readFile(path.join(result.scratch, "node-service", "tenet", "intent.md"), "utf8");
   assert.ok(draft.includes(row.draftRevision));
-  assert.equal(await readFile(path.join(home, ".claude.json"), "utf8").then(() => true, () => false), true);
+  assert.equal(await readFile(path.join(home, ".claude.json"), "utf8").then(() => true, () => false), false);
   assert.match(await readFile(path.join(result.scratch, "node-service-card.md"), "utf8"), /Tenet onboarding/);
 
   // Scoring after a human session reads the action log. This test supplies

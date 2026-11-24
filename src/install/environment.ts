@@ -9,12 +9,12 @@ export function localProfileRoot(
   }
   const platform = environment.platform ?? process.platform;
   if (platform !== "win32") return undefined;
-  const appData = process.env.LOCALAPPDATA;
-  if (appData) return path.resolve(appData);
   const profile = process.env.USERPROFILE;
-  if (profile) return path.resolve(profile, "AppData", "Roaming");
+  if (profile) return path.resolve(profile);
+  const appData = process.env.APPDATA;
+  if (appData) return path.resolve(appData);
   const home = process.env.HOME;
-  return home ? path.resolve(home, "AppData", "Roaming") : undefined;
+  return home ? path.resolve(home) : undefined;
 }
 
 export function localProfileRoots(

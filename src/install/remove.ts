@@ -102,7 +102,12 @@ async function validateRecordedPaths(
   }
   const roots = [localProfileRoot, ...recordedRoots]
     .filter((root): root is string => Boolean(root))
-    .map((root) => path.resolve(root));
+    .map((root) => {
+      if (!path.isAbsolute(root)) {
+        throw pathError(root);
+      }
+      return path.resolve(root);
+    });
   const localPaths = [
     ...(pending?.writes.filter((item) => item.kind === "local_key").map((item) => item.path) ?? []),
     ...(localManifest?.keys.map((item) => item.path) ?? []),
@@ -272,10 +277,13 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
       kept.set(block.path, "edited-by-you");
       continue;
     }
-    const target = block.previous_block !== undefined && block.previous_block !== null
+    let target = block.previous_block !== undefined && block.previous_block !== null
       ? `${source.slice(0, range.start)}${block.previous_block}${source.slice(range.end)}`
       : removeAppendedBlock(source, range.start, range.end, block.prefix_sep);
-    if (target.length === 0 && !block.previous_existed) await rm(filename, { force: true });
+    if (block.previous_block === "" && (target === "\n" || target === "\r\n")) target = "";
+    const previousExisted = block.previous_existed ??
+      (block.previous_block !== undefined && block.previous_block !== null);
+    if (target.length === 0 && !previousExisted) await rm(filename, { force: true });
     else if (target.length === 0) await writeAtomic(filename, "");
     else await writeAtomic(filename, target);
     removed.push({ path: block.path, kind: "block" });

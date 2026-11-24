@@ -53,11 +53,17 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
   });
   if (resumed) return { ...resumed, findings: result.findings };
   const plan = await planWriteSet(result, options);
+  const findings = [
+    ...result.findings,
+    ...(plan.integrity_warning
+      ? [{ kind: "local-integrity" as const, path: "tenet.lock", message: plan.integrity_warning }]
+      : []),
+  ];
   if (await isComplete(cwd, plan)) {
     return {
       plan: plan.plan,
       wrote: { created: [], blocks: [], keys: [], local_keys: [] },
-      findings: result.findings,
+      findings,
     };
   }
   const applied = await applyPlan(plan, {
@@ -66,5 +72,5 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
       ? { localProfileRoot: profileRoot }
       : {}),
   });
-  return { ...applied, findings: result.findings };
+  return { ...applied, findings };
 }

@@ -18,18 +18,14 @@ sections:
 
 <!-- Purpose, primary users, north star, value table, boundaries. Never name tools, files or vendors here. -->
 
-| ID | Purpose or boundary | Serves / Target |
-|---|---|---|
-| V-1 | Undecided · edit or run tenet onboard | ≤1% checkout timeout failure |
+| ID | Purpose or boundary | Serves / Target | Origin |
+|---|---|---|---|
+| V-1 | Undecided · edit or run tenet onboard | ≤1% checkout timeout failure | asked |
 
 ## Requirements
 
 - R-1 A payment request that times out is retried at most once, never twice. {origin: asked; serves: V-1}
 - R-2 Card numbers and verification codes are never written to logs or error messages. {origin: asked; serves: V-1; scope: global}
-
-<!-- Example observed statement (add code citation once code exists):
-- R-3 Retry backoff waits 250 ms before the single retry attempt. {origin: observed; cites: src/checkout/retry.ts:12-18; serves: V-1}
--->
 
 ## Design
 

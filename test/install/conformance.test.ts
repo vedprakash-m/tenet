@@ -308,6 +308,39 @@ for (const caseName of positiveCases) {
       };
       assert.equal(shared.servers.tenet.command, "npx");
     }
+    if (caseName === "p03-node-existing-ci") {
+      const policy = await readFile(path.join(setup.repo.path, "tenet.yaml"), "utf8");
+      const workflow = await readFile(path.join(setup.repo.path, ".github", "workflows", "ci.yml"), "utf8");
+      assert.match(policy, /mode: existing-job/);
+      const original = await readFile(
+        path.join(casesRoot, caseName, "before", ".github", "workflows", "ci.yml"),
+        "utf8",
+      );
+      assert.ok(workflow.startsWith(original));
+      assert.match(workflow, /# tenet:begin v0\.1\.0-alpha\.0/);
+      assert.match(workflow, /outputFile\.junit=artifacts\/unit\.xml/);
+    }
+    if (caseName === "p04-node-matrix") {
+      const workflow = await readFile(path.join(setup.repo.path, ".github", "workflows", "ci.yml"), "utf8");
+      assert.match(workflow, /matrix:/);
+      assert.match(workflow, /node: \[20, 22\]/);
+    }
+    if (caseName === "p13-existing-ci-with-services") {
+      const workflow = await readFile(path.join(setup.repo.path, ".github", "workflows", "ci.yml"), "utf8");
+      assert.match(workflow, /services:/);
+      assert.match(workflow, /image: postgres:16/);
+      assert.match(workflow, /POSTGRES_PASSWORD: test-only/);
+    }
+    if (caseName === "p14-reusable-workflow") {
+      const caller = await readFile(path.join(setup.repo.path, ".github", "workflows", "ci.yml"), "utf8");
+      assert.equal(caller, await readFile(
+        path.join(casesRoot, caseName, "before", ".github", "workflows", "ci.yml"),
+        "utf8",
+      ));
+      const policy = await readFile(path.join(setup.repo.path, "tenet.yaml"), "utf8");
+      assert.match(policy, /mode: existing-job/);
+      assert.match(policy, /test_workflow: \.github\/workflows\/reusable\.yml/);
+    }
     if (caseName === "p18-accepted-reporter-edit") {
       const workflow = await readFile(path.join(setup.repo.path, ".github", "workflows", "ci.yml"), "utf8");
       assert.match(workflow, /- id: tenet-tests/);
@@ -482,9 +515,9 @@ test("remove restores a pre-existing zero-byte managed block file", async (t) =>
   const manifest = JSON.parse(await readFile(
     path.join(setup.repo.path, ".tenet", "manifest.json"),
     "utf8",
-  )) as { blocks: Array<{ path: string; previous_existed: boolean }> };
+  )) as { blocks: Array<{ path: string; previous_block: string | null }> };
   assert.equal(manifest.blocks.find((item) =>
-    item.path === ".github/pull_request_template.md")?.previous_existed, true);
+    item.path === ".github/pull_request_template.md")?.previous_block, "");
   const result = await remove(await optionsForStep(setup, 0));
   assert.equal(await readFile(path.join(setup.repo.path, ".github", "pull_request_template.md"), "utf8"), "");
   assert.ok(result.removed.some((item) =>
@@ -722,9 +755,9 @@ test("accepted reporter edit appends flags inside a multiline YAML run block", a
   const result = await init(setup.options);
   assert.equal(result.plan.ci_mode, "existing-ci");
   const workflow = await readFile(path.join(setup.repo.path, ".github", "workflows", "ci.yml"), "utf8");
-  assert.match(workflow, /- id: tenet-tests\n        run: \|\n          npx vitest run --reporter=default --reporter=junit --outputFile\.junit=\.tenet\/reports\/test\.xml\n          echo tests-finished\n/);
+  assert.match(workflow, /- id: tenet-tests\n {8}run: \|\n {10}npx vitest run --reporter=default --reporter=junit --outputFile\.junit=\.tenet\/reports\/test\.xml\n {10}echo tests-finished\n/);
   assert.doesNotMatch(workflow, /run: \| --reporter/);
-  assert.equal((workflow.match(/\n          echo tests-finished\n/) ?? []).length, 1);
+  assert.equal((workflow.match(/\n {10}echo tests-finished\n/) ?? []).length, 1);
 });
 
 test("Tenet test workflow binds the Node toolchain from .nvmrc", async (t) => {
@@ -811,7 +844,7 @@ test("n08 cancellation preserves the exact repository tree", async (t) => {
   ));
 });
 
-test("n01 and n02 expose structured preflight findings without writes", async (t) => {
+test("n01 and n02 expose structured preflight findings without writes", async () => {
   for (const [caseName, code] of [
     ["n01-git-executable-missing", "TN-ENV-GIT"],
     ["n02-not-a-git-repository", "TN-ENV-NOT-GIT"],

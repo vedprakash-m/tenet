@@ -46,7 +46,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "kind": { "const": "no-test-report" },
+          "kind": { "enum": ["no-test-report", "local-integrity"] },
           "path": { "type": "string", "minLength": 1 },
           "message": { "type": "string", "minLength": 1 }
         },

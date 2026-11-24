@@ -1,7 +1,10 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import type { CommandSpec } from "../core/commands.js";
 import { message } from "../core/messages.js";
 import { errorFinding, fail, type Finding } from "../core/output.js";
 import { upgrade as runUpgrade } from "../install/upgrade.js";
+import { localIntegrityWarning } from "../install/integrity.js";
 
 type UpgradeDependencies = { upgrade?: typeof runUpgrade };
 
@@ -40,7 +43,23 @@ export function makeUpgradeCommand(dependencies: UpgradeDependencies = {}): Comm
         return { findings: [fail("TN-USAGE-UPGRADE", words.message, words.fix)] };
       }
       try {
-        const value = await upgrade({ cwd: context.cwd });
+        const value = await upgrade({ cwd: context.cwd, offline: context.offline });
+        try {
+          const lock = JSON.parse(await readFile(path.join(context.cwd, "tenet.lock"), "utf8")) as {
+            package?: unknown;
+            version?: unknown;
+            "x-integrity-source"?: unknown;
+          };
+          if (
+            lock["x-integrity-source"] === "local" &&
+            typeof lock.package === "string" &&
+            typeof lock.version === "string"
+          ) {
+            context.stderr.write(`Warning: ${localIntegrityWarning(lock.package, lock.version)}\n`);
+          }
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        }
         if (!context.json) {
           context.stdout.write(`Tenet ${value.from} → ${value.to} · ${value.changed.length} managed path(s).\n`);
         }

@@ -37,7 +37,7 @@ export type InitPlan = {
 };
 
 export type InstallFinding = {
-  kind: "no-test-report";
+  kind: "no-test-report" | "local-integrity";
   path: string;
   message: string;
 };
@@ -68,6 +68,7 @@ export type PreflightAnswers = {
   purpose?: string;
   kind?: ProjectKind;
   allowReporterEdit?: boolean;
+  allowLocalHosts?: boolean;
   continue?: boolean;
 };
 
@@ -103,16 +104,19 @@ export type PreflightEnvironment = {
 export type PreflightOptions = {
   cwd?: string;
   yes?: boolean;
+  localHosts?: boolean;
+  offline?: boolean;
   vendor?: boolean;
   answers?: PreflightAnswers;
   environment?: PreflightEnvironment;
 };
 
 export type PreflightPrompt = {
-  key: "purpose" | "kind" | "reporterEdit";
+  key: "purpose" | "kind" | "reporterEdit" | "localHosts";
   question: string;
   options?: ProjectKind[];
   default?: string | boolean;
+  local_keys?: PlannedLocalKey[];
 };
 
 export type RunnerFact = {
@@ -180,7 +184,7 @@ export type ManifestCreated = {
 
 export type ManifestBlock = PlannedBlock & {
   marker: string;
-  previous_existed: boolean;
+  previous_existed?: boolean;
   previous_block?: string | null;
   prefix_sep?: "" | "\n" | "\r\n";
 };
@@ -241,6 +245,7 @@ export type WriteSet = {
   writes: PendingWrite[];
   manifest: InstallManifest;
   localProfileRoot?: string;
+  integrity_warning?: string;
   upgrade?: PendingUpgrade;
 };
 
