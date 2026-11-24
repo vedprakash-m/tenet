@@ -1,13 +1,20 @@
+---
+tenet: {spec: 1, doc: tech-spec, level: L2, version: "0.12", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:7d113e5be50da0b40316e223c71c43028b900679757986ea154af7af1e35241c, flags: []}
+  1-the-agentsmd-block: {state: draft, digest: sha256:ddf223ae8f399877797fea51ab0dd55fa336ee16806f72e5e14295d38a04bdfc, flags: []}
+  2-skills: {state: draft, digest: sha256:20287d61c9dbc4b4b96ba823ae54e498fa4c7377faf55b97b09cb143fbc2b9bf, flags: []}
+  3-tagging-tests: {state: draft, digest: sha256:26cd385062914ff516f332c6758619e54cddbf01f33a3cf6f58a78d7c7c26c78, flags: []}
+  4-skills-from-010: {state: draft, digest: sha256:64b3a968b15cc773e8a9988f4f3b698c8ec522cb95ac359531db5fdc0030da23, flags: []}
+  5-loops: {state: draft, digest: sha256:881ba8b92d091f728f53d3175197884ed116db89bb7e7f61c23234ada4142380, flags: []}
+  6-adapters-and-the-reference-runner-010: {state: draft, digest: sha256:e61178122adfacec45d7e6603de41a0595dff64052d588b742982e46c0f465db, flags: []}
+---
 # Tenet technical specification: what agents are given
+> L2 · Version 0.12 · Draft · [Tech spec](../tech-spec.md) · Budget: 6,000 tokens · L-0024 · Previous: `archive/specs/tech-spec/agents.md@0.11.md`
 
-> Level L2 · Version 0.12 · Part of [tech-spec.md](../tech-spec.md) · Status: **draft, awaiting the Owner's approval** · Budget: 6,000 tokens · Added in L-0024 · Previous version: `archive/specs/tech-spec/agents.md@0.11.md`
-
-**Context card.** The instructions that make agents use Tenet are part of the contract, because the product depends on them: the `AGENTS.md` block, the three alpha.0 skills, and how to tag tests in each runner. CP-0012 ships these texts, CP-0010 installs them, and CP-0052's fresh-session check tests them. Hosts are described in [contracts §10](contracts.md#10-install-manifest-and-hosts); context selection is ALG-10. §5 is the loop contract that drives agents from 0.1.0, and §6 the adapters and the reference runner that execute it (R-224).
-
+**Context card.** This contract covers the `AGENTS.md` block, three alpha.0 skills, and runner test tags. CP-0012 ships them, CP-0010 installs them, and CP-0052 tests a fresh session. See Contracts §10 for hosts, ALG-10 for context, §5 for 0.1.0 loops, and §6 for adapters and the reference runner (R-224).
 ## 1. The `AGENTS.md` block
-
 At most 1,500 tokens. `init` and `upgrade` fill the braces from policy and the detected runner.
-
 ```markdown
 <!-- tenet:begin v{version} -->
 ## Working with Tenet
@@ -50,7 +57,6 @@ test, acceptance item or specification.
 ```
 
 **Working rules** (R-225). `{working rules}` is the text of `kit/practices/default.md`, unless `tenet.yaml` sets `agents.working_rules: off`, or a path to the project's own file (at most 400 tokens). The default:
-
 ```markdown
 - State your assumptions. If the task can be read more than one way, say so and ask; don't choose silently.
 - Make the smallest change that meets the acceptance items. No features, options or abstractions nobody asked for.
@@ -63,12 +69,10 @@ test, acceptance item or specification.
 These depend on the agent following them; the ones that can be checked are catalog ideas R-226 to R-230.
 
 **Agent card shape** (tooling R-206), YAML front matter of `kit/agents/<name>.md`, with `kit/agents/drafter.md` as the reference:
-- **Required:** `name`, `version`, `role`, `kind` (`creator` or `critic`), `purpose`, `inputs` `{spec_levels, sections, artifacts}`, `outputs` `{result_schema, writes}` (`writes` for creators only; a critic returns findings and writes no files).
-- **Optional:** `tools[]`, `side_effects` `{filesystem, git, network}`, `paths` `{write, deny_read, deny_write}`, `acts_as`, `sponsor`, `stop_rules[]`, `eval_suite`.
+**Required:** `name`, `version`, `role`, `kind` (`creator` or `critic`), `purpose`, `inputs` `{spec_levels, sections, artifacts}`, `outputs` `{result_schema, writes}` (`writes` for creators only; a critic returns findings and writes no files).
+**Optional:** `tools[]`, `side_effects` `{filesystem, git, network}`, `paths` `{write, deny_read, deny_write}`, `acts_as`, `sponsor`, `stop_rules[]`, `eval_suite`.
 - **Critics add:** `criteria`, `independence`, `finding_schema`, `abstain_when`.
-
 ## 2. Skills
-
 Each skill is a `SKILL.md` in the open agent-skills format, under 2,000 tokens, with these steps.
 
 **`draft-specs`** (onboarding):
@@ -101,10 +105,8 @@ Each skill is a `SKILL.md` in the open agent-skills format, under 2,000 tokens, 
 - Compare the touched requirements' blessed text with the change.
 - Report each finding as `introduced`, `exposed`, `inherited` or `uncertain`, with a location or a reproduction (evidence.md §1, `review`).
 - Never approve work you wrote.
-
 ## 3. Tagging tests
-
-A tag is the item or requirement ID in brackets in the test's name. Where a name cannot hold brackets, use `tenet_` with underscores: `tenet_AB_1` means `AB-1`, and `tenet_R_12` means `R-12`. A JUnit `tenet.case` property also works.
+Tag the test name with the item or requirement ID in brackets. Where brackets are unavailable, use `tenet_AB_1` for `AB-1` or `tenet_R_12` for `R-12`. JUnit also accepts `tenet.case`.
 
 | Runner | Example |
 |---|---|
@@ -116,9 +118,7 @@ A tag is the item or requirement ID in brackets in the test's name. Where a name
 | Anything else | `tenet_<ID with underscores>` in the name, or the `tenet.case` property |
 
 An acceptance tag counts for a pull request only on lines that pull request adds (ALG-08). A requirement tag counts wherever it is.
-
 ## 4. Skills from 0.1.0
-
 - **`write-a-definition`** (shaper):
   1. Get context for the paths the request names.
   2. Write `definition.md`: the intent in the requester's words; each acceptance item with its claim class, method, pass rule and test IDs.
@@ -150,7 +150,7 @@ A loop is data in `kit/loops/<name>.yaml` (schema `kit/schemas/loop.json`, CP-00
 | `set` | `set`: counters (`rounds: +1`); `then` | Counters only rise |
 | `route` | `on`: a target for each of the three outcomes `advance`, `refuse`, `human-gate`, each a target or `{if, goto, else}` on counters | Evaluates the gate (ALG-07) and moves on its **disposition**: a refusal that only advises counts as `advance`, so observing never sends work back |
 
-A route maps `records` and `advises` to `advance`. For `blocks`, use the first enforcing match by ALG-07 row order, then claim ID order inside row 8. The overall verdict and display lead remain ALG-07 results. A request for a human decision maps to `human-gate`, another refusal to `refuse`. A required input or receipt that has not arrived leaves the step waiting without spending another attempt. An explicit human step still requires its own decision. A repeat after the round or step cap escalates without invoking a host.
+Routes map `records` and `advises` to `advance`. For `blocks`, take the first enforcing ALG-07 row, then claim ID order in row 8. ALG-07 still sets the overall verdict and display lead. Decisions map to `human-gate`; other refusals to `refuse`. Missing inputs or receipts wait without another attempt. Explicit human steps need their own decision. Repeating beyond the round or step cap escalates before host invocation.
 
 **Inputs and outputs:**
 - Inputs: `intake`, `context`, `definition`, `assignment`, `result`, `card`, `findings`, `tests`
@@ -160,9 +160,9 @@ A route maps `records` and `advises` to `advance`. For `blocks`, use the first e
 
 **Assignment:** `{work, station, step, attempt, card, inputs: [{name, source, trust, hash}], allowed_paths, budget_tokens, deadline}`. **Result:** `{work, step, attempt, assignment_digest, outputs, evidence?, proposed_events}`. Tenet appends events only after the gate accepts them (R-018).
 
-**Pinned tests.** `record --pin-tests` consumes the accepted test-writer assignment and approved definition. The record names work, assignment and attempt, writer actor and card digest, definition digest, baseline subject, mapped cases, baseline failure ID and sorted test paths with content digests. A harness failure is inconclusive. A changed approved definition or test content invalidates its pin. Refresh only through the independent test-writer path before the builder begins. Pin provenance and CI evidence remain separate.
+**Pinned tests.** `record --pin-tests` takes the accepted test-writer assignment and approved definition. It records work, assignment, attempt, writer actor and card digest, definition digest, baseline subject, mapped cases, baseline failure ID and sorted test paths with content digests. Harness failure is inconclusive. Changed approved definition or test content invalidates the pin. Refresh only via the independent writer before build. Pin provenance and CI evidence stay separate.
 
-**Static checks** (`tenet check --pack`): every creating step is followed by an inspection; counters only rise within `limits`; every route covers all three outcomes and every target exists; every `fix:<id>` names an earlier creating agent step; human gates list `stop` first; `read-only` cards hold no write tools; critics inspecting implementation or test results run after the corresponding scripts. Definition review precedes test creation.
+**Static checks** (`tenet check --pack`): inspect after creation; counters only rise within limits. Routes cover all three outcomes and all targets exist. Each `fix:<id>` names an earlier creating step. Human gates list `stop` first; read-only cards have no write tools. Implementation or test critics run after the relevant scripts. Review definitions before creating tests.
 
 **Worked loops** (the `minimal` pack, careful lane):
 
@@ -209,7 +209,7 @@ steps:
 | `result(run_id)` | `{outputs, summary}`: summaries and hashes, never transcripts unless opted in (R-107) |
 
 **Adapters in 0.1.0:**
-- `command`: runs a configured executable and argument list with `{card}`, `{skill}` and `{assignment}` placeholders, using literal substitution without shell parsing
+The `command` adapter runs a configured executable and arguments, substituting `{card}`, `{skill}` and `{assignment}` literally without shell parsing.
 - `claude-code` and `copilot-cli`, the two Spike D qualified (L-0030):
   - Claude Code runs `claude -p … --output-format json --permission-mode acceptEdits --allowedTools …` with `--max-budget-usd` when an explicit USD budget is available; its result reports `total_cost_usd` (cost `known`, unit USD).
   - Copilot CLI runs `copilot -p … --allow-tool … --output-format json -s`; its JSON lines end in a `result` event with `exitCode`, files changed and `premiumRequests` (cost `known`, unit `premium-request`). It loads the user's own MCP servers unless told not to, so the adapter turns them off or reports isolation `none`.
@@ -232,9 +232,9 @@ External engines implement the same contract.
 5. Wait for the card, then return to step 1.
 6. A stop threshold or `limits.steps` stops the run and calls `tenet escalate`.
 
-Every step records `run.started` and `run.ended` with the actor chain (runner → adapter → card), usage and cost status. **Limits:** one repository; no scheduler or daemon (it runs while the command runs, locally or in a CI job); at most `--parallel` items (default 1), each in its own worktree, one active attempt per work item within the same local repository when its atomic reservation is available. Cross-clone ownership is advisory under R-037. **Trust:** the runner is an executor only. Evidence comes from CI, and the card treats the runner like any host. `tenet-runner doctor` prints each adapter's capability table and recommends running agents under a `bots[]` identity (trust assumption 4).
+Each step records `run.started` and `run.ended` with actor chain (runner → adapter → card), usage and cost status. **Limits.** One repository; no scheduler or daemon. It runs locally or in CI only while the command runs. At most `--parallel` items (default 1), each in its own worktree. Atomic local reservations allow one active attempt per item. Cross-clone ownership is advisory (R-037). **Trust.** The runner executes; CI supplies evidence. The card treats the runner like any host. `tenet-runner doctor` prints adapter capabilities and recommends a `bots[]` identity (trust assumption 4).
 
-**Spawning:** adapters start hosts with an argument array, never through a shell, and set `MSYS_NO_PATHCONV=1` on Windows. In Spike A, Git Bash turned `/tenet approve` into a file path before it was posted.
+**Spawning.** Adapters spawn hosts with argument arrays, without a shell. On Windows set `MSYS_NO_PATHCONV=1`; Spike A found Git Bash converted `/tenet approve` to a path before posting.
 
 ### Durable attempts and recovery
 
@@ -251,6 +251,6 @@ Persist a work, station, step and attempt key in the runner journal along with t
 
 `status <work>` reports phase, attempt and recovery action. `stop <work>` cancels the recorded process tree after validating process identity. Use a process group on POSIX and the recorded tree on Windows. Confirm termination before starting a replacement. Preserve uncommitted work. An uncertain stop stays visible. Host logs remain local and are omitted from run records. `doctor` reports the installed adapter version and measured capabilities.
 
-If only one named adapter qualifies, that adapter plus the command adapter can satisfy plan §1. If no named adapter qualifies, the command adapter remains available for development and the release gate stays open for the Owner. Report inaccessible cost or containment explicitly instead of inferring it.
+One qualifying named adapter plus the command adapter can satisfy plan §1. With none, the command adapter stays available for development and the release gate stays open for the Owner. Report unavailable cost or containment.
 
-**Package:** `runner/` in this repository, published as `@vedprakash-m/tenet-runner` at the same version as `@vedprakash-m/tenet`, depending only on it and Node built-ins.
+**Package.** Publish `runner/` as `@vedprakash-m/tenet-runner` at the Tenet version, with only Tenet and Node built-ins as dependencies.
