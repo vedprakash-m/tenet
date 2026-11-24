@@ -117,16 +117,20 @@ test("the alpha.0 npm tarball has the release layout and runs the installed CLI"
   const revision = git(cwd, env, "rev-parse", "HEAD");
   const installedBin = path.join(installed, manifest.bin.tenet);
   assert.match(await readFile(installedBin, "utf8"), /^#!\/usr\/bin\/env node\n/);
-  let tenet = (...args: string[]) => runNpm(["exec", "--offline", "--no", "--", "tenet", "--cwd", cwd, ...args], consumer, env);
-  if (process.platform !== "win32") {
-    const shim = path.join(consumer, "node_modules", ".bin", "tenet");
-    const entry = await realpath(shim);
-    assert.equal(entry, await realpath(installedBin));
+  const windows = process.platform === "win32";
+  const shim = path.join(consumer, "node_modules", ".bin", windows ? "tenet.cmd" : "tenet");
+  if (windows) await access(shim);
+  else {
+    assert.equal(await realpath(shim), await realpath(installedBin));
     await access(shim, constants.X_OK);
-    // The CLI compares argv[1] with import.meta.url. Use the resolved npm bin on POSIX.
-    tenet = (...args: string[]) => execFileSync(entry, ["--cwd", cwd, ...args], {
-      cwd: consumer, env, encoding: "utf8", timeout: 30_000,
-    });
+  }
+  function tenet(...args: string[]): string {
+    const options = { cwd, env, encoding: "utf8" as const, windowsHide: true, timeout: 30_000 };
+    if (!windows) return execFileSync(shim, args, options);
+    // cmd.exe runs the installed npm batch shim. The arguments below are fixed CLI flags.
+    return execFileSync(process.env.ComSpec ?? "cmd.exe", [
+      "/d", "/s", "/v:off", "/c", `""%TENET_PACKED_BIN%" ${args.join(" ")}"`,
+    ], { ...options, env: { ...env, TENET_PACKED_BIN: shim }, windowsVerbatimArguments: true });
   }
   assert.equal(tenet("--version").trim(), manifest.version);
   for (const [command, ...args] of [["version", "--version"], ["help", "--help"],
