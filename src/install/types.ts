@@ -1,5 +1,6 @@
 import type { Finding } from "../core/output.js";
 import type { CheckResult } from "../specs/check.js";
+import type { LockVerification } from "../policy/index.js";
 
 export type HostCapability = "skills+mcp" | "mcp" | "instructions";
 export type ProjectKind = "service" | "library" | "data" | "infrastructure" | "ml" | "other";
@@ -87,6 +88,8 @@ export type PreflightEnvironment = {
   tools?: {
     git?: string | null;
     node?: string | null;
+    ssh?: string | null;
+    gh?: string | null;
   };
   installedVersion?: string;
   registry?: {
@@ -274,4 +277,47 @@ export type RemoveResult = {
   removed: RemoveRemoved[];
   kept: RemoveKept[];
   reminder: string | null;
+};
+
+export type DoctorCheckName = "node" | "git" | "ssh" | "gh" | "lock" | "workflows";
+
+export type DoctorCheck = {
+  name: DoctorCheckName;
+  ok: boolean;
+  detail: string;
+};
+
+export type DoctorResult = {
+  checks: DoctorCheck[];
+};
+
+export type DoctorEvaluation = DoctorResult & {
+  findings: Finding[];
+  exitCode: 0 | 1 | 3;
+};
+
+export type DoctorTool = "node" | "git" | "ssh" | "gh";
+
+export type DoctorToolRun = (
+  tool: DoctorTool,
+  args: string[],
+  options: { cwd: string },
+) => Promise<string>;
+
+export type DoctorLockVerifier = (options: { cwd: string }) => Promise<LockVerification>;
+
+export type DoctorDependencies = {
+  platform?: NodeJS.Platform | string;
+  runTool?: DoctorToolRun;
+  runners?: Partial<Record<DoctorTool, DoctorToolRun>>;
+  verifyLock?: DoctorLockVerifier;
+};
+
+export type DoctorOptions = {
+  cwd?: string;
+  platform?: NodeJS.Platform | string;
+  environment?: PreflightEnvironment;
+  runTool?: DoctorToolRun;
+  runners?: Partial<Record<DoctorTool, DoctorToolRun>>;
+  verifyLock?: DoctorLockVerifier;
 };

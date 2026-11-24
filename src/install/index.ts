@@ -1,4 +1,5 @@
 export { HOST_DESCRIPTORS, compareUtf16, detectHosts, hostDescriptors } from "./hosts.js";
+export { doctor, doctorEvaluation } from "./doctor.js";
 export { init } from "./init.js";
 export { remove } from "./remove.js";
 export { upgrade } from "./upgrade.js";
@@ -7,6 +8,15 @@ export { preflight, preflightInit } from "./preflight.js";
 export type {
   CiJobFact,
   CiMode,
+  DoctorCheck,
+  DoctorCheckName,
+  DoctorDependencies,
+  DoctorEvaluation,
+  DoctorLockVerifier,
+  DoctorOptions,
+  DoctorResult,
+  DoctorTool,
+  DoctorToolRun,
   HostCapability,
   HostContext,
   HostDescriptor,

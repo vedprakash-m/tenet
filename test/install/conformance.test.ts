@@ -6,7 +6,7 @@ import test from "node:test";
 import { pathToFileURL } from "node:url";
 import { cleanupTestRoot, tmpRepo, type TemporaryRepository } from "../helpers/tmpRepo.ts";
 
-const output = path.resolve(".test-tmp", `install-dist-${process.pid}`);
+const output = path.resolve(`.install-conformance-dist-${process.pid}`);
 const compile = spawnSync(process.execPath, [
   path.resolve("node_modules/typescript/bin/tsc"),
   "--target", "ES2023",

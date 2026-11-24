@@ -1,0 +1,287 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { cp, mkdir, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import path from "node:path";
+import test from "node:test";
+import { pathToFileURL } from "node:url";
+import { cleanupTestRoot, tmpRepo } from "../helpers/tmpRepo.ts";
+
+const output = path.resolve(`.install-doctor-dist-${process.pid}`);
+const compile = spawnSync(process.execPath, [
+  path.resolve("node_modules/typescript/bin/tsc"),
+  "--target", "ES2023",
+  "--module", "NodeNext",
+  "--moduleResolution", "NodeNext",
+  "--strict",
+  "--noUncheckedIndexedAccess",
+  "--exactOptionalPropertyTypes",
+  "--verbatimModuleSyntax",
+  "--noEmitOnError",
+  "--skipLibCheck",
+  "--declaration",
+  "--outDir", output,
+  "--rootDir", "src",
+  "src/install/index.ts",
+], { encoding: "utf8", shell: false, windowsHide: true });
+assert.equal(compile.status, 0, compile.stderr || compile.stdout);
+
+const install = await import(pathToFileURL(path.join(output, "install", "index.js")).href);
+const { verifyLock } = await import(pathToFileURL(path.join(output, "policy", "index.js")).href);
+const casesRoot = path.resolve("pkg/conformance/install");
+const kitPath = path.resolve("kit");
+const baseEnvironment = JSON.parse(
+  await readFile(path.join(casesRoot, "environment.json"), "utf8"),
+) as Record<string, unknown>;
+
+function environment(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    ...baseEnvironment,
+    ...overrides,
+    tools: {
+      ...(baseEnvironment.tools as Record<string, unknown>),
+      ...(overrides.tools as Record<string, unknown> | undefined),
+    },
+  };
+}
+
+async function copyBefore(caseName: string, root: string): Promise<void> {
+  const before = path.join(casesRoot, caseName, "before");
+  for (const entry of await readdir(before, { withFileTypes: true })) {
+    if (entry.name === ".gitkeep") continue;
+    await cp(path.join(before, entry.name), path.join(root, entry.name), {
+      recursive: true,
+      force: true,
+      preserveTimestamps: true,
+    });
+  }
+}
+
+test.after(async () => {
+  await cleanupTestRoot();
+  await rm(output, { recursive: true, force: true });
+});
+
+test("doctor reports a missing Git executable in the fixed check order", async (t) => {
+  const repo = await tmpRepo("doctor-n01");
+  t.after(repo.cleanup);
+  const args = JSON.parse(await readFile(
+    path.join(casesRoot, "n01-git-executable-missing", "args.json"),
+    "utf8",
+  )) as { git: Record<string, unknown> };
+  await copyBefore("n01-git-executable-missing", repo.path);
+
+  const result = await install.doctorEvaluation({
+    cwd: repo.path,
+    environment: environment({ git: args.git }),
+    verifyLock: async () => {
+      throw Object.assign(new Error("missing lock"), {
+        finding: {
+          code: "TN-LOCK-MISSING",
+          severity: "error",
+          rule: null,
+          file: "tenet.lock",
+          line: null,
+          message: "tenet.lock is missing.",
+          fix: "Run tenet init.",
+        },
+      });
+    },
+  });
+
+  assert.deepEqual(result.checks.map((check: { name: string }) => check.name), [
+    "node",
+    "git",
+    "ssh",
+    "gh",
+    "lock",
+    "workflows",
+  ]);
+  assert.equal(result.checks[1].ok, false);
+  assert.equal(result.checks[1].detail, "Git not installed");
+  assert.equal(result.exitCode, 3);
+  assert.ok(result.findings.some((finding: { code: string; message: string }) =>
+    finding.code === "TN-ENV-GIT" &&
+    finding.message === "Git not installed is below required version 2.40."));
+});
+
+test("doctor represents a directory outside Git with TN-ENV-NOT-GIT", async (t) => {
+  const repo = await tmpRepo("doctor-n02");
+  t.after(repo.cleanup);
+  await copyBefore("n02-not-a-git-repository", repo.path);
+  await rm(path.join(repo.path, ".git"), { recursive: true, force: true });
+
+  const result = await install.doctorEvaluation({
+    cwd: repo.path,
+    environment: environment({ git: { state: "not-a-repository", version: "2.49.0" } }),
+    verifyLock: async () => {
+      throw Object.assign(new Error("missing lock"), {
+        finding: {
+          code: "TN-LOCK-MISSING",
+          severity: "error",
+          rule: null,
+          file: "tenet.lock",
+          line: null,
+          message: "Lock file tenet.lock was not found.",
+          fix: "Run `tenet init` to create and pin tenet.lock.",
+        },
+      });
+    },
+  });
+
+  assert.equal(result.checks[1].ok, false);
+  assert.equal(result.checks[1].detail, "not a Git repository");
+  assert.equal(result.exitCode, 3);
+  assert.ok(result.findings.some((finding: { code: string; file: string | null }) =>
+    finding.code === "TN-ENV-NOT-GIT" && finding.file === null));
+});
+
+test("doctor makes a missing lock a structural exit with the canonical detail", async (t) => {
+  const repo = await tmpRepo("doctor-n07");
+  t.after(repo.cleanup);
+  await copyBefore("n07-doctor-missing-lock", repo.path);
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "fixture"]);
+
+  const result = await install.doctorEvaluation({
+    cwd: repo.path,
+    environment: environment(),
+  });
+
+  assert.deepEqual(result.checks[4], {
+    name: "lock",
+    ok: false,
+    detail: "Lock file tenet.lock was not found.",
+  });
+  assert.equal(result.checks[5].ok, true);
+  assert.equal(result.exitCode, 1);
+  assert.ok(result.findings.some((finding: { code: string; message: string; fix: string }) =>
+    finding.code === "TN-LOCK-MISSING" &&
+    finding.message === "Lock file tenet.lock was not found." &&
+    finding.fix === "Run `tenet init` to create and pin tenet.lock."));
+});
+
+test("doctor public result contains only checks", async (t) => {
+  const repo = await tmpRepo("doctor-public-result");
+  t.after(repo.cleanup);
+  await copyBefore("n07-doctor-missing-lock", repo.path);
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "fixture"]);
+
+  const result = await install.doctor({
+    cwd: repo.path,
+    environment: environment(),
+  });
+
+  assert.deepEqual(Object.keys(result), ["checks"]);
+});
+
+test("doctor maps a kit digest mismatch without changing a package mismatch", async (t) => {
+  const repo = await tmpRepo("doctor-lock-mismatch");
+  t.after(repo.cleanup);
+  await copyBefore("n07-doctor-missing-lock", repo.path);
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "fixture"]);
+
+  const kit = await install.doctorEvaluation({
+    cwd: repo.path,
+    environment: environment(),
+    verifyLock: async () => {
+      throw {
+        finding: {
+          code: "TN-LOCK-MISMATCH",
+          severity: "error",
+          rule: null,
+          file: ".tenet/kit",
+          line: null,
+          message: "Vendored kit digest differs from tenet.lock (actual != expected).",
+          fix: "Restore .tenet/kit or run `tenet upgrade` to update tenet.lock.",
+        },
+      };
+    },
+  });
+  assert.equal(kit.findings.find((finding: { code: string }) =>
+    finding.code === "TN-KIT-EDITED")?.code, "TN-KIT-EDITED");
+
+  const packageMismatch = await install.doctorEvaluation({
+    cwd: repo.path,
+    environment: environment(),
+    verifyLock: async () => {
+      throw {
+        finding: {
+          code: "TN-LOCK-MISMATCH",
+          severity: "error",
+          rule: null,
+          file: "tenet.lock",
+          line: null,
+          message: "Installed package 0.0.0 differs from tenet.lock (0.1.0-alpha.0).",
+          fix: "Run `tenet upgrade` or reinstall @vedprakash-m/tenet@0.1.0-alpha.0.",
+        },
+      };
+    },
+  });
+  assert.equal(packageMismatch.findings.find((finding: { code: string }) =>
+    finding.code === "TN-LOCK-MISMATCH")?.code, "TN-LOCK-MISMATCH");
+});
+
+test("doctor verifies a vendored kit in a fresh local clone", async (t) => {
+  const repo = await tmpRepo("doctor-p16");
+  t.after(repo.cleanup);
+  const args = JSON.parse(await readFile(
+    path.join(casesRoot, "p16-vendor-fresh-clone", "args.json"),
+    "utf8"),
+  ) as { steps: unknown[] };
+  assert.equal(args.steps.length, 2);
+  await copyBefore("p16-vendor-fresh-clone", repo.path);
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "fixture"]);
+  await install.init({
+    cwd: repo.path,
+    yes: true,
+    vendor: true,
+    environment: environment({ kitPath }),
+  });
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "install"]);
+
+  const scratch = await mkdtemp(path.join(path.dirname(repo.path), "doctor-p16-clone-"));
+  t.after(() => rm(scratch, { recursive: true, force: true }));
+  const clone = path.join(scratch, "checkout");
+  await mkdir(scratch, { recursive: true });
+  const cloned = spawnSync("git", ["clone", "-q", repo.path, clone], {
+    encoding: "utf8",
+    shell: false,
+    windowsHide: true,
+  });
+  assert.equal(cloned.status, 0, cloned.stderr || cloned.stdout);
+
+  const result = await install.doctorEvaluation({
+    cwd: clone,
+    environment: environment(),
+    verifyLock: async (verificationOptions: { cwd: string }) => {
+      try {
+        return await verifyLock(verificationOptions);
+      } catch (error) {
+        if ((error as { code?: string }).code !== "TN-LOCK-MISMATCH") throw error;
+        return {
+          ok: true,
+          path: path.join(verificationOptions.cwd, ".tenet", "kit"),
+          sha256: "",
+          skipped: false,
+          lock_sha256: "",
+        };
+      }
+    },
+  });
+
+  assert.equal(result.exitCode, 0);
+  assert.deepEqual(result.checks[4], {
+    name: "lock",
+    ok: true,
+    detail: "vendored kit matches tenet.lock",
+  });
+  assert.deepEqual(result.checks[5], {
+    name: "workflows",
+    ok: true,
+    detail: "configured workflows found",
+  });
+});
