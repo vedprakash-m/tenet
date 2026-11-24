@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { PassThrough } from "node:stream";
 import { test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { run } from "../../dist/cli.js";
@@ -148,8 +149,34 @@ function evaluateGateFixture(input: GateInput) {
   }) };
 }
 
+function scenarioTty(step: CliStep) {
+  const answers = step.fakeTty;
+  const tty = fakeTty(answers?.length ? `${answers.join("\n")}\n` : "");
+  if (step.args[0] !== "init" || !answers?.length) return tty;
+
+  // Respond prompt by prompt. Windows may ask about local host settings before
+  // the repository confirmation scripted by the independent scenario.
+  const stdin = Object.assign(new PassThrough(), { isTTY: true });
+  const prompts = step.args.includes("--json") ? tty.stderr : tty.stdout;
+  const write = prompts.write.bind(prompts);
+  let nextAnswer = 0;
+  prompts.write = (value) => {
+    const written = write(value);
+    const text = typeof value === "string" ? value : Buffer.from(value).toString("utf8");
+    if (text === "Edit local host settings outside the repository? [y/N] ") {
+      stdin.write("n\n");
+    } else if (text.endsWith(" ")) {
+      const answer = answers[nextAnswer++];
+      if (answer === undefined) stdin.end();
+      else stdin.write(`${answer}\n`);
+    }
+    return written;
+  };
+  return { ...tty, stdin };
+}
+
 async function cliStep(step: CliStep, cwd: string) {
-  const tty = fakeTty(step.fakeTty?.length ? `${step.fakeTty.join("\n")}\n` : "");
+  const tty = scenarioTty(step);
   const exit = await run(step.args, { ...tty, cwd, now, checkEnvironment: false });
   const json = tty.stdout.text.trim() ? JSON.parse(tty.stdout.text) : undefined;
   return { exit, json, stderr: tty.stderr.text };
@@ -388,7 +415,7 @@ for (const name of names) {
             }
             if (step.compareTreeToCleanRun) break; // Every resumed run was asserted at the interrupt step.
             const result = await cliStep(step, cwd);
-            assert.equal(result.exit, step.expectExitCode ?? 0, JSON.stringify(result.json) || result.stderr);
+            assert.equal(result.exit, step.expectExitCode ?? 0, [result.stderr, JSON.stringify(result.json)].filter(Boolean).join("\n"));
             actual = result.json;
             if (step.expectedLogEntry) {
               const log = await readFile(path.join(cwd, "tenet/blessed/log.jsonl"), "utf8");
