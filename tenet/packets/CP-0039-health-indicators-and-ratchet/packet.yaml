@@ -9,8 +9,8 @@ serves: [V-P9, V-M10]
 implements: [R-175, R-176, R-177]
 milestone: M1
 source: "specs/plan.md"
-stage: shaped
-status: ready
+stage: commit
+status: parked
 blocked_by: [CP-0024]
 unblocks: []
 owner_role: null
