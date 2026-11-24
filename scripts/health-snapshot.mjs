@@ -15,7 +15,7 @@ import ts from "typescript";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const healthDirectory = path.join(root, ".tenet", "health");
 const coveragePath = path.join(healthDirectory, "coverage.lcov");
-const suitePath = path.join(healthDirectory, "suite-time.json");
+const suitePath = path.join(root, ".tenet", "health-suite-time.json");
 const complexityPath = path.join(healthDirectory, "complexity.json");
 const snapshotPath = path.join(healthDirectory, "snapshot.json");
 

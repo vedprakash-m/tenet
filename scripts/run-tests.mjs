@@ -11,6 +11,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const healthDirectory = path.join(root, ".tenet", "health");
+const suitePath = path.join(root, ".tenet", "health-suite-time.json");
 const coverage = process.argv.includes("--coverage");
 const roots = process.argv.slice(2).filter((argument) => argument !== "--coverage");
 if (roots.length === 0) roots.push("test");
@@ -61,7 +62,7 @@ if (coverage) {
   const normalized = canonicalCoverage(readFileSync(rawCoverage, "utf8"));
   writeFileSync(path.join(healthDirectory, "coverage.lcov"), normalized);
   writeFileSync(
-    path.join(healthDirectory, "suite-time.json"),
+    suitePath,
     `${JSON.stringify({ schema_version: 1, suite_time_ms: suiteTimeMs }, null, 2)}\n`,
   );
   rmSync(rawCoverage, { force: true });
