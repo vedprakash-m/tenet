@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/results/board.json",
+  "title": "Specification board result",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "read": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "main": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "records": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      },
+      "required": [
+        "main",
+        "branches",
+        "records"
+      ]
+    },
+    "specs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "section": {
+            "type": "string",
+            "minLength": 1
+          },
+          "level": {
+            "enum": ["L0", "L1", "L2", "L3", "L4"]
+          },
+          "state": {
+            "enum": ["draft", "blessed", "rejected", "deferred"]
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "enum": ["edited", "sources-changed"]
+            }
+          },
+          "recorded": {
+            "enum": ["self", "forge", "signed"]
+          }
+        },
+        "required": ["path", "section", "level", "state", "flags"],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "blessed"
+                }
+              },
+              "required": ["state"]
+            },
+            "then": {
+              "properties": {
+                "recorded": {
+                  "enum": ["self", "forge", "signed"]
+                }
+              },
+              "required": ["recorded"]
+            }
+          }
+        ]
+      }
+    },
+    "pending_blessings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "section": {
+            "type": "string",
+            "minLength": 1
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "open_questions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": ["path", "section", "conflicts", "open_questions"]
+      }
+    },
+    "spec_debt": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": ["broken-citation", "untested-requirement", "over-budget"]
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["kind", "path", "id", "message"]
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "as_of",
+    "read",
+    "specs",
+    "pending_blessings",
+    "spec_debt"
+  ]
+}

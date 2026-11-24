@@ -10,7 +10,7 @@ export type TemporaryRepository = {
   cleanup(): Promise<void>;
 };
 
-const testRoot = path.resolve(".test-tmp");
+const testRoot = path.resolve(".test-tmp", String(process.pid));
 
 function run(args: string[], cwd: string, input?: string | Uint8Array): string {
   const child = spawnSync("git", args, {

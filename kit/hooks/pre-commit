@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if command -v tenet >/dev/null 2>&1; then
+  tenet check --quiet >&2 || printf '%s\n' 'tenet check found problems; review them before committing.' >&2
+fi
+
+exit 0
