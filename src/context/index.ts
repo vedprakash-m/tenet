@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { message } from "../core/messages.js";
 import { fail, type Finding } from "../core/output.js";
 import { loadPolicy, ownersFor, ruleMode } from "../policy/index.js";
 import type { Policy } from "../policy/types.js";
@@ -199,6 +200,27 @@ function requirementCandidates(
   }));
 }
 
+function hasProse(copy: string, idPrefix: string): boolean {
+  const lines = copy.replace(/\n$/, "").split("\n");
+  const statement = new RegExp(`^\\s*[-*+]\\s+(?:${idPrefix}|V)-\\d+\\b`);
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index] ?? "";
+    const next = lines[index + 1] ?? "";
+    if (
+      line.includes("|") &&
+      line.split("|").some((cell) => cell.trim().toLowerCase().replace(/\s+/g, "") === "id") &&
+      /^\s*\|?(?:\s*:?-+:?\s*\|)+\s*$/.test(next)
+    ) {
+      index += 2;
+      while (index < lines.length && (lines[index] ?? "").includes("|")) index += 1;
+      index -= 1;
+      continue;
+    }
+    if (line.trim() && !statement.test(line)) return true;
+  }
+  return false;
+}
+
 function sourceDocId(front: Record<string, unknown> | null, sourcePath: string): string {
   const tenet = front?.tenet;
   if (tenet && typeof tenet === "object" && !Array.isArray(tenet)) {
@@ -238,17 +260,22 @@ async function collect(
   const cwd = path.resolve(input.cwd ?? process.cwd());
   const budget = input.budget_tokens ?? 4_000;
   if (!Number.isFinite(budget) || budget <= 0) {
-    throw fail(
-      "TN-USAGE-BUDGET",
-      `Invalid token budget: ${String(input.budget_tokens)}`,
-      "Pass a finite positive --budget-tokens value.",
-    );
+    const words = message("TN-USAGE-BUDGET", { budget: String(input.budget_tokens) });
+    throw fail("TN-USAGE-BUDGET", words.message, words.fix);
   }
   if (input.paths !== undefined && (!Array.isArray(input.paths) || input.paths.some((value) => typeof value !== "string"))) {
-    throw fail("TN-USAGE-CONTEXT", "Invalid context paths.", "Pass paths as strings.");
+    const words = message("TN-USAGE-CONTEXT", {
+      command: "context",
+      detail: "paths must be strings",
+    });
+    throw fail("TN-USAGE-CONTEXT", words.message, words.fix);
   }
   if (input.ids !== undefined && (!Array.isArray(input.ids) || input.ids.some((value) => typeof value !== "string"))) {
-    throw fail("TN-USAGE-CONTEXT", "Invalid context IDs.", "Pass IDs as strings.");
+    const words = message("TN-USAGE-CONTEXT", {
+      command: "context",
+      detail: "IDs must be strings",
+    });
+    throw fail("TN-USAGE-CONTEXT", words.message, words.fix);
   }
 
   const policy = await loadPolicy({ cwd });
@@ -294,7 +321,7 @@ async function collect(
         computedFlags,
       );
       candidates.push(...requirements);
-      if (requirements.length === 0) {
+      if (hasProse(copy, policy.specs.id_prefix)) {
         candidates.push({
           id: `${docId}#${section.slug}`,
           section: section.slug,
