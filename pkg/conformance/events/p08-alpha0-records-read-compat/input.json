@@ -1,0 +1,17 @@
+{
+  "op": "readProofRecord",
+  "records": [
+    {
+      "path": "proof/pr-5/0123456789abcdef/1001-1.json",
+      "content": "{\"schema_version\":1,\"evaluation_id\":\"0123456789abcdef\",\"conclusion\":\"success\",\"tested\":{\"commit\":\"1111111111111111111111111111111111111111\",\"kind\":\"head\"}}"
+    },
+    {
+      "path": "proof/pr-5/latest",
+      "content": "{\"started_at\":\"2026-11-23T12:00:00Z\",\"path\":\"proof/pr-5/0123456789abcdef/1001-1.json\"}"
+    },
+    {
+      "path": "rules/2026-11.jsonl",
+      "content": "{\"evaluation_id\":\"0123456789abcdef\",\"run\":\"1001-1\",\"pr\":5,\"rule\":\"acceptance-passed\",\"mode\":\"advise\",\"would_block\":false,\"at\":\"2026-11-23T12:00:00Z\"}\n"
+    }
+  ]
+}

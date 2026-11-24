@@ -1,0 +1,11 @@
+{
+  "error_code": "TN-POLICY-INCOMPATIBLE",
+  "gate": {
+    "verdict": "refuse",
+    "disposition": "blocks",
+    "lead": "TN-POLICY-INCOMPATIBLE",
+    "reasons": [
+      "TN-POLICY-INCOMPATIBLE"
+    ]
+  }
+}

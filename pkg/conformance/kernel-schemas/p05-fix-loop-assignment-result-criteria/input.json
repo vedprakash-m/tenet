@@ -1,0 +1,110 @@
+{
+  "loop": {
+    "loop": "fix-step",
+    "kind": "fix",
+    "applies": {
+      "station": "verify",
+      "lanes": [
+        "careful",
+        "deep"
+      ]
+    },
+    "limits": {
+      "rounds": 2,
+      "steps": 20
+    },
+    "steps": [
+      {
+        "id": "bump",
+        "kind": "set",
+        "set": {
+          "rounds": "+1"
+        },
+        "then": "repair"
+      },
+      {
+        "id": "repair",
+        "kind": "agent",
+        "card": "builder",
+        "inputs": [
+          "assignment",
+          "findings"
+        ],
+        "outputs": [
+          "result"
+        ]
+      },
+      {
+        "id": "check",
+        "kind": "route",
+        "on": {
+          "advance": "done",
+          "refuse": "stop",
+          "human-gate": "stop"
+        }
+      }
+    ]
+  },
+  "step_assignment": {
+    "work": "CP-0049",
+    "station": "build",
+    "step": "work",
+    "attempt": 1,
+    "card": "builder",
+    "inputs": [
+      {
+        "name": "context",
+        "source": "tenet-context",
+        "trust": "blessed",
+        "hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      {
+        "name": "tests",
+        "source": "pin-1",
+        "trust": "ci-observed",
+        "hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    ],
+    "allowed_paths": [
+      "src/kernel/**"
+    ],
+    "budget_tokens": 20000,
+    "deadline": "2026-11-24T00:00:00Z"
+  },
+  "step_result": {
+    "work": "CP-0049",
+    "step": "work",
+    "attempt": 1,
+    "assignment_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "outputs": [
+      "result"
+    ],
+    "evidence": [
+      "EV-1"
+    ],
+    "proposed_events": []
+  },
+  "criteria": {
+    "schema_version": 1,
+    "work": "pr-5",
+    "implements": [
+      "R-12"
+    ],
+    "acceptance": [
+      {
+        "id": "AB-1",
+        "text": "Retries once after timeout",
+        "class": "functional",
+        "methods": [
+          "integration"
+        ],
+        "pass_rule": {
+          "kind": "binary"
+        },
+        "test_ids": [
+          "AB-1"
+        ]
+      }
+    ]
+  }
+}

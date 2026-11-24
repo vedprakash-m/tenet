@@ -50,7 +50,7 @@ Repository facts and `assignment.json` are byte-identical over `(HEAD, working t
 
 **Draft format.** Requirement lines, citations, conflicts, open questions and front matter follow contracts §3. A requirement may also sit in a table whose first column is `ID`: the text comes from `Requirement`, else `Rule`, else the first other text column; `Serves`, `Origin`, `Cites`, `Scope` and `Adopted by` map (case-insensitive headers; `—`, `-` or empty cells map to `null`/`[]`) to the same metadata; braces are optional there; every other column (`Release`, `Guarantee`, `Status`…) is kept and ignored. Vision tables (L0) are parsed the same way for `V-` items. `inferred` statements cannot be blessed until a person edits or explicitly adopts them (origin becomes `asked`, with `adopted_by`).
 
-**The onboarding card.** The target branch has no Tenet workflow yet, so `tenet onboard --card` checks uncommitted spec edits (`TN-SUBJ-DIRTY`), pins `drafted_at_rev` on drafted specs, and renders the card for the pull request description (`onboard --card` cannot combine with `--inventory-only`, `--refresh` or `--layout`, else `TN-USAGE-ONBOARD` exit 2): what was read, conflicts (heading omitted when zero conflicts), sections with statement counts by origin, reading times (`Math.ceil(words / 200)` per section; `"Sections (about <n> minutes)"` sums section minutes), and the citation check. Golden examples live in `pkg/conformance/cards/`. CI cards begin after the setup merges. Supported starts:
+**The onboarding card.** The target branch has no Tenet workflow yet, so `tenet onboard --card` checks uncommitted spec edits (`TN-SUBJ-DIRTY`), pins `drafted_at_rev` when unset (leaving existing stamps pinned unless `--refresh` or cleared), and renders the card for the pull request description (`onboard --card` cannot combine with `--inventory-only`, `--refresh` or `--layout`, else `TN-USAGE-ONBOARD` exit 2): what was read, conflicts (heading omitted when zero conflicts), sections with statement counts by origin, reading times (`Math.ceil(words / 200)` per section using `minute`/`minutes`; `"Sections (about <n> minutes)"` sums section minutes), literal `<n>` when `--pr` is omitted, and the citation check. Golden examples live in `pkg/conformance/cards/`. CI cards begin after the setup merges. Supported starts:
 - protected main (the onboarding pull request)
 - an empty repository (commit to main)
 - a template clone
@@ -63,7 +63,7 @@ Repository facts and `assignment.json` are byte-identical over `(HEAD, working t
 - each session is logged in `<records>/blessed/log.jsonl`
 - the blessing is recorded as `self` (advisory: anyone with write access could edit front matter, which is why the card lists blessings changed in each pull request); from alpha.1 a review action also blesses, recorded as `forge`; from alpha.2, `signed`
 
-A conflict's resolution is written as `resolution:` on its `CF` item. When the chosen option contradicts a drafted statement, bless opens that statement for editing before the section can be blessed.
+A conflict's resolution is written as `resolution:` on its `CF` item (case-insensitive `Resolution:` accepted on read). Open conflicts may name `(section: <slug|heading>)` or `null` (document-wide) and optional `(affects: ID1, ID2)`. When the chosen option contradicts a drafted statement ID, bless opens that statement for editing and requires its text to change or vanish before recording `resolution:` and allowing blessing.
 
 The **last blessed text stays in force** (the blessed copy):
 - An edit to it is flagged `edited`: an unblessed proposal that rejecting keeps out.
@@ -116,8 +116,8 @@ It then prints the first findings and offers onboarding (in an empty repo, asks 
 ## 3. Onboarding measures (ALG-13)
 
 - **A statement** is one requirement line, or one sentence in a vision, design, experience or plan section.
-- **Kept:** its text, with whitespace collapsed and the `{…}` metadata removed, is identical in the drafted text and the blessed text. Anything else is a substantive edit. `bless` computes this when it blesses, comparing with the section's text at `drafted_at_rev`, the commit holding the agent's draft (still on the branch when blessing happens), and writes it to `<records>/blessed/log.jsonl`. Without `drafted_at_rev` (or if it is unreachable in a shallow clone after squash merge) `statements` records all five counts as `null`, never computed against later text.
-- **Denominator:** statements in sections blessed or rejected; deferred sections are reported separately.
+- **Kept:** its text, with whitespace collapsed and the `{…}` metadata removed, is identical in the drafted text and the blessed text. Anything else is a substantive edit. Adoptions (`inferred` -> `asked`) with unchanged text count in both `kept` and `adopted`; deleted drafted statements count in `edited` (`kept + edited === drafted`). `bless` computes this per finished section, comparing with the section's text at `drafted_at_rev`, the commit holding the agent's draft (still on the branch when blessing happens), and writes it to `<records>/blessed/log.jsonl` (`minutes` tracks cumulative elapsed session minutes). Without `drafted_at_rev` (or if unreachable in a shallow clone after squash merge) `statements` records all five counts as `null`, never computed against later text.
+- **Denominator:** statements in sections blessed or rejected (`action === "defer"` still writes a log row, excluded from `ALG-13` scoring).
 - **Recall:** answer-key obligations matched by a kept or edited statement, judged by a human scorer.
 - **Invented:** statements the scorer finds in neither the sources nor the answer key.
 - **Blessing minutes:** from the session's start and end, in the log.

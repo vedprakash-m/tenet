@@ -1,0 +1,12 @@
+{
+  "verdict": "refuse",
+  "disposition": "blocks",
+  "lead": "TN-GATE-CONFLICT",
+  "reasons": [
+    "TN-GATE-CONFLICT"
+  ],
+  "next": {
+    "who": "owner",
+    "action": "resolve"
+  }
+}

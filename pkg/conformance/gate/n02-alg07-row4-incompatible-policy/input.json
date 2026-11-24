@@ -1,0 +1,29 @@
+{
+  "op": "mergePolicyAndGate",
+  "layers": [
+    {
+      "layer": "pack",
+      "claim": {
+        "type": "acceptance",
+        "methods": [
+          "unit"
+        ],
+        "pass_rule": {
+          "kind": "binary"
+        }
+      }
+    },
+    {
+      "layer": "project",
+      "claim": {
+        "type": "acceptance",
+        "methods": [
+          "integration"
+        ],
+        "pass_rule": {
+          "kind": "binary"
+        }
+      }
+    }
+  ]
+}
