@@ -18,7 +18,6 @@
 | `TN-ACC-DUP-ID` | Duplicate acceptance item ID {id}. | Renumber or remove the repeated {id} item. |
 | `TN-ACC-MISSING-ID` | Acceptance item needs an ID. | Prefix the item with [AB-<n>]. |
 | `TN-ACC-UNPASSED` | Acceptance items not passing: {ids}. | Add passing tests tagged with [AB-n] or fix failing tests for {ids}. |
-| `TN-BACKTEST-INCOMPLETE` | Backtest cohort has incomplete coverage ({coverage} / {cohort_size} PRs). | Complete missing PR records before claiming the 100-PR backtest threshold. |
 | `TN-BLESS-INFERRED` | Section {slug} still contains inferred statements ({ids}). | Edit or adopt {ids}, then run `tenet bless`. |
 | `TN-BLESS-NO-TTY` | Interactive terminal required to bless specifications. | Run `tenet bless` in an interactive terminal session. |
 | `TN-BLESS-OPEN-CONFLICT` | Section {slug} has unresolved conflicts or open questions ({ids}). | Resolve {ids} in Conflicts or Open questions, then run `tenet bless`. |
@@ -33,19 +32,14 @@
 | `TN-ENV-NODE` | Node.js {found} is below required version 22. | Install Node.js 22 LTS or newer and retry. |
 | `TN-ENV-NOT-GIT` | Directory {path} is not a Git repository. | Run `git init` or run from inside a Git repository. |
 | `TN-ENV-OFFLINE` | Command `tenet {command}` requires network access, which is disabled by `--offline`. | Re-run `tenet {command}` without `--offline`. |
-| `TN-EV-CROSS-WORK` | Event {id} references predecessor {prev} from another work item. | Fix predecessor link on {id} to reference an event in the same work item. |
-| `TN-EV-CYCLE` | Event {id} participates in a cycle or self-link. | Remove the cyclic predecessor edge on {id} before reducing. |
 | `TN-EV-DUP` | Duplicate event ID {id} has conflicting content. | Keep one canonical event for {id} and remove the conflicting entry. |
-| `TN-EV-NO-CREATE` | Work item {work} has no valid unique creation event. | Supply or resolve the canonical `work.created` event for {work}. |
 | `TN-EV-ORPHAN` | Event {id} references unknown predecessor {prev}. | Include or fetch event {prev} before reducing work item events. |
-| `TN-EV-RESOLVE` | Resolution {id} omits one or more active conflict heads. | Record a `resolve` event whose `prev` includes every active conflict head. |
 | `TN-GATE-*` | Gate blocked or held by rule {rule}: {reason}. | Resolve {reason} and re-run the gate check. |
 | `TN-GATE-APPROVE-NOT-EVIDENCE` | Approval cannot satisfy evidence claim {claim}. | Supply required verification evidence for {claim} or request a time-boxed waiver via `tenet decide`. |
 | `TN-GATE-CLAIM` | Claim {claim} is {state}. | Satisfy {claim}, wait for CI verification, or request a waiver via `tenet decide`. |
 | `TN-GATE-CONFLICT` | Work item has unresolved event conflicts ({ids}). | Run `tenet resolve` on {ids} before advancing. |
 | `TN-GATE-FROZEN` | Work item is frozen. | Wait for the Owner to unfreeze the work item before advancing. |
 | `TN-GATE-REVIEW` | Review is incomplete or requires adjudication ({reason}). | Resolve review findings or record a decision via `tenet decide`. |
-| `TN-GATE-SELF-WAIVE` | Actor {actor} cannot waive claim {claim} broken by their own change. | Have another authorized decision-maker waive {claim} or satisfy the check. |
 | `TN-GATE-STOP` | Stop threshold reached: {reason}. | Write an escalation report and run `tenet escalate`. |
 | `TN-GATE-TRUST` | Protected trust-surface claim {claim} is not satisfied. | Open a change-policy decision request via `tenet decide`. |
 | `TN-GATE-UNKNOWN` | Policy applicability is unknown because {missing} is missing. | Define {missing} in tenet.yaml or CODEOWNERS and re-run. |
@@ -65,7 +59,6 @@
 | `TN-POLICY-LOOSEN` | Policy layer {layer} attempts to loosen {name}. | Remove the loosening override from {layer} so later layers only tighten. |
 | `TN-POLICY-MISSING` | Policy file tenet.yaml was not found. | Run `tenet init` to create tenet.yaml. |
 | `TN-POLICY-RULE` | Unknown policy rule or setting {name} in tenet.yaml. | Remove or fix {name} in tenet.yaml against the active pack. |
-| `TN-POLICY-RULE-DECISION` | Promoting rule {rule} to {mode} requires an approved change-policy decision. | Record an approved `change-policy` decision first, then re-run `tenet rules`. |
 | `TN-POLICY-SCHEMA` | tenet.yaml does not match the alpha.0 schema: {detail}. | Fix tenet.yaml or remove fields that are not available in alpha.0. |
 | `TN-PROTECTED` | Change modifies protected path {path}. | Revert edits to {path} or open a change-policy decision request via `tenet decide`. |
 | `TN-RECORD-BUNDLE` | Recorded CI bundle {run_id} failed verification: {reason}. | Re-run the CI verification workflow and check bundle integrity. |
@@ -84,3 +77,15 @@
 | `TN-USAGE-BUDGET` | Context token budget {budget} must be a positive integer. | Pass a positive integer to `--budget-tokens` or `budget_tokens`. |
 | `TN-USAGE-REF` | The git ref is invalid. | Pass a repository ref. |
 | `TN-WEAK-*` | Possible test weakening ({finding}) in {file}: {names}. | Restore removed tests or remove skip markers in {file}, or ask for a waiver. |
+
+## 3. Alpha.1 message templates
+
+Moved into the §2 table when `CP-0007` and `CP-0050` add their entries to `src/core/messages.ts` (`test/core/messages.test.ts` checks §2 rows strictly against `src/core/messages.ts`):
+
+- `TN-BACKTEST-INCOMPLETE`: `"Backtest cohort has incomplete coverage ({coverage} / {cohort_size} PRs)."` Fix: `"Complete missing PR records before claiming the 100-PR backtest threshold."`
+- `TN-EV-CROSS-WORK`: `"Event {id} references predecessor {prev} from another work item."` Fix: `"Fix predecessor link on {id} to reference an event in the same work item."`
+- `TN-EV-CYCLE`: `"Event {id} participates in a cycle or self-link."` Fix: `"Remove the cyclic predecessor edge on {id} before reducing."`
+- `TN-EV-NO-CREATE`: `"Work item {work} has no valid unique creation event."` Fix: `"Supply or resolve the canonical \`work.created\` event for {work}."`
+- `TN-EV-RESOLVE`: `"Resolution {id} omits one or more active conflict heads."` Fix: `"Record a \`resolve\` event whose \`prev\` includes every active conflict head."`
+- `TN-GATE-SELF-WAIVE`: `"Actor {actor} cannot waive claim {claim} broken by their own change."` Fix: `"Have another authorized decision-maker waive {claim} or satisfy the check."`
+- `TN-POLICY-RULE-DECISION`: `"Promoting rule {rule} to {mode} requires an approved change-policy decision."` Fix: `"Record an approved \`change-policy\` decision first, then re-run \`tenet rules\`."`

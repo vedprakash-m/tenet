@@ -10,9 +10,10 @@ Answers to `tenet/packets/CP-0050-gate-rule-modes-level-and-rules/escalations/pr
    - `rules(ruleId?, mode?, opts)` with no args returns `{ rules: [{ rule, mode, would_block_count, not_useful_count }] }`; with `(ruleId, mode)` updates `rules[ruleId]` in `tenet.yaml` and returns `{ rule, previous_mode, mode }` (`kit/schemas/results/rules.json`).
    - Promoting a rule to a stricter mode (`observe -> advise|enforce` or `advise -> enforce`) requires an approved `change-policy` decision matched by `opts.decision` or reduced events, else fails `TN-POLICY-RULE-DECISION`.
 
-3. **Self-waiver and unapproved promotion error codes (`contracts.md §13`; `messages.md §2`)**
+3. **Self-waiver and unapproved promotion error codes (`contracts.md §13`; `messages.md §3`)**
    - Author self-waiver (`waive.actor === author_of_change`) fails claim satisfaction with `TN-GATE-SELF-WAIVE` (`exit 1` in `enforce`, `advise` otherwise under `TN-GATE-*`), refusing the gate (`verdict: "refuse"`).
    - Rule promotion without an approved `change-policy` decision fails with `TN-POLICY-RULE-DECISION` (`exit 4`, policy refusal).
+   - Both codes (plus `TN-BACKTEST-INCOMPLETE`) live in `messages.md §3` until `CP-0050` adds them to `src/core/messages.ts` and promotes them to `messages.md §2`.
 
 4. **`next.command` strings vs evaluation fixtures (`algorithms.md` `ALG-07`; `kernel.md §2`)**
    Live `evaluateGate()` sets `next.command` to `"tenet resolve"` (`TN-GATE-CONFLICT`), `"tenet decide"` (`TN-GATE-TRUST`, `TN-GATE-REVIEW`, missing approval), `"tenet escalate"` (`TN-GATE-STOP`), `"tenet fix"` (`TN-GATE-UNKNOWN`, `TN-POLICY-INCOMPATIBLE`), or `null` (`advance`, CI wait, builder revise via runner). Fixture projections omit `command` or project `null` under `kernel.md §2 line 44`.

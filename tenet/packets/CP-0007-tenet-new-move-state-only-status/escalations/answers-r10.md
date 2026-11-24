@@ -6,7 +6,7 @@ Answers to `tenet/packets/CP-0007-tenet-new-move-state-only-status/escalations/p
    `reduce` returns `{ state, justified_station, tentative_moves, conflicts, findings, applied, held }`:
    - `justified_station`: last legally reached non-tentative station (or `null` when creation is absent or conflicted).
    - `tentative_moves`: `[{ event_id, station, time, deadline, status: "tentative" | "unjustified" }]`, flipping to `"unjustified"` once `as_of >= deadline` (`time + replay.pending_hours`).
-   - Structural reduction `findings` use `finding.json` shape (`severity: "error", rule: null, file: null, line: null`) with registered codes: `TN-EV-DUP`, `TN-EV-ORPHAN`, `TN-EV-CYCLE` (cycle/self-link), `TN-EV-CROSS-WORK` (cross-work predecessor), `TN-EV-NO-CREATE` (missing or competing `work.created`), and `TN-EV-RESOLVE` (incomplete `resolve`).
+   - Structural reduction `findings` use `finding.json` shape (`severity: "error", rule: null, file: null, line: null`) with registered codes: `TN-EV-DUP`, `TN-EV-ORPHAN`, `TN-EV-CYCLE` (cycle/self-link), `TN-EV-CROSS-WORK` (cross-work predecessor), `TN-EV-NO-CREATE` (missing or competing `work.created`), and `TN-EV-RESOLVE` (incomplete `resolve`). (`messages.md §3` holds the alpha.1 templates until `CP-0007` adds them to `src/core/messages.ts` and promotes them to `messages.md §2`.)
 
    *Coordinator note for CP-0054-locked `kernel.md §1` (line 7):* align field names `justified_station`, `tentative_moves`, `conflicts` (`conflict_heads`), `findings` (`TN-EV-*`), `applied`, `held`.
 
