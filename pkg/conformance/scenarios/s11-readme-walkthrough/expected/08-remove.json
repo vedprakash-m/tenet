@@ -3,13 +3,43 @@
   "command": "remove",
   "version": "0.0.0",
   "result": {
-    "removedPaths": [
-      "tenet.yaml",
-      "tenet.lock"
+    "removed": [
+      {
+        "path": ".agents/skills/tenet-draft-specs/SKILL.md",
+        "kind": "file"
+      },
+      {
+        "path": ".agents/skills/tenet-review-with-findings/SKILL.md",
+        "kind": "file"
+      },
+      {
+        "path": ".agents/skills/tenet-work-a-change/SKILL.md",
+        "kind": "file"
+      },
+      {
+        "path": ".gitattributes",
+        "kind": "file"
+      },
+      {
+        "path": ".gitignore",
+        "kind": "file"
+      },
+      {
+        "path": "AGENTS.md",
+        "kind": "file"
+      },
+      {
+        "path": "tenet.lock",
+        "kind": "file"
+      },
+      {
+        "path": "tenet.yaml",
+        "kind": "file"
+      }
     ],
     "kept": [
       {
-        "path": "tenet/intent.md",
+        "path": "tenet",
         "reason": "spec-or-records"
       }
     ],

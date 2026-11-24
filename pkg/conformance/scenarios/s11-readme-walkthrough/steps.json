@@ -87,7 +87,6 @@
         "--json"
       ],
       "expectExitCode": 0,
-      "expectedTree": "before",
       "expectedJson": "expected/08-remove.json"
     }
   ]

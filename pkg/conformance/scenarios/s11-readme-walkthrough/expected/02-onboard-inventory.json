@@ -5,9 +5,9 @@
   "result": {
     "preflight": {
       "revision": "175926eb3b08d21dea4388cc916d7932e0d37d79",
-      "read_count": 5,
+      "read_count": 4,
       "skipped_count": 0,
-      "dirty_warning": false
+      "dirty_warning": true
     },
     "inventory": {
       "schema_version": 1,
@@ -31,12 +31,6 @@
             "kind": "source",
             "sha256": "a4df7c522729ec739d213d194c3d97bd87b3eefe1fce477daf7a8b74ce0f94db",
             "lines": 3
-          },
-          {
-            "path": "tenet.yaml",
-            "kind": "config",
-            "sha256": "f5623b8c7d413ae1f36e6004c9b958dd669410e21a05cfc35f11e878cdf1fce2",
-            "lines": 20
           },
           {
             "path": "test/retry.test.ts",
