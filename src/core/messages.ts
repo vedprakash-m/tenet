@@ -148,10 +148,6 @@ export const messageTemplates = {
     "message": "Lock file tenet.lock was not found.",
     "fix": "Run `tenet init` to create and pin tenet.lock."
   },
-  "TN-LOCK-UNVERIFIABLE": {
-    "message": "Lock file tenet.lock uses local package integrity and cannot be verified in CI.",
-    "fix": "Publish the Tenet package, then run `tenet upgrade` to refresh the registry integrity pin."
-  },
   "TN-PATH-ESCAPE": {
     "message": "Path {path} resolves outside the repository root.",
     "fix": "Use a relative path inside the repository without symlink escapes."

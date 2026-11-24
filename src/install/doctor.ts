@@ -168,8 +168,10 @@ async function unverifiableLock(cwd: string): Promise<Finding | null> {
     const filename = path.join(cwd, "tenet.lock");
     const lock = JSON.parse(await readFile(filename, "utf8")) as Record<string, unknown>;
     if (lock["x-integrity-source"] !== "local") return null;
-    const text = message("TN-LOCK-UNVERIFIABLE", {});
-    return { ...fail("TN-LOCK-UNVERIFIABLE", text.message, text.fix), file: "tenet.lock" };
+    const text = message("TN-LOCK-INVALID", {
+      detail: "package integrity is local and cannot be verified in CI; publish the package and refresh the pin",
+    });
+    return { ...fail("TN-LOCK-INVALID", text.message, text.fix), file: "tenet.lock" };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
     if (error instanceof SyntaxError) return null;

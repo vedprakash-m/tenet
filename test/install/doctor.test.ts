@@ -227,10 +227,10 @@ test("doctor reports local integrity as unverifiable", async (t) => {
   assert.deepEqual(result.checks[4], {
     name: "lock",
     ok: false,
-    detail: "Lock file tenet.lock uses local package integrity and cannot be verified in CI.",
+    detail: "Lock file tenet.lock is invalid: package integrity is local and cannot be verified in CI; publish the package and refresh the pin.",
   });
   assert.ok(result.findings.some((finding: { code: string }) =>
-    finding.code === "TN-LOCK-UNVERIFIABLE"));
+    finding.code === "TN-LOCK-INVALID"));
 });
 
 test("doctor parses OpenSSH for Windows versions", async (t) => {
