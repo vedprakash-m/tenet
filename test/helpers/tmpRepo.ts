@@ -12,6 +12,12 @@ export type TemporaryRepository = {
 
 const testRoot = path.resolve(".test-tmp", String(process.pid));
 
+// A temporary repository whose .git vanished must never fall through to this
+// project's own repository: git stops searching at the test root.
+process.env.GIT_CEILING_DIRECTORIES = [path.dirname(testRoot), process.env.GIT_CEILING_DIRECTORIES]
+  .filter(Boolean)
+  .join(path.delimiter);
+
 function run(args: string[], cwd: string, input?: string | Uint8Array): string {
   const child = spawnSync("git", args, {
     cwd,
