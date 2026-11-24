@@ -1,3 +1,12 @@
+---
+tenet: {spec: 1, doc: tech-spec, level: L2, version: "0.12", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:80012618c3b959c8d1a1becc4fe1b34170d086bdb8a320a2cda7d67189b73ae4, flags: []}
+  1-evidence-payloads: {state: draft, digest: sha256:832ed7d1c26a78079dfb097a6b34f21b2d26d7dff48bcff609e7d17c84514cdb, flags: []}
+  2-real-test-reports: {state: draft, digest: sha256:38a40f209ea0d3967857ddb8f25e1836fcfe3d872cada41c88e26bbbf7a43ef1, flags: []}
+  3-test-evidence-matching-alg-08: {state: draft, digest: sha256:76c164440a8733550e10a3f804b7fea65f39b028f529d6f54a7c1f318a80fe7d, flags: []}
+  4-trust-observations-and-guarantee-levels: {state: draft, digest: sha256:18cada498cd28f3908a8137e9019c5c336dd0329bbfaffeb47a73dcff36c35eb, flags: []}
+---
 # Tenet technical specification: evidence payloads and real reports
 
 > Level L2 · Version 0.12 · Part of [tech-spec.md](../tech-spec.md) · Status: **draft, awaiting the Owner's approval** · Budget: 6,000 tokens · Split from `contracts.md` §6 and §12 under the rollover rule (L-0030)
