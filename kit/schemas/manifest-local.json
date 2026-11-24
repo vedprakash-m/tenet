@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/manifest-local.json",
+  "title": "Tenet local host install manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "profile_roots": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "keys": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "host": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 },
+          "pointer": { "type": "string", "pattern": "^/" },
+          "previous": {},
+          "installed": {},
+          "previous_raw": { "type": "string" }
+        },
+        "required": ["host", "path", "pointer", "previous", "installed"]
+      }
+    }
+  },
+  "required": ["schema_version", "profile_roots", "keys"]
+}

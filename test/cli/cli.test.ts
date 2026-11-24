@@ -20,6 +20,22 @@ test("unknown flags exit with usage code 2", async () => {
   assert.match(terminal.stderr.text, /Unknown flag/);
 });
 
+test("doctor bypasses the global environment gate and reports its own checks", async () => {
+  const terminal = fakeTty();
+  const code = await run(["--json", "doctor"], {
+    ...terminal,
+    nodeVersion: "1.0.0",
+    gitVersion: "1.0.0",
+  });
+  assert.equal(code, 0);
+  const envelope = JSON.parse(terminal.stdout.text) as {
+    result: { checks: Array<{ name: string }> } | null;
+  };
+  assert.deepEqual(envelope.result?.checks.map(({ name }) => name), [
+    "node", "git", "ssh", "gh", "lock", "workflows",
+  ]);
+});
+
 test("usage validation precedes environment and offline checks", async () => {
   const terminal = fakeTty();
   registerCommand({

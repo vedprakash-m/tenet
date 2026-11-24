@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/results/remove.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "removed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["file", "block", "key"] }
+        },
+        "required": ["path", "kind"]
+      }
+    },
+    "kept": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "reason": { "enum": ["edited-by-you", "spec-or-records"] }
+        },
+        "required": ["path", "reason"]
+      }
+    },
+    "reminder": { "type": ["string", "null"] }
+  },
+  "required": ["removed", "kept", "reminder"]
+}

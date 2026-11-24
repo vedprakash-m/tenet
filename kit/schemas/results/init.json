@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/results/init.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "created": { "$ref": "#/$defs/paths" },
+        "blocks": { "$ref": "#/$defs/blocks" },
+        "keys": { "$ref": "#/$defs/keys" },
+        "local_keys": { "$ref": "#/$defs/localKeys" },
+        "hosts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "capability": { "enum": ["skills+mcp", "mcp", "instructions"] }
+            },
+            "required": ["id", "capability"]
+          }
+        },
+        "ci_mode": { "enum": ["existing-ci", "tenet-workflow", "none"] },
+        "ci_reason": { "type": "string" }
+      },
+      "required": ["created", "blocks", "keys", "local_keys", "hosts", "ci_mode", "ci_reason"]
+    },
+    "wrote": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "created": { "$ref": "#/$defs/paths" },
+        "blocks": { "$ref": "#/$defs/blocks" },
+        "keys": { "$ref": "#/$defs/keys" },
+        "local_keys": { "$ref": "#/$defs/localKeys" }
+      },
+      "required": ["created", "blocks", "keys", "local_keys"]
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "enum": ["no-test-report", "local-integrity"] },
+          "path": { "type": "string", "minLength": 1 },
+          "message": { "type": "string", "minLength": 1 }
+        },
+        "required": ["kind", "path", "message"]
+      }
+    },
+    "cancelled": { "type": "boolean" }
+  },
+  "required": ["plan", "wrote", "findings"],
+  "$defs": {
+    "paths": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["markdown", "yaml"] }
+        },
+        "required": ["path", "kind"]
+      }
+    },
+    "keys": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "pointer": { "type": "string", "pattern": "^/" }
+        },
+        "required": ["path", "pointer"]
+      }
+    },
+    "localKeys": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "host": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 },
+          "pointer": { "type": "string", "pattern": "^/" }
+        },
+        "required": ["host", "path", "pointer"]
+      }
+    }
+  }
+}
