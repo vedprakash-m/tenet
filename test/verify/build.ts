@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 
 // npm test builds dist once before any test runs; tests never compile into dist themselves,
 // because a rebuild during the run races other test files importing from dist.
-export function buildVerify(): void {
+export function buildVerify(_additionalRoots: string[] = []): void {
   if (!existsSync("dist/verify/record.js")) throw new Error("dist is not built: run `npm run build` (npm test does this first)");
 }
 
