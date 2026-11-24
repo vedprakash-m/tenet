@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "git": {
+    "state": "unborn"
+  },
+  "steps": [
+    {
+      "run": [
+        "init",
+        "--yes",
+        "--json"
+      ]
+    }
+  ]
+}

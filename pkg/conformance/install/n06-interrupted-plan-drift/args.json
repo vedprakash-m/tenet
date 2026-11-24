@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "steps": [
+    {
+      "run": [
+        "init",
+        "--yes",
+        "--json"
+      ],
+      "interrupt": {
+        "at": "after-pending"
+      }
+    },
+    {
+      "run": [
+        "init",
+        "--yes",
+        "--json"
+      ],
+      "beforeRun": {
+        "write": {
+          "AGENTS.md": "# Owner edit since planning\n"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "git": {
+    "state": "not-a-repository"
+  },
+  "steps": [
+    {
+      "run": [
+        "init",
+        "--yes",
+        "--json"
+      ]
+    }
+  ]
+}
