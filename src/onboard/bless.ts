@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { readFileSync, realpathSync } from "node:fs";
-import { appendFile, mkdir, readFile, rm } from "node:fs/promises";
+import { appendFile, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { isMap, parseDocument } from "yaml";
 import { utcSeconds } from "../core/clock.js";
@@ -29,6 +29,7 @@ export type BlessIO = {
   terminal?: boolean;
   now?: () => Date;
   edit?: (filename: string, cwd: string) => Promise<void>;
+  write?: typeof writeAtomic;
 };
 type Ask = (prompt: string) => Promise<string | null>;
 type SectionState = { doc: ParsedDoc; section: SpecSection; text: string; filename: string };
@@ -280,9 +281,9 @@ export async function blessSession(state: SessionState, io: BlessIO = {}) {
 
 type Front = ReturnType<typeof matter>;
 type Counts = { drafted: number | null; kept: number | null; edited: number | null; adopted: number | null; added: number | null };
-type Patch = { path: string; text: string };
-type Workspace = { cwd: string; head: string; records: string; prefix: string; started: number; now: () => Date };
-const normalize = (text: string) => text.replaceAll("\r\n", "\n");
+type Patch = { path: string; text: string; expected?: string };
+type Workspace = { cwd: string; head: string; records: string; prefix: string; started: number; now: () => Date; write: typeof writeAtomic };
+const normalize = (text: string) => text.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
 const cleanText = (text: string) => text.replace(/\{[^{}]*\}/g, "").trim().replace(/\s+/g, " ");
 const portable = (value: string) => value.replaceAll("\\", "/").replace(/^\.\//, "");
 
@@ -457,20 +458,63 @@ async function copyFor(entry: SectionState, read: ReturnType<typeof reader>): Pr
   return copy;
 }
 
+async function blessedCopyPath(ws: Workspace, document: string, slug: string): Promise<string> {
+  const encode = (file: string) => file.replaceAll("/", "__");
+  // Windows resolves paths case-insensitively while record paths retain their original case.
+  const compare = (file: string) => process.platform === "win32" ? file.toLowerCase() : file;
+  const encoded = encode(document);
+  const comparison = compare(encoded);
+  const root = await confine(ws.records, ws.cwd);
+  async function collides(directory: string, relative: string): Promise<boolean> {
+    const entries = await readdir(directory, { withFileTypes: true });
+    for (const entry of entries) {
+      if (relative === ws.records && ["blessed", "holdout"].includes(entry.name.toLowerCase())) continue;
+      const candidate = `${relative}/${entry.name}`;
+      const key = compare(encode(candidate));
+      if (entry.isDirectory() && comparison.startsWith(`${key}__`)) {
+        if (await collides(path.join(directory, entry.name), candidate)) return true;
+      } else if (entry.isFile() && key === comparison && compare(candidate) !== compare(document)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  if (await collides(root, ws.records)) {
+    throw { ...diagnostic("TN-SCHEMA", { path: document, schema: "spec-front-matter", pointer: "/sections" }), file: document };
+  }
+  const relative = `${ws.records}/blessed/${encoded}/${slug}.md`;
+  // An existing symlink inside blessed must not point elsewhere in the repository.
+  await confine(relative, ws.cwd);
+  const blessedRoot = await confine(`${ws.records}/blessed`, ws.cwd);
+  await mkdir(blessedRoot, { recursive: true });
+  const copy = `${encoded}/${slug}.md`;
+  await confine(copy, blessedRoot);
+  await confine(`${copy}.anchors.json`, blessedRoot);
+  return relative;
+}
+
+async function optionalBytes(filename: string): Promise<Buffer | null> {
+  return readFile(filename).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  });
+}
+
 async function persist(ws: Workspace, patches: Patch[], log: object): Promise<void> {
   const logfile = await confine(`${ws.records}/blessed/log.jsonl`, ws.cwd);
   const saved = new Map<string, Buffer | null>();
   try {
     for (const patch of patches) {
       const filename = await confine(patch.path, ws.cwd);
-      const old = await readFile(filename).catch((error: NodeJS.ErrnoException) => {
-        if (error.code === "ENOENT") return null;
-        throw error;
-      });
-      await writeAtomic(filename, patch.text);
+      const old = await optionalBytes(filename);
+      if (patch.expected !== undefined && old?.toString("utf8") !== patch.expected) {
+        throw diagnostic("TN-SUBJ-DIRTY", { command: "bless" });
+      }
+      await ws.write(filename, patch.text);
       saved.set(filename, old);
     }
     await mkdir(path.dirname(logfile), { recursive: true });
+    saved.set(logfile, await optionalBytes(logfile));
     await appendFile(logfile, `${JSON.stringify(log)}\n`, "utf8");
   } catch (error) {
     const failures: unknown[] = [error];
@@ -510,7 +554,7 @@ async function writeAction(ws: Workspace, entry: SectionState, action: Completed
       const errors = resolveCitations(relevant, read);
       if (errors.length) return errors;
       const newAnchors = anchorsFor(subject, read);
-      const copyPath = `${ws.records}/blessed/${checked.doc.path.replaceAll("/", "__")}/${section.slug}.md`;
+      const copyPath = await blessedCopyPath(ws, checked.doc.path, section.slug);
       const digest = sectionDigest(subject.text);
       if (action === "bless" && section.blessed_digest && section.blessed_digest !== digest) {
         front.yaml.setIn(["tenet", "version"], bumpVersion(front.yaml.getIn(["tenet", "version"])));
@@ -525,7 +569,7 @@ async function writeAction(ws: Workspace, entry: SectionState, action: Completed
       set("anchors", newAnchors.anchors);
       set("blessed_copy", copyPath);
       set("flags", section.digest === digest ? [] : ["edited"]);
-      patches.push({ path: copyPath, text: subject.text }, { path: `${copyPath}.anchors.json`, text: `${JSON.stringify(newAnchors.texts, null, 2)}\n` });
+      patches.push({ path: copyPath, text: normalize(subject.text) }, { path: `${copyPath}.anchors.json`, text: `${JSON.stringify(newAnchors.texts, null, 2)}\n` });
       measured = subject;
     } else if (section.blessed_digest) {
       if (restore) {
@@ -543,7 +587,7 @@ async function writeAction(ws: Workspace, entry: SectionState, action: Completed
       set("digest", section.digest);
       set("flags", []);
     }
-    patches.push({ path: checked.doc.path, text: documentText(front) });
+    patches.push({ path: checked.doc.path, text: documentText(front), expected: entry.text });
     const counts = await countDraft(checked, measured, ws);
     await persist(ws, patches, {
       doc: checked.doc.path, section: section.slug, action, by, at: utcSeconds(ws.now),
@@ -582,7 +626,7 @@ export async function runBless(options: BlessOptions = {}, io: BlessIO = {}): Pr
     const records = portable(policy.paths.records);
     const prefix = policy.specs.id_prefix;
     const now = io.now ?? (() => new Date());
-    const ws: Workspace = { cwd, head, records, prefix, now, started: now().valueOf() };
+    const ws: Workspace = { cwd, head, records, prefix, now, started: now().valueOf(), write: io.write ?? writeAtomic };
     const read = reader(cwd);
     const load = async (relative: string) => {
       const filename = await confine(relative, cwd);
