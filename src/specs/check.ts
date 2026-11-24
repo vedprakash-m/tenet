@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFileSync, type Dirent } from "node:fs";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { parseDocument } from "yaml";
 import { jcs } from "../core/hash.js";
@@ -467,10 +467,6 @@ async function packFindings(cwd: string, pack: CheckOptions["pack"]): Promise<Fi
   return schemaFindings(filename, "pack", parseYaml(text));
 }
 
-async function markdownEntries(cwd: string): Promise<LadderEntry[]> {
-  return ladder({ cwd });
-}
-
 function selectedEntries(entries: LadderEntry[], paths: string[] | undefined): LadderEntry[] {
   if (!paths || paths.length === 0) return entries;
   const selected = new Set(paths.map(portable));
@@ -480,11 +476,15 @@ function selectedEntries(entries: LadderEntry[], paths: string[] | undefined): L
 async function configuredEntries(
   cwd: string,
   policy: Policy,
-  discovered: LadderEntry[],
+  filenames: string[],
 ): Promise<LadderEntry[]> {
-  const entries = new Map(discovered.map((entry) => [entry.path, entry]));
+  const selected = new Set(filenames.map(portable));
+  const entries = new Map(
+    (await ladder({ cwd, files: filenames })).map((entry) => [entry.path, entry]),
+  );
   for (const document of policy.specs.documents) {
     const filename = portable(path.posix.join(policy.paths.records, document.path));
+    if (!selected.has(filename)) continue;
     if (entries.has(filename)) continue;
     const text = await readOptional(path.join(cwd, ...filename.split("/")));
     if (text === null) continue;
@@ -498,6 +498,43 @@ async function configuredEntries(
   return [...entries.values()].sort((left, right) =>
     rank(left.level) - rank(right.level) ||
     (left.path < right.path ? -1 : left.path > right.path ? 1 : 0));
+}
+
+async function activeDocumentPaths(
+  cwd: string,
+  policy: Policy,
+  hasConfiguredLadder: boolean,
+): Promise<{ files: string[]; roots: string[] }> {
+  const intent = portable(path.posix.join(policy.paths.records, "intent.md"));
+  const base = !hasConfiguredLadder &&
+    await readOptional(path.join(cwd, ...intent.split("/"))) !== null
+    ? [intent]
+    : policy.specs.documents.map((document) =>
+      portable(path.posix.join(policy.paths.records, document.path)));
+  const roots = base.map((filename) => filename.replace(/\.md$/, ""));
+  const files = [...base];
+  for (const root of roots) {
+    files.push(...await markdownBelow(cwd, root));
+  }
+  return { files: [...new Set(files)], roots: [...new Set([...base, ...roots])] };
+}
+
+async function markdownBelow(cwd: string, relativeRoot: string): Promise<string[]> {
+  const root = path.join(cwd, ...relativeRoot.split("/"));
+  let entries: Dirent[];
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+  const files: string[] = [];
+  for (const entry of entries) {
+    const filename = path.posix.join(relativeRoot, entry.name);
+    if (entry.isDirectory()) files.push(...await markdownBelow(cwd, filename));
+    else if (entry.isFile() && entry.name.endsWith(".md")) files.push(filename);
+  }
+  return files;
 }
 
 async function requiredDocumentFindings(
@@ -525,6 +562,7 @@ async function requiredDocumentFindings(
 async function duplicateIdsOnOtherBranches(
   cwd: string,
   current: LadderEntry[],
+  pathspecs: string[],
 ): Promise<Finding[]> {
   const refsText = await git(["for-each-ref", "--format=%(refname)%09%(objectname)", "refs/heads", "refs/remotes"], { cwd })
     .catch(() => "");
@@ -562,7 +600,10 @@ async function duplicateIdsOnOtherBranches(
   };
   collect(current, "working-tree");
   for (const { ref } of refs) {
-    const listing = await git(["ls-tree", "-r", "-z", "--name-only", ref], { cwd }).catch(() => "");
+    const listing = await git(
+      ["ls-tree", "-r", "-z", "--name-only", ref, "--", ...pathspecs],
+      { cwd },
+    ).catch(() => "");
     const paths = listing.split("\0").filter((filename) => filename.endsWith(".md"));
     if (paths.length === 0) continue;
     const blobs = await catFileBatch(ref, paths, { cwd });
@@ -628,7 +669,11 @@ export async function check(options: CheckOptions = {}): Promise<CheckResult> {
     }
   }
   const policy = await loadPolicy({ cwd });
-  const allEntries = await configuredEntries(cwd, policy, await markdownEntries(cwd));
+  const activePaths = await activeDocumentPaths(cwd, policy, hasConfiguredLadder);
+  const selectedPaths = scoped
+    ? (options.paths ?? []).map(portable)
+    : activePaths.files;
+  const allEntries = await configuredEntries(cwd, policy, selectedPaths);
   const entries = selectedEntries(allEntries, options.paths);
   const findings: Finding[] = [...policy.findings];
   const sectionFindings = await checkSections(entries, cwd);
@@ -639,7 +684,7 @@ export async function check(options: CheckOptions = {}): Promise<CheckResult> {
   if (!scoped) {
     findings.push(...await requiredDocumentFindings(cwd, policy, hasConfiguredLadder));
     findings.push(...duplicateIdFindings(allEntries));
-    findings.push(...await duplicateIdsOnOtherBranches(cwd, allEntries));
+    findings.push(...await duplicateIdsOnOtherBranches(cwd, allEntries, activePaths.roots));
     findings.push(...visionCoverage(allEntries));
     findings.push(...await kitFindings(cwd, policy, options.installedVersion ?? installedPackageVersion));
   } else {

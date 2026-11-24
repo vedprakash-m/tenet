@@ -229,6 +229,76 @@ for (const caseName of caseNames) {
   });
 }
 
+test("check and fix limit discovery to the active specification set", async () => {
+  for (const explicit of [false, true]) {
+    const repo = await tmpRepo(`bounded-ladder-${explicit ? "explicit" : "one-file"}`);
+    try {
+      const documents = explicit
+        ? [{ path: "vision.md", level: "L0" }]
+        : undefined;
+      await repo.write("tenet.yaml", JSON.stringify({
+        standard: "0.1.0-alpha.0",
+        kit_path: "kit",
+        paths: { records: "tenet" },
+        level: "observe",
+        specs: {
+          id_prefix: "R",
+          ...(documents ? { documents } : {}),
+        },
+      }, null, 2));
+      await repo.write("kit/TENET.md", "# Kit\n");
+      const activePath = explicit ? "tenet/vision.md" : "tenet/intent.md";
+      const activeBody = explicit
+        ? "- V-1 Predictable. {origin: asked}\n"
+        : "- R-1 Predictable. {origin: asked}\n";
+      await repo.write(activePath, spec(
+        activePath,
+        explicit ? "vision" : "requirements",
+        activeBody,
+        explicit ? "L0" : "L1",
+      ));
+      await repo.write("kit/templates/requirements.md", spec(
+        "kit/templates/requirements.md",
+        "requirements",
+        "- R-999 Fixture. {origin: documented; cites: missing.ts:1}",
+      ));
+      repo.git(["add", "."]);
+      repo.git(["commit", "-qm", "base"]);
+      repo.git(["branch", "fixture-only"]);
+
+      const result = await check({ cwd: repo.path });
+      assert.equal(
+        result.findings.some((finding) =>
+          finding.file === "kit/templates/requirements.md" ||
+          finding.message.includes("missing.ts")),
+        false,
+      );
+      const repaired = await fix({ cwd: repo.path, dryRun: true });
+      assert.equal(
+        repaired.changes.some((change) =>
+          change.path.startsWith("kit/templates/")),
+        false,
+      );
+      if (!explicit) {
+        await repo.write(activePath, spec(
+          activePath,
+          "requirements",
+          "- R-1 Predictable. {origin: asked}\n- Needs an ID. {origin: asked}",
+        ));
+        repo.git(["add", activePath]);
+        repo.git(["commit", "-qm", "add unnumbered item"]);
+        await fix({ cwd: repo.path });
+        assert.match(
+          await readFile(path.join(repo.path, ...activePath.split("/")), "utf8"),
+          /- R-2 Needs an ID\./,
+        );
+      }
+    } finally {
+      await repo.cleanup();
+    }
+  }
+});
+
 test("check resolves citations with canonical findings", async () => {
   const repo = await tmpRepo("check-citation");
   try {
@@ -900,6 +970,19 @@ test("check meets cold and warm 500-document timing with batched Git calls", asy
       );
       expectedFiles.push(filename);
     }
+    await repo.write("tenet.yaml", JSON.stringify({
+      ...policy,
+      specs: {
+        ...policy.specs,
+        documents: [
+          ...policy.specs.documents,
+          ...expectedFiles.map((filename) => ({
+            path: filename.slice("tenet/".length),
+            level: "L2",
+          })),
+        ],
+      },
+    }, null, 2));
     repo.git(["add", "."]);
     repo.git(["commit", "--quiet", "-m", "scale fixture"]);
     const trace = path.join(repo.path, "git-trace.json");

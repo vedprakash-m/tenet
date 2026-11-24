@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { lstat, mkdir, readFile, rename } from "node:fs/promises";
+import { readFileSync, type Dirent } from "node:fs";
+import { lstat, mkdir, readFile, readdir, rename } from "node:fs/promises";
 import path from "node:path";
 import { parse, stringify } from "yaml";
 import { writeAtomic } from "../core/fs.js";
@@ -158,7 +158,11 @@ function idNumber(id: string): number {
   return match?.[1] ? Number.parseInt(match[1], 10) : 0;
 }
 
-async function otherBranchOccurrences(cwd: string, prefix: string): Promise<IdOccurrence[]> {
+async function otherBranchOccurrences(
+  cwd: string,
+  prefix: string,
+  pathspecs: string[],
+): Promise<IdOccurrence[]> {
   const currentCommit = (await git(["rev-parse", "HEAD"], { cwd }).catch(() => "")).trim();
   const refsText = await git(
     ["for-each-ref", "--format=%(refname)%09%(objectname)%09%(committerdate:unix)", "refs/heads", "refs/remotes"],
@@ -173,7 +177,10 @@ async function otherBranchOccurrences(cwd: string, prefix: string): Promise<IdOc
   });
   const result: IdOccurrence[] = [];
   for (const { ref, timestamp } of refs) {
-    const listing = await git(["ls-tree", "-r", "-z", "--name-only", ref], { cwd }).catch(() => "");
+    const listing = await git(
+      ["ls-tree", "-r", "-z", "--name-only", ref, "--", ...pathspecs],
+      { cwd },
+    ).catch(() => "");
     const paths = listing.split("\0").filter((filename) => filename.endsWith(".md"));
     if (paths.length === 0) continue;
     const blobs = await catFileBatch(ref, paths, { cwd });
@@ -198,6 +205,65 @@ async function otherBranchOccurrences(cwd: string, prefix: string): Promise<IdOc
     }
   }
   return result;
+}
+
+async function markdownBelow(cwd: string, relativeRoot: string): Promise<string[]> {
+  const root = path.join(cwd, ...relativeRoot.split("/"));
+  let entries: Dirent[];
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+  const files: string[] = [];
+  for (const entry of entries) {
+    const filename = path.posix.join(relativeRoot, entry.name);
+    if (entry.isDirectory()) files.push(...await markdownBelow(cwd, filename));
+    else if (entry.isFile() && entry.name.endsWith(".md")) files.push(filename);
+  }
+  return files;
+}
+
+async function activeDocumentPaths(
+  cwd: string,
+  policy: Policy,
+): Promise<{ files: string[]; roots: string[] }> {
+  const intent = portable(path.posix.join(policy.paths.records, "intent.md"));
+  let configured = false;
+  try {
+    const raw = parse(await readFile(path.join(cwd, "tenet.yaml"), "utf8")) as unknown;
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      const specs = (raw as Record<string, unknown>).specs;
+      configured = Boolean(
+        specs &&
+        typeof specs === "object" &&
+        Array.isArray((specs as { documents?: unknown }).documents) &&
+        ((specs as { documents: unknown[] }).documents.length > 0),
+      );
+    }
+  } catch {
+    // loadPolicy reports the canonical configuration diagnostic.
+  }
+  if (!configured) {
+    try {
+      if ((await lstat(path.join(cwd, ...intent.split("/")))).isFile()) {
+        const roots = [intent, intent.replace(/\.md$/, "")];
+        return {
+          files: [...new Set([intent, ...await markdownBelow(cwd, roots[1] ?? "intent")])],
+          roots,
+        };
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+  }
+  const base = policy.specs.documents.map((document) =>
+    portable(path.posix.join(policy.paths.records, document.path)));
+  const roots = [...base, ...base.map((filename) => filename.replace(/\.md$/, ""))];
+  const files = [...base];
+  for (const root of roots.slice(base.length)) files.push(...await markdownBelow(cwd, root));
+  return { files: [...new Set(files)], roots: [...new Set(roots)] };
 }
 
 function bodyLines(text: string): string[] {
@@ -439,10 +505,13 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
   const cwd = path.resolve(options.cwd ?? process.cwd());
   const policy = await loadPolicy({ cwd });
   const prefix = policy.specs.id_prefix;
-  const discovered = await ladder({ cwd });
+  const activePaths = await activeDocumentPaths(cwd, policy);
+  const discovered = await ladder({ cwd, files: activePaths.files });
   const known = new Map(discovered.map((entry) => [entry.path, entry]));
+  const active = new Set(activePaths.files);
   for (const document of policy.specs.documents) {
     const filename = portable(path.posix.join(policy.paths.records, document.path));
+    if (!active.has(filename)) continue;
     if (known.has(filename)) continue;
     try {
       const text = await readFile(path.join(cwd, ...filename.split("/")), "utf8");
@@ -474,7 +543,7 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
       }];
     })
   ));
-  const branchIds = await otherBranchOccurrences(cwd, prefix);
+  const branchIds = await otherBranchOccurrences(cwd, prefix, activePaths.roots);
   let nextRequirement = Math.max(0, ...requirementIds.map((item) => idNumber(item.id)),
     ...branchIds.filter((item) => item.id.startsWith(`${prefix}-`)).map((item) => idNumber(item.id))) + 1;
   let nextVision = Math.max(0, ...visionIds.map((item) => idNumber(item.id)),
