@@ -1,0 +1,13 @@
+{
+  "scenarios": [
+    {
+      "name": "default-no-fetch",
+      "fetched_external_refs": false
+    },
+    {
+      "name": "offline-plus-fetch",
+      "error_code": "TN-ENV-OFFLINE",
+      "exit_code": 3
+    }
+  ]
+}

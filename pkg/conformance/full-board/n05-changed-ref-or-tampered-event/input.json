@@ -1,0 +1,32 @@
+{
+  "op": "projectBoard",
+  "now": "2026-11-23T16:00:00Z",
+  "snapshot": {
+    "records_ref_tip_expected": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    "records_ref_tip_actual": "cafebabecafebabecafebabecafebabecafebabe",
+    "events": [
+      {
+        "id": "01JDF000000000000000000001",
+        "prev": [],
+        "type": "work.created",
+        "work": "pr-16",
+        "time": "2026-11-23T12:00:00Z",
+        "by": "ved",
+        "data": {
+          "title": "Tampered A"
+        }
+      },
+      {
+        "id": "01JDF000000000000000000001",
+        "prev": [],
+        "type": "work.created",
+        "work": "pr-16",
+        "time": "2026-11-23T12:00:00Z",
+        "by": "mallory",
+        "data": {
+          "title": "Tampered B"
+        }
+      }
+    ]
+  }
+}
