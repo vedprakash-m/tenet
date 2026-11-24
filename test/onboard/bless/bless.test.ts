@@ -294,3 +294,24 @@ test("onboard --card explains that a draft is needed before it writes anything",
   assert.match(JSON.parse(request.stdout.text).errors[0].message, /commit a specification draft/);
   await assert.rejects(raw(repo), { code: "ENOENT" });
 });
+
+test("bless discovers the one-file intent only when specs.documents is empty or omitted", async (t) => {
+  const repo = await setup(t, `## Requirements\n${requirement}`);
+  await repo.write("tenet.yaml", config.replace("path: intent.md", "path: vision.md"));
+  assert.equal((await speak(repo, "1\nbless\n")).result?.blessed, 0);
+  await repo.write("tenet.yaml", config.split("specs:")[0]);
+  const result = await speak(repo, "1\nbless\n");
+  assert.deepEqual(result.findings, []);
+  assert.equal(result.result?.blessed, 1);
+  assert.match(await raw(repo, copy), /Retry once/);
+});
+
+test("self blessing offers configured IDs and falls back to ownersFor", async (t) => {
+  const repo = await setup(t, `## Requirements\n${requirement}`);
+  await repo.write("CODEOWNERS", "/tenet/intent.md @platform\n");
+  await repo.write("tenet.yaml", config.split("owners:")[0]);
+  const result = await speak(repo, "1\nbless\n");
+  assert.deepEqual(result.findings, []);
+  assert.match(result.text, /Who is blessing\? 1\. @platform/);
+  assert.equal(JSON.parse(await raw(repo, log)).by, "@platform");
+});
