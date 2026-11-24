@@ -1,0 +1,7 @@
+{
+  "decision": null,
+  "observation": {
+    "forge_source_id": "cmt-stale-1",
+    "stale": true
+  }
+}

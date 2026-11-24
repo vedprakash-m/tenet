@@ -288,5 +288,4 @@ export const onboardText = {
   noTestReport: "No machine-readable test report configured",
   invalidLayout: "choose one-file or separate for --layout",
   unexpectedPositionals: "unexpected positional arguments",
-  refreshPending: "CP-0009 check is not wired for onboarding refresh",
 } as const;

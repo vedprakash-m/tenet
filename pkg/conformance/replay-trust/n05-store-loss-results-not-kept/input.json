@@ -1,0 +1,15 @@
+{
+  "op": "requiredOutcome",
+  "scenarios": [
+    {
+      "name": "protect-store-loss",
+      "level": "protect",
+      "situation": "records-not-kept"
+    },
+    {
+      "name": "verify-store-loss",
+      "level": "verify",
+      "situation": "records-not-kept"
+    }
+  ]
+}

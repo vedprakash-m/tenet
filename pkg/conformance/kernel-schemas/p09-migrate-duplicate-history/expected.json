@@ -1,0 +1,70 @@
+{
+  "work": {
+    "schema_version": 1,
+    "id": "CP-0010",
+    "title": "Tenet init",
+    "type": "feature",
+    "lane": null,
+    "priority": null,
+    "due": null,
+    "levels": [],
+    "serves": [],
+    "implements": [],
+    "milestone": null,
+    "source": null,
+    "blocked_by": [],
+    "unblocks": [],
+    "candidate": null,
+    "appetite": null,
+    "spent": null,
+    "owner_role": null,
+    "claimed_by": null
+  },
+  "events": [
+    {
+      "id": "01M82YNFM09DS1K2C4TSZJFR15",
+      "prev": [],
+      "type": "work.created",
+      "work": "CP-0010",
+      "time": "2026-11-23T01:00:00Z",
+      "by": "Ved",
+      "data": {
+        "title": "Tenet init",
+        "type": "feature",
+        "station": "intake"
+      }
+    },
+    {
+      "id": "01M82YNFM0G1T8MD4M4NYN77WS",
+      "prev": [
+        "01M82YNFM09DS1K2C4TSZJFR15"
+      ],
+      "type": "work.moved",
+      "work": "CP-0010",
+      "time": "2026-11-23T01:00:00Z",
+      "by": "Ved",
+      "data": {
+        "station": "intake"
+      }
+    },
+    {
+      "id": "01M8323B801HAGK12RWEZ91APY",
+      "prev": [
+        "01M82YNFM0G1T8MD4M4NYN77WS"
+      ],
+      "type": "work.moved",
+      "work": "CP-0010",
+      "time": "2026-11-23T02:00:00Z",
+      "by": "policy",
+      "data": {
+        "from": "intake",
+        "station": "verify",
+        "skipped": [
+          "define"
+        ],
+        "ledger": "L-0030"
+      }
+    }
+  ],
+  "problems": []
+}

@@ -1,0 +1,35 @@
+{
+  "op": "projectAndRender",
+  "now": "2026-11-23T16:00:00Z",
+  "snapshot": {
+    "rule_events": [
+      {
+        "rule": "citations-valid",
+        "would_block": true,
+        "not_useful": true,
+        "pr": 2
+      },
+      {
+        "rule": "citations-valid",
+        "would_block": true,
+        "not_useful": false,
+        "pr": 3
+      },
+      {
+        "rule": "tests-not-weakened",
+        "refused": true,
+        "waived": true,
+        "pr": 4
+      }
+    ],
+    "merged_works": [
+      {
+        "id": "pr-4",
+        "level": "protect",
+        "self_accepted": true,
+        "merged_by": "ved",
+        "pr_author": "ved"
+      }
+    ]
+  }
+}

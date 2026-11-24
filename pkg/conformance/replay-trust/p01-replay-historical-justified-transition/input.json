@@ -1,0 +1,78 @@
+{
+  "op": "replay",
+  "as_of": "2026-11-23T12:10:00Z",
+  "today_policy": {
+    "level": "verify",
+    "rules": {
+      "distinguishing-evidence": "enforce"
+    }
+  },
+  "snapshot": {
+    "policy_at_eval": {
+      "level": "protect",
+      "rules": {
+        "acceptance-passed": "enforce"
+      }
+    },
+    "evidence_store": [
+      {
+        "id": "EV-1",
+        "subject": {
+          "kind": "git-tree",
+          "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        "claims": [
+          "AB-1"
+        ],
+        "result": "pass",
+        "valid_until": "2026-11-23T13:00:00Z"
+      }
+    ]
+  },
+  "history": [
+    {
+      "id": "01JDF000000000000000000001",
+      "prev": [],
+      "type": "work.created",
+      "work": "pr-5",
+      "time": "2026-11-23T12:00:00Z",
+      "by": "ved",
+      "data": {
+        "station": "build"
+      }
+    },
+    {
+      "id": "01JDF000000000000000000002",
+      "prev": [
+        "01JDF000000000000000000001"
+      ],
+      "type": "gate",
+      "work": "pr-5",
+      "time": "2026-11-23T12:04:00Z",
+      "by": "recorder",
+      "data": {
+        "verdict": "advance",
+        "evaluated_at": "2026-11-23T12:04:00Z",
+        "argument": [
+          {
+            "claim": "AB-1",
+            "evidence": "EV-1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "01JDF000000000000000000003",
+      "prev": [
+        "01JDF000000000000000000002"
+      ],
+      "type": "work.moved",
+      "work": "pr-5",
+      "time": "2026-11-23T12:05:00Z",
+      "by": "recorder",
+      "data": {
+        "station": "verify"
+      }
+    }
+  ]
+}

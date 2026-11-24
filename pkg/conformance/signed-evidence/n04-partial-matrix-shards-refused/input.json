@@ -1,0 +1,12 @@
+{
+  "op": "attest",
+  "level": "verify",
+  "expected_bundles": [
+    "tenet-bundle-test-0",
+    "tenet-bundle-test-1"
+  ],
+  "downloaded_bundles": [
+    "tenet-bundle-test-0"
+  ],
+  "missing_status": 503
+}

@@ -1,0 +1,14 @@
+{
+  "scenarios": [
+    {
+      "name": "protect-store-loss",
+      "conclusion": "neutral",
+      "degraded_includes": "results not kept"
+    },
+    {
+      "name": "verify-store-loss",
+      "conclusion": "failure",
+      "degraded_includes": "results not kept"
+    }
+  ]
+}

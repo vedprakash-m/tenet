@@ -1,0 +1,21 @@
+{
+  "valid": false,
+  "problems": [
+    {
+      "code": "TN-SCHEMA",
+      "severity": "error",
+      "rule": null,
+      "file": null,
+      "line": null,
+      "pointer": "/id"
+    },
+    {
+      "code": "TN-SCHEMA",
+      "severity": "error",
+      "rule": null,
+      "file": null,
+      "line": null,
+      "pointer": "/history/0/at"
+    }
+  ]
+}

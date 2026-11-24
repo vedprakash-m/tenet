@@ -1,3 +1,4 @@
+import { message } from "../core/messages.js";
 import type { Finding } from "../types/generated.js";
 import { citationParts, docSection, testSegmentsResolve } from "./anchors.js";
 import { itemLine, type ParsedDoc, type Requirement } from "./parse.js";
@@ -9,40 +10,16 @@ function citationFinding(
   doc: ParsedDoc,
   item: Requirement,
   values: Record<string, string>,
-  malformed = false,
 ): Finding {
-  const messages: Record<string, [string, string, string]> = {
-    "TN-CITE-FILE": [
-      "Cited file {path} was not found.",
-      "Update the citation path or restore {path}.",
-      "citations-valid",
-    ],
-    "TN-CITE-RANGE": [
-      "Citation {cite} has an invalid line range or format.",
-      "Fix {cite} to use a valid path:line or path:start-end within file length.",
-      "citations-valid",
-    ],
-    "TN-CITE-HEADING": [
-      "Cited heading #{slug} was not found in {path}.",
-      "Update the doc: citation to an existing heading slug in {path}.",
-      "citations-valid",
-    ],
-    "TN-CITE-TEST": [
-      "Cited test {name} was not found in {file}.",
-      "Update the test: citation to match a declared test in {file}.",
-      "citations-valid",
-    ],
-  };
-  const details = messages[code];
-  const fill = (value: string) => value.replace(/\{(\w+)\}/g, (_, key: string) => values[key] ?? `{${key}}`);
+  const words = message(code, values);
   return {
     code,
     severity: "error",
-    rule: details?.[2] ?? "citations-valid",
+    rule: "citations-valid",
     file: doc.path,
     line: itemLine(item),
-    message: malformed ? "citation is malformed" : fill(details?.[0] ?? ""),
-    fix: fill(details?.[1] ?? ""),
+    message: words.message,
+    fix: words.fix,
   };
 }
 
@@ -61,7 +38,7 @@ export function resolveCitations(doc: ParsedDoc, readFile: Reader): Finding[] {
         const malformedDoc = /^doc:\s*/.test(cite) && !/.+#.+/.test(cite);
         const parsed = citationParts(cite);
         if (!parsed || malformedTest || malformedDoc) {
-          findings.push(citationFinding("TN-CITE-RANGE", doc, item, { cite }, true));
+          findings.push(citationFinding("TN-CITE-RANGE", doc, item, { cite }));
           continue;
         }
         const file = readFile(parsed.path);

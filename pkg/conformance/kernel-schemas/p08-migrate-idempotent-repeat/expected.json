@@ -1,0 +1,60 @@
+{
+  "identical_across_repeats": true,
+  "work": {
+    "schema_version": 1,
+    "id": "CP-0007",
+    "title": "Events and reduction",
+    "type": "feature",
+    "lane": "careful",
+    "priority": null,
+    "due": null,
+    "levels": [],
+    "serves": [],
+    "implements": [],
+    "milestone": null,
+    "source": null,
+    "blocked_by": [],
+    "unblocks": [],
+    "candidate": null,
+    "appetite": null,
+    "spent": null,
+    "owner_role": null,
+    "claimed_by": null
+  },
+  "events": [
+    {
+      "id": "01M82GY140P2T7EJQNMDYXYXKD",
+      "prev": [],
+      "type": "work.created",
+      "work": "CP-0007",
+      "time": "2026-11-22T21:00:00Z",
+      "by": "Ved",
+      "data": {
+        "title": "Events and reduction",
+        "type": "feature",
+        "lane": "careful",
+        "station": "intake",
+        "reason": "seeded"
+      }
+    },
+    {
+      "id": "01M82H7630NXH96MC3SQXEA23D",
+      "prev": [
+        "01M82GY140P2T7EJQNMDYXYXKD"
+      ],
+      "type": "work.moved",
+      "work": "CP-0007",
+      "time": "2026-11-22T21:05:00Z",
+      "by": "Ved",
+      "data": {
+        "from": "intake",
+        "station": "build",
+        "receipts": 2,
+        "gate": [
+          "R-018"
+        ]
+      }
+    }
+  ],
+  "problems": []
+}

@@ -1,0 +1,35 @@
+{
+  "op": "makeAndRenderRequest",
+  "input": {
+    "repository": "vedprakash-m/tenet-sandbox",
+    "work": "pr-12",
+    "target": "definition",
+    "subject": {
+      "kind": "git-tree",
+      "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    "decision_kind": "approve",
+    "question": "Approve definition?",
+    "choices": [
+      {
+        "id": "1",
+        "label": "stop"
+      },
+      {
+        "id": "2",
+        "label": "revise"
+      },
+      {
+        "id": "3",
+        "label": "approve"
+      }
+    ],
+    "evaluation_id": "1234567890abcdef",
+    "policy_revision": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "allowed_actors": [
+      "alice",
+      "ved"
+    ],
+    "expires_at": "2026-11-24T12:00:00Z"
+  }
+}

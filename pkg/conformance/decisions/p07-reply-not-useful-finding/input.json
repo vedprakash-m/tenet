@@ -1,0 +1,43 @@
+{
+  "op": "recordAnswer",
+  "event": {
+    "kind": "issue_comment",
+    "source_id": "cmt-903",
+    "author_login": "vedprakash-m",
+    "body": "/tenet not-useful FND-42 false positive on moved helper",
+    "created_at": "2026-11-23T12:08:00Z",
+    "content_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "snapshot": {
+    "owners": [
+      {
+        "id": "ved",
+        "forge_accounts": [
+          "vedprakash-m"
+        ],
+        "keys": [
+          {
+            "public_key": "ssh-ed25519 AAAA1",
+            "added": "2026-11-01T00:00:00Z"
+          }
+        ]
+      },
+      {
+        "id": "alice",
+        "forge_accounts": [
+          "alice-dev"
+        ],
+        "keys": [
+          {
+            "public_key": "ssh-ed25519 AAAA2",
+            "added": "2026-11-01T00:00:00Z",
+            "revoked": "2026-11-20T00:00:00Z"
+          }
+        ]
+      }
+    ],
+    "level": "protect",
+    "pr_author": "tenet-bot",
+    "tested_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  }
+}

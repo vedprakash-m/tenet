@@ -1,0 +1,21 @@
+{
+  "op": "projectBoard",
+  "now": "2026-11-23T16:00:00Z",
+  "since": "commit-before-pr8",
+  "snapshot": {
+    "works": [
+      {
+        "id": "pr-6",
+        "title": "Old unchanged",
+        "updated_at": "2026-11-22T10:00:00Z",
+        "changed_since_rev": false
+      },
+      {
+        "id": "pr-8",
+        "title": "Fresh change",
+        "updated_at": "2026-11-23T15:30:00Z",
+        "changed_since_rev": true
+      }
+    ]
+  }
+}

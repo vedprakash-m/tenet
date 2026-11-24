@@ -1,0 +1,7 @@
+{
+  "op": "observeTrustAndDecision",
+  "level": "verify",
+  "pr_opened_by_agent_session_for": "vedprakash-m",
+  "decision_actor_account": "vedprakash-m",
+  "host_t4_attested": false
+}
