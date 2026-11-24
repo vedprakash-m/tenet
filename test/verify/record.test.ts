@@ -381,3 +381,11 @@ test("r6 finding 4 compares blessed-copy digests with and without their algorith
   assert.equal(refused.result.card.badge, "intent-not-yet-blessed");
   assert.deepEqual(refused.result.card.requirements, []);
 });
+
+test("an unmerged pull request close records nothing beyond its last evaluation", async () => {
+  const untouched = <T extends object>(): T => new Proxy({} as T, {
+    get(_target, name) { assert.fail(`Closed pull request accessed ${String(name)}`); },
+  });
+  const event = { kind: "pull_request", action: "closed", merged: false, repository, number: 7 } as const;
+  assert.deepEqual(await recordAll(event, untouched(), untouched()), []);
+});
