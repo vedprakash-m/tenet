@@ -1,3 +1,10 @@
+---
+tenet: {spec: 1, doc: tech-spec, level: L2, version: "0.1", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:e9e00911c7e7d759579f632069baeb27cd2b19efc2bd34bf5a9abd04eb9862da, flags: []}
+  1-health-schemas-and-inputs: {state: draft, digest: sha256:5c21e22ec45fef7c582a6d0cb9accb17c6ca6f11a26e113b0b21b441030643ca, flags: []}
+  2-health-evaluation-and-tamper-routing-alg-16: {state: draft, digest: sha256:5f205349aa2de50888fa500949291d2dbfb71bad42df59ad5573cc2f510d7b02, flags: []}
+---
 # Tenet technical specification: health indicators and ratchet
 
 > Level L2 · Version 0.1 · Part of [tech-spec.md](../tech-spec.md) · Status: **draft, awaiting the Owner's approval** · Budget: 6,000 tokens · Split from `contracts.md`, `algorithms.md`, and `CP-0039` v6 (`L-0039`) under the rollover rule
