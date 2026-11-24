@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "command": "check",
+  "version": "0.0.0",
+  "result": {
+    "findings": [],
+    "summary": {
+      "errors": 0,
+      "warnings": 0,
+      "advises": 0
+    }
+  },
+  "errors": []
+}

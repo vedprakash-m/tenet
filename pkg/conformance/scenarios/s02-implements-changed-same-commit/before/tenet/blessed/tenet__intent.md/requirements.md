@@ -1,0 +1,2 @@
+- R-1 A payment that times out is retried once, never twice. {origin: observed; cites: src/retry.ts:1-3, test: test/retry.test.ts > retries once}
+- R-2 Failed payments are logged once for audit. {origin: observed; cites: src/retry.ts:4-6}

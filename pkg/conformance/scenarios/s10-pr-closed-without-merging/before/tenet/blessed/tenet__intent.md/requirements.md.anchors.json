@@ -1,0 +1,7 @@
+{
+  "src/retry.ts:1-3": [
+    "export function retry(fn: () => void) {",
+    "  try { fn(); } catch { fn(); }",
+    "}"
+  ]
+}

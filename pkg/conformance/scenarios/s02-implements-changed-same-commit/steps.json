@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "scenario": "s02-implements-changed-same-commit",
+  "spec_refs": [
+    "tenet/specs/tech-spec/contracts.md#1-files-and-identifiers",
+    "tenet/specs/tech-spec/ci.md#3-workflows",
+    "tenet/specs/plan/alpha.0b.md#a0-5"
+  ],
+  "steps": [
+    {
+      "id": "01-branch",
+      "kind": "git",
+      "args": [
+        "checkout",
+        "-b",
+        "pr-2"
+      ]
+    },
+    {
+      "id": "02-commit-pr",
+      "kind": "write",
+      "files": {
+        "src/retry.ts": "export function retry(fn: () => void) {\n  try { fn(); } catch { fn(); }\n}\nexport function logFailure() {\n  return true;\n}\n",
+        "test/retry.test.ts": "import { test } from \"node:test\";\ntest(\"[R-1] retries once\", () => {});\ntest(\"[AB-1] [R-1] retries once on timeout\", () => {});\n"
+      }
+    },
+    {
+      "id": "03-git-commit",
+      "kind": "git",
+      "args": [
+        "commit",
+        "-am",
+        "Implement retry"
+      ]
+    },
+    {
+      "id": "04-first-eval",
+      "kind": "verify",
+      "event": {
+        "kind": "workflow_run",
+        "repository": "fixture/checkout",
+        "pulls": [
+          2
+        ],
+        "prBody": "Fix retries.\n\n## Acceptance\nImplements: R-1\n- [AB-1] one retry after timeout",
+        "runId": "201",
+        "attempt": 1
+      },
+      "bundle": {
+        "bundle": {
+          "schema_version": 1,
+          "x-repository": "fixture/checkout",
+          "run": {
+            "id": "201",
+            "attempt": 1,
+            "workflow": "Tenet tests",
+            "job": "test",
+            "index": 0
+          },
+          "pr": 2,
+          "tested": {
+            "commit": "2a290c843e9ac486a20ce40dbe769d8b8b62b225",
+            "kind": "merge-candidate",
+            "head": "2a290c843e9ac486a20ce40dbe769d8b8b62b225",
+            "base": "f83b7a69873d1ed3561e98c5888e735aabe5a61e"
+          },
+          "checks": [
+            {
+              "name": "test",
+              "exit_code": 0,
+              "outcome": "success",
+              "duration_ms": 12,
+              "report": "reports/unit.xml",
+              "report_sha256": "170944dee7875dd3758a49ba700a164730e09ab5e8662059fe158762cc115f07",
+              "inputs": [],
+              "x-report-kind": "junit"
+            }
+          ]
+        },
+        "files": {
+          "reports/unit.xml": "<testsuite name=\"suite\" tests=\"1\">\n  <testcase classname=\"retry\" name=\"[AB-1] [R-1] retries once on timeout\" file=\"test/retry.test.ts\" time=\"0.010\">\n  </testcase>\n</testsuite>\n"
+        }
+      },
+      "expectedJson": "expected/04-verify.json",
+      "expectedCard": "expected/04-card.md"
+    },
+    {
+      "id": "05-edit-description-same-commit",
+      "kind": "verify",
+      "event": {
+        "kind": "edited",
+        "repository": "fixture/checkout",
+        "number": 2,
+        "prBody": "Fix retries.\n\n## Acceptance\nImplements: R-1, R-2\n- [AB-1] one retry after timeout\n- [AB-2] audit entry recorded"
+      },
+      "reuseBundleRunId": "201",
+      "expectedJson": "expected/05-verify.json",
+      "expectedCard": "expected/05-card.md"
+    }
+  ]
+}

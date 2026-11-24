@@ -100,7 +100,7 @@
 
 **CP-0052 · Blessing, onboarding card, evaluation and scenarios** · R-223 (bless, card), R-012 (drafter evaluation)
 1. *Needs:* CP-0010; ALG-03, ALG-13; OB §1; AG §1–§2.
-2. *Owns:* `src/onboard/{bless,card}.ts`, the `bless` command and its result schema, `onboard --card`, `pkg/evals/onboarding/` (repository only, never published), `pkg/conformance/scenarios/`, `test/onboard/bless/`.
+2. *Owns:* `src/onboard/{bless,card}.ts`, the `bless` command and its result schema, `onboard --card`, `pkg/evals/onboarding/` (repository only, never published), `test/onboard/bless/`.
 3. *Exports:* `bless({doc?, section?}) → {blessed, confirmed, rejected, deferred, minutes}`; `onboardingCard() → markdown` (it also records `drafted_at_rev`).
 4. *Behavior:* ALG-03's session (conflicts first; bless, confirm, edit, reject, defer); version bumps; the anchors file; the log line (ALG-13); the card per OB §1 and its golden examples.
 5. *Edge cases:* no terminal (exit 2); an inferred statement left; an open conflict; a conflict choice that contradicts a statement; interruption keeps finished sections; re-blessing an edited section; `confirm` after a squash from a shallow clone.
@@ -111,7 +111,7 @@
      - each has a `key.json` with obligations and their sources, planted conflicts (a stale README, an ADR against a test, an inactive flag, a roadmap issue) and scripted answers
      - scoring: ALG-13's automatic checks and kept ratio; recall and invented scored by a person who did not run the agent, with a second scorer on 20%
      - **fresh-session check:** bless "retry once", change the code to retry twice, then ask a fresh agent session that has only the installed `AGENTS.md`, skills and MCP to change the retry code; it passes if the agent works from "retry once" and reports the drift
-   - **The scenario suite** (`pkg/conformance/scenarios/`), run against the CLI, SDK, MCP and card:
+   - **The independent scenario suite** (`pkg/conformance/scenarios/`, already authored; its runner passes without editing the suite itself), run against the CLI, SDK, MCP and card:
      - a tagged test that never ran
      - `Implements:` changed on the same commit
      - an advisory and an enforced failure together (ALG-07, as a fixture)

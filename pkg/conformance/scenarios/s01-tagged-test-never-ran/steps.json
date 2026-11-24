@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "scenario": "s01-tagged-test-never-ran",
+  "spec_refs": [
+    "tenet/specs/tech-spec/evidence.md#3-test-evidence-matching-alg-08",
+    "tenet/specs/tech-spec/ci.md#10-outcomes",
+    "tenet/specs/plan/alpha.0b.md#a0-5"
+  ],
+  "steps": [
+    {
+      "id": "01-branch",
+      "kind": "git",
+      "args": [
+        "checkout",
+        "-b",
+        "pr-1"
+      ]
+    },
+    {
+      "id": "02-edit-pr",
+      "kind": "write",
+      "files": {
+        "src/retry.ts": "export function retry(fn: () => void) {\n  try { fn(); } catch { fn(); }\n}\n",
+        "test/retry.test.ts": "import { test } from \"node:test\";\ntest(\"[R-1] retries once\", () => {});\ntest(\"[AB-1] [R-1] one retry after timeout\", () => {});\ntest(\"[AB-2] no retry on auth failure\", () => {});\n"
+      }
+    },
+    {
+      "id": "03-commit-pr",
+      "kind": "git",
+      "args": [
+        "commit",
+        "-am",
+        "Add checkout retry and tests"
+      ]
+    },
+    {
+      "id": "04-verify-record",
+      "kind": "verify",
+      "event": {
+        "kind": "workflow_run",
+        "repository": "fixture/checkout",
+        "pulls": [
+          1
+        ],
+        "prBody": "Fix checkout retries.\n\n## Acceptance\nImplements: R-1\n- [AB-1] one retry after a timeout, never two\n- [AB-2] no retry when authority check fails",
+        "runId": "101",
+        "attempt": 1
+      },
+      "bundle": {
+        "bundle": {
+          "schema_version": 1,
+          "x-repository": "fixture/checkout",
+          "run": {
+            "id": "101",
+            "attempt": 1,
+            "workflow": "Tenet tests",
+            "job": "test",
+            "index": 0
+          },
+          "pr": 1,
+          "tested": {
+            "commit": "3f4dc639689266a47165af4866b42357373291b0",
+            "kind": "merge-candidate",
+            "head": "3f4dc639689266a47165af4866b42357373291b0",
+            "base": "61665ba06c0d9cfcf7a5062afea7b995c1696110"
+          },
+          "checks": [
+            {
+              "name": "test",
+              "exit_code": 0,
+              "outcome": "success",
+              "duration_ms": 15,
+              "report": "reports/unit.xml",
+              "report_sha256": "487adf1c74a6a7845b195ced4345d31046f4d8c7bbda876694581fd8d160cead",
+              "inputs": [],
+              "x-report-kind": "junit"
+            }
+          ]
+        },
+        "files": {
+          "reports/unit.xml": "<testsuite name=\"suite\" tests=\"1\">\n  <testcase classname=\"retry\" name=\"[AB-1] [R-1] one retry after timeout\" file=\"test/retry.test.ts\" time=\"0.010\">\n  </testcase>\n</testsuite>\n"
+        }
+      },
+      "expectedJson": "expected/04-verify.json",
+      "expectedCard": "expected/04-card.md"
+    }
+  ]
+}

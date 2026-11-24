@@ -1,0 +1,1 @@
+- R-1 A payment that times out is retried once, never twice. {origin: observed; cites: test: test/retry.test.ts > retries once; serves: V-1}

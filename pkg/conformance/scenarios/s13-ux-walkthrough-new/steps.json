@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "scenario": "s13-ux-walkthrough-new",
+  "spec_refs": [
+    "tenet/specs/ux-spec.md#1b-a-new-project",
+    "tenet/specs/plan/alpha.0b.md#a0-7"
+  ],
+  "steps": [
+    {
+      "id": "01-init-new-project",
+      "kind": "cli",
+      "args": [
+        "init",
+        "--yes",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedOmitted": "proposals-r7#Q7"
+    },
+    {
+      "id": "02-commit-initial",
+      "kind": "git",
+      "args": [
+        "add",
+        "-A"
+      ]
+    },
+    {
+      "id": "03-commit-main",
+      "kind": "git",
+      "args": [
+        "commit",
+        "-m",
+        "Initialize Tenet"
+      ]
+    },
+    {
+      "id": "04-onboard-inventory",
+      "kind": "cli",
+      "args": [
+        "onboard",
+        "--inventory-only",
+        "--json"
+      ],
+      "expectExitCode": 0
+    },
+    {
+      "id": "05-onboard-card",
+      "kind": "cli",
+      "args": [
+        "onboard",
+        "--card",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedOmitted": "proposals-r7#Q4"
+    },
+    {
+      "id": "06-bless",
+      "kind": "cli",
+      "args": [
+        "bless",
+        "--json"
+      ],
+      "fakeTty": [
+        "1",
+        "bless"
+      ],
+      "expectExitCode": 0,
+      "expectedOmitted": "proposals-r7#Q2"
+    }
+  ]
+}

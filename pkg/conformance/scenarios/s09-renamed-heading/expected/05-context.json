@@ -1,0 +1,38 @@
+{
+  "blessed": [
+    {
+      "id": "R-1",
+      "section": "payment-retries",
+      "text": "A payment that times out is retried once, never twice.",
+      "flags": [],
+      "owner": "ved",
+      "reason": "id"
+    }
+  ],
+  "drafts": [],
+  "index": [],
+  "omitted": [],
+  "truncated": false,
+  "rules": [
+    {
+      "rule": "tests-not-weakened",
+      "mode": "advise"
+    },
+    {
+      "rule": "protected-surfaces",
+      "mode": "advise"
+    },
+    {
+      "rule": "acceptance-passed",
+      "mode": "advise"
+    },
+    {
+      "rule": "citations-valid",
+      "mode": "advise"
+    },
+    {
+      "rule": "budget",
+      "mode": "advise"
+    }
+  ]
+}
