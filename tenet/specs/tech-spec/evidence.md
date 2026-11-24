@@ -19,6 +19,18 @@
 
 ## 2. Real test reports
 
+`init` writes the runner's own command with these flags (never `npm test -- …`):
+
+| Runner / kind | `checks.<name>.run` | `report`, `report_from` |
+|---|---|---|
+| vitest | `npx vitest run --reporter=default --reporter=junit --outputFile.junit=.tenet/reports/<name>.xml` | `junit`, file |
+| jest | `npx jest --ci --json --outputFile=.tenet/reports/<name>.json` | `jest-json`, file |
+| node:test | `node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=.tenet/reports/<name>.xml` | `junit`, file |
+| pytest | `python -m pytest --junitxml=.tenet/reports/<name>.xml` | `junit`, file |
+| go | `go test -json ./...` | `go-test-json`, stdout |
+| ctrf | runner's CTRF command writing `.tenet/reports/<name>.json` | `ctrf`, file |
+| other | the user's own command | `none`: per-test results unavailable |
+
 Every reader enforces `ci.md §3` limits (`50 * 1024 * 1024` bytes per file; `20,000` raw cases per file before retry collapsing and `20,000` merged total; nesting depth `64`) and throws `TN-REPORT-MISSING` (missing file or empty `path[]`) or `TN-REPORT-MALFORMED` (unknown `kind` or invalid format), each with `.code`, plain message and fix. `kind === "none"` returns `{ runner: "none", cases: [], teardown_failed: false, inconclusive: true }` immediately without reading disk. Relative report paths resolve against `opts?.cwd ?? process.cwd()`, while `case.file` is relativized to `cwd` only when `opts?.cwd` is explicitly passed (otherwise keeping forward slashes). Zero cases sets `inconclusive: true`. Matrix shards passed as `path[]` merge by `full_name` using worst-status precedence `error > fail > skip > pass` (concatenating `attempts`, unioning deduplicated `tags`, keeping first non-empty `file`, summing `duration_ms` when present on any merged shard, setting `teardown_failed: shards.some(s => s.teardown_failed)`, and `inconclusive: mergedCases.length === 0`).
 
 - **JUnit general:** if both `classname` and `name` are missing/empty, throw `TN-REPORT-MALFORMED`; if `name` is missing/empty with non-empty `classname`, `full_name` is `classname`; if `classname` is empty/missing or equals `name`, `full_name` is `name`; otherwise `` `${classname} > ${name}` ``. Inherit `file` from the nearest ancestor `<testsuite file="…">` when `<testcase>` omits `file`. `duration_ms` is `Math.round(Number(time) * 1000)` when finite. Repeated `<testcase>` elements with the same `full_name` in one file collapse into one case keeping all `attempts` in document order, final element's `status`, unioned `tags`, first `file` and summed `duration_ms`. `<flakyFailure>` / `<rerunFailure>` children record prior `"fail"` entries in `attempts` before the case's final status. Read `<properties><property name="tenet.case" value="…">` at the `<testcase>` level only (not `<testsuite>`); accept comma- or whitespace-separated tag tokens (`AB-1`, `[AB-1]`, `tenet_AB_1`), ignoring unknown/reserved prefixes and deduplicating `tags`.

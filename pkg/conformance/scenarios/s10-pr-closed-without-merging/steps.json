@@ -1,0 +1,100 @@
+{
+  "schema": 1,
+  "scenario": "s10-pr-closed-without-merging",
+  "spec_refs": [
+    "tenet/specs/tech-spec/ci.md#3-workflows",
+    "tenet/specs/tech-spec/ci.md#4-records-ref",
+    "tenet/specs/plan/alpha.0b.md#a0-7"
+  ],
+  "steps": [
+    {
+      "id": "01-branch",
+      "kind": "git",
+      "args": [
+        "checkout",
+        "-b",
+        "pr-7"
+      ]
+    },
+    {
+      "id": "02-commit-pr",
+      "kind": "write",
+      "files": {
+        "test/retry.test.ts": "import { test } from \"node:test\";\ntest(\"[AB-1] [R-1] retries once\", () => {});\n"
+      }
+    },
+    {
+      "id": "03-git-commit",
+      "kind": "git",
+      "args": [
+        "commit",
+        "-am",
+        "Add passing test"
+      ]
+    },
+    {
+      "id": "04-last-open-evaluation",
+      "kind": "verify",
+      "event": {
+        "kind": "workflow_run",
+        "repository": "fixture/checkout",
+        "pulls": [
+          7
+        ],
+        "prBody": "Candidate fix.\n\n## Acceptance\nImplements: R-1\n- [AB-1] retries once",
+        "runId": "701",
+        "attempt": 1
+      },
+      "bundle": {
+        "bundle": {
+          "schema_version": 1,
+          "x-repository": "fixture/checkout",
+          "run": {
+            "id": "701",
+            "attempt": 1,
+            "workflow": "Tenet tests",
+            "job": "test",
+            "index": 0
+          },
+          "pr": 7,
+          "tested": {
+            "commit": "93dd8e75bf7aeaebfde5b7566bec681e8de494aa",
+            "kind": "merge-candidate",
+            "head": "93dd8e75bf7aeaebfde5b7566bec681e8de494aa",
+            "base": "2c11d93fc0f92bd259eecb4aa4592d7635e9425a"
+          },
+          "checks": [
+            {
+              "name": "test",
+              "exit_code": 0,
+              "outcome": "success",
+              "duration_ms": 8,
+              "report": "reports/unit.xml",
+              "report_sha256": "8abb906cf38b16812b9de1b7a4fd40a3e55bf09b486ad90b5ca5a3095cab9259",
+              "inputs": [],
+              "x-report-kind": "junit"
+            }
+          ]
+        },
+        "files": {
+          "reports/unit.xml": "<testsuite name=\"suite\" tests=\"1\">\n  <testcase classname=\"retry\" name=\"[AB-1] [R-1] retries once\" file=\"test/retry.test.ts\" time=\"0.010\">\n  </testcase>\n</testsuite>\n"
+        }
+      },
+      "expectedJson": "expected/04-verify.json",
+      "expectedCard": "expected/04-card.md"
+    },
+    {
+      "id": "05-pr-closed-unmerged",
+      "kind": "verify",
+      "event": {
+        "kind": "pull_request",
+        "action": "closed",
+        "merged": false,
+        "repository": "fixture/checkout",
+        "number": 7
+      },
+      "assertRecordsTipUnchanged": true,
+      "expectedOmitted": "proposals-r7#Q6"
+    }
+  ]
+}

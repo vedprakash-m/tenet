@@ -1,0 +1,67 @@
+{
+  "schema": 1,
+  "scenario": "s11-readme-walkthrough",
+  "spec_refs": [
+    "README.md#get-started",
+    "tenet/specs/plan/alpha.0b.md#a0-7"
+  ],
+  "steps": [
+    {
+      "id": "01-init-yes",
+      "kind": "cli",
+      "args": [
+        "init",
+        "--yes",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedOmitted": "proposals-r7#Q7"
+    },
+    {
+      "id": "02-onboard-inventory",
+      "kind": "cli",
+      "args": [
+        "onboard",
+        "--inventory-only",
+        "--json"
+      ],
+      "expectExitCode": 0
+    },
+    {
+      "id": "03-onboard-card",
+      "kind": "cli",
+      "args": [
+        "onboard",
+        "--card",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedOmitted": "proposals-r7#Q4"
+    },
+    {
+      "id": "04-bless",
+      "kind": "cli",
+      "args": [
+        "bless",
+        "--json"
+      ],
+      "fakeTty": [
+        "1",
+        "bless"
+      ],
+      "expectExitCode": 0,
+      "expectedOmitted": "proposals-r7#Q2"
+    },
+    {
+      "id": "05-remove",
+      "kind": "cli",
+      "args": [
+        "remove",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedTree": "before",
+      "expectedOmitted": "proposals-r7#Q7"
+    }
+  ]
+}

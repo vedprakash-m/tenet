@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "scenario": "s05-global-rule-budget-pressure",
+  "spec_refs": [
+    "tenet/specs/tech-spec/algorithms.md#alg-10",
+    "tenet/specs/tech-spec/contracts.md#9-mcp"
+  ],
+  "steps": [
+    {
+      "id": "01-context-tight-budget",
+      "kind": "cli",
+      "args": [
+        "context",
+        "--paths",
+        "src/checkout/pay.ts",
+        "--budget-tokens",
+        "80",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedJson": "expected/01-context-tight.json"
+    },
+    {
+      "id": "02-mcp-parity",
+      "kind": "mcp",
+      "requests": [
+        {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "method": "initialize",
+          "params": {
+            "protocolVersion": "2025-11-25"
+          }
+        },
+        {
+          "jsonrpc": "2.0",
+          "id": 2,
+          "method": "tools/call",
+          "params": {
+            "name": "tenet_context",
+            "arguments": {
+              "paths": [
+                "src/checkout/pay.ts"
+              ],
+              "budget_tokens": 80
+            }
+          }
+        }
+      ],
+      "expectedJson": "expected/02-mcp.json"
+    },
+    {
+      "id": "03-sdk-explicit-over-budget",
+      "kind": "sdk",
+      "export": "context",
+      "input": {
+        "ids": [
+          "R-2"
+        ],
+        "budget_tokens": 80
+      },
+      "expectedJson": "expected/03-context-explicit.json"
+    },
+    {
+      "id": "04-zero-budget-usage-error",
+      "kind": "cli",
+      "args": [
+        "context",
+        "--paths",
+        "src/checkout/pay.ts",
+        "--budget-tokens",
+        "0",
+        "--json"
+      ],
+      "expectExitCode": 2,
+      "expectedJson": "expected/04-context-zero.json"
+    }
+  ]
+}

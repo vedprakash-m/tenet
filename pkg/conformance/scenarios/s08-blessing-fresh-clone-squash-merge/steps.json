@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "scenario": "s08-blessing-fresh-clone-squash-merge",
+  "spec_refs": [
+    "tenet/specs/tech-spec/algorithms.md#alg-03",
+    "tenet/specs/tech-spec/onboarding.md#3-onboarding-measures-alg-13",
+    "tenet/specs/plan/alpha.0b.md#a0-7"
+  ],
+  "notes": "Setup simulates draft + bless on branch onboard, squash-merge into main, deleting onboard, then shallow-cloning (--depth 1) into ../fresh-clone.",
+  "steps": [
+    {
+      "id": "01-squash-and-shallow-clone",
+      "kind": "git-squash-shallow-clone",
+      "branch": "onboard",
+      "cloneDepth": 1,
+      "targetDir": "../fresh-clone"
+    },
+    {
+      "id": "02-context-in-shallow-clone",
+      "kind": "sdk",
+      "workdir": "../fresh-clone",
+      "export": "context",
+      "input": {
+        "paths": [
+          "src/retry.ts"
+        ]
+      },
+      "expectedJson": "expected/02-context-clean.json"
+    },
+    {
+      "id": "03-change-cited-code",
+      "kind": "write",
+      "workdir": "../fresh-clone",
+      "files": {
+        "src/retry.ts": "export function retry(fn: () => void) {\n  try { fn(); } catch { try { fn(); } catch { fn(); } }\n}\n"
+      }
+    },
+    {
+      "id": "04-context-during-drift",
+      "kind": "sdk",
+      "workdir": "../fresh-clone",
+      "export": "context",
+      "input": {
+        "paths": [
+          "src/retry.ts"
+        ]
+      },
+      "expectedJson": "expected/04-context-drift.json"
+    },
+    {
+      "id": "05-bless-confirm-in-shallow-clone",
+      "kind": "cli",
+      "workdir": "../fresh-clone",
+      "args": [
+        "bless",
+        "--json"
+      ],
+      "fakeTty": [
+        "1",
+        "confirm"
+      ],
+      "expectExitCode": 0,
+      "expectedOmitted": "proposals-r7#Q3"
+    },
+    {
+      "id": "06-context-after-confirm",
+      "kind": "sdk",
+      "workdir": "../fresh-clone",
+      "export": "context",
+      "input": {
+        "paths": [
+          "src/retry.ts"
+        ]
+      },
+      "expectedJson": "expected/02-context-clean.json"
+    }
+  ]
+}
