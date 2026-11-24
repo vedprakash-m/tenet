@@ -30,6 +30,7 @@
     "prepack": "npm run build",
     "test": "npm run build && node -e \"const fs=require('node:fs');const path=require('node:path');const {spawnSync}=require('node:child_process');const roots=process.argv.slice(1);if(roots.length===0)roots.push('test');const files=[];const visit=p=>{const stat=fs.statSync(p);if(stat.isDirectory()){for(const name of fs.readdirSync(p))visit(path.join(p,name));}else if(/\\.test\\.[jt]s$/.test(p))files.push(p);};for(const root of roots)visit(root);const child=spawnSync(process.execPath,['--test',...files],{stdio:'inherit'});process.exit(child.status??1);\"",
     "scenarios": "npm test -- test/onboard/scenarios.test.ts",
+    "eval:onboarding": "node pkg/evals/onboarding/run.mjs",
     "check:examples": "node scripts/check-examples.mjs"
   },
   "dependencies": {

@@ -9,7 +9,7 @@ Category: go-cli
 ### onboard --inventory-only --json
 
 - Exit code: 0
-- Run time: 3.530 seconds
+- Run time: 3.996 seconds
 - Problem: ok
 
 ```text
@@ -18,42 +18,42 @@ Category: go-cli
 
 ### check --json
 
-- Exit code: 1
-- Run time: 1.358 seconds
-- Problem: TN-INTERNAL
+- Exit code: 3
+- Run time: 1.552 seconds
+- Problem: TN-POLICY-MISSING
 
 ```text
-{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-INTERNAL","severity":"error","rule":null,"file":null,"line":null,"message":"The command could not run","fix":"Policy file tenet.yaml was not found."}]}
+{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-POLICY-MISSING","severity":"error","rule":null,"file":"tenet.yaml","line":null,"message":"Policy file tenet.yaml was not found.","fix":"Run `tenet init` to create tenet.yaml."}]}
 ```
 
 ### board --json
 
-- Exit code: 1
-- Run time: 1.341 seconds
-- Problem: TN-INTERNAL
+- Exit code: 3
+- Run time: 1.540 seconds
+- Problem: TN-POLICY-MISSING
 
 ```text
-{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-INTERNAL","severity":"error","rule":null,"file":null,"line":null,"message":"The command could not run","fix":"Policy file tenet.yaml was not found."}]}
+{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-POLICY-MISSING","severity":"error","rule":null,"file":"tenet.yaml","line":null,"message":"Policy file tenet.yaml was not found.","fix":"Run `tenet init` to create tenet.yaml."}]}
 ```
 
 ### context --query test --budget-tokens 2000 --json
 
-- Exit code: 1
-- Run time: 1.320 seconds
-- Problem: TN-INTERNAL
+- Exit code: 3
+- Run time: 1.544 seconds
+- Problem: TN-POLICY-MISSING
 
 ```text
-{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-INTERNAL","severity":"error","rule":null,"file":null,"line":null,"message":"The command could not run","fix":"Policy file tenet.yaml was not found."}]}
+{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-POLICY-MISSING","severity":"error","rule":null,"file":"tenet.yaml","line":null,"message":"Policy file tenet.yaml was not found.","fix":"Run `tenet init` to create tenet.yaml."}]}
 ```
 
 ### verify --run-checks --json
 
 - Exit code: 2
-- Run time: 1.358 seconds
+- Run time: 1.555 seconds
 - Problem: ok
 
 ```text
-{"ok":false,"command":"verify","version":"0.0.0","result":null,"errors":[{"code":"TN-USAGE-VERIFY","severity":"error","rule":null,"file":null,"line":null,"message":"Invalid usage for `tenet verify`: choose exactly one of --run-checks, --bundle, or --record.","fix":"Run `tenet verify --help` for valid arguments and flags."}]}
+{"ok":false,"command":"verify","version":"0.0.0","result":null,"errors":[{"code":"TN-USAGE-VERIFY","severity":"error","rule":null,"file":null,"line":null,"message":"Invalid usage for `tenet verify`: provide a readable CI event file.","fix":"Run `tenet verify --help` for valid arguments and flags."}]}
 ```
 
 ## with-minimal-tenet-yaml
@@ -61,7 +61,7 @@ Category: go-cli
 ### onboard --inventory-only --json
 
 - Exit code: 0
-- Run time: 3.495 seconds
+- Run time: 3.990 seconds
 - Problem: ok
 
 ```text
@@ -71,7 +71,7 @@ Category: go-cli
 ### check --json
 
 - Exit code: 1
-- Run time: 4.235 seconds
+- Run time: 3.133 seconds
 - Problem: ok
 
 ```text
@@ -81,17 +81,17 @@ Category: go-cli
 ### board --json
 
 - Exit code: 0
-- Run time: 1.904 seconds
+- Run time: 2.217 seconds
 - Problem: ok
 
 ```text
-{"ok":true,"command":"board","version":"0.0.0","result":{"schema_version":1,"as_of":"2026-11-24T04:22:56.955Z","read":{"main":"d5c06cb04479eeacbbb9378ea26261b6be516320","branches":[],"records":null},"specs":[],"pending_blessings":[],"spec_debt":[]},"errors":[]}
+{"ok":true,"command":"board","version":"0.0.0","result":{"schema_version":1,"as_of":"2026-11-24T06:47:41.857Z","read":{"main":"d5c06cb04479eeacbbb9378ea26261b6be516320","branches":[],"records":null},"specs":[],"pending_blessings":[],"spec_debt":[]},"errors":[]}
 ```
 
 ### context --query test --budget-tokens 2000 --json
 
 - Exit code: 0
-- Run time: 1.328 seconds
+- Run time: 1.611 seconds
 - Problem: ok
 
 ```text
@@ -101,10 +101,10 @@ Category: go-cli
 ### verify --run-checks --json
 
 - Exit code: 2
-- Run time: 1.363 seconds
+- Run time: 1.550 seconds
 - Problem: ok
 
 ```text
-{"ok":false,"command":"verify","version":"0.0.0","result":null,"errors":[{"code":"TN-USAGE-VERIFY","severity":"error","rule":null,"file":null,"line":null,"message":"Invalid usage for `tenet verify`: choose exactly one of --run-checks, --bundle, or --record.","fix":"Run `tenet verify --help` for valid arguments and flags."}]}
+{"ok":false,"command":"verify","version":"0.0.0","result":null,"errors":[{"code":"TN-USAGE-VERIFY","severity":"error","rule":null,"file":null,"line":null,"message":"Invalid usage for `tenet verify`: provide a readable CI event file.","fix":"Run `tenet verify --help` for valid arguments and flags."}]}
 ```
 

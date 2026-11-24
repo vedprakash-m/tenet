@@ -9,7 +9,7 @@ Category: node-library-jest
 ### onboard --inventory-only --json
 
 - Exit code: 0
-- Run time: 3.177 seconds
+- Run time: 3.481 seconds
 - Problem: ok
 
 ```text
@@ -18,42 +18,42 @@ Category: node-library-jest
 
 ### check --json
 
-- Exit code: 1
-- Run time: 1.364 seconds
-- Problem: TN-INTERNAL
+- Exit code: 3
+- Run time: 1.591 seconds
+- Problem: TN-POLICY-MISSING
 
 ```text
-{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-INTERNAL","severity":"error","rule":null,"file":null,"line":null,"message":"The command could not run","fix":"Policy file tenet.yaml was not found."}]}
+{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-POLICY-MISSING","severity":"error","rule":null,"file":"tenet.yaml","line":null,"message":"Policy file tenet.yaml was not found.","fix":"Run `tenet init` to create tenet.yaml."}]}
 ```
 
 ### board --json
 
-- Exit code: 1
-- Run time: 1.356 seconds
-- Problem: TN-INTERNAL
+- Exit code: 3
+- Run time: 1.571 seconds
+- Problem: TN-POLICY-MISSING
 
 ```text
-{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-INTERNAL","severity":"error","rule":null,"file":null,"line":null,"message":"The command could not run","fix":"Policy file tenet.yaml was not found."}]}
+{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-POLICY-MISSING","severity":"error","rule":null,"file":"tenet.yaml","line":null,"message":"Policy file tenet.yaml was not found.","fix":"Run `tenet init` to create tenet.yaml."}]}
 ```
 
 ### context --query test --budget-tokens 2000 --json
 
-- Exit code: 1
-- Run time: 1.367 seconds
-- Problem: TN-INTERNAL
+- Exit code: 3
+- Run time: 1.610 seconds
+- Problem: TN-POLICY-MISSING
 
 ```text
-{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-INTERNAL","severity":"error","rule":null,"file":null,"line":null,"message":"The command could not run","fix":"Policy file tenet.yaml was not found."}]}
+{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-POLICY-MISSING","severity":"error","rule":null,"file":"tenet.yaml","line":null,"message":"Policy file tenet.yaml was not found.","fix":"Run `tenet init` to create tenet.yaml."}]}
 ```
 
 ### verify --run-checks --json
 
 - Exit code: 2
-- Run time: 2.702 seconds
+- Run time: 1.664 seconds
 - Problem: ok
 
 ```text
-{"ok":false,"command":"verify","version":"0.0.0","result":null,"errors":[{"code":"TN-USAGE-VERIFY","severity":"error","rule":null,"file":null,"line":null,"message":"Invalid usage for `tenet verify`: choose exactly one of --run-checks, --bundle, or --record.","fix":"Run `tenet verify --help` for valid arguments and flags."}]}
+{"ok":false,"command":"verify","version":"0.0.0","result":null,"errors":[{"code":"TN-USAGE-VERIFY","severity":"error","rule":null,"file":null,"line":null,"message":"Invalid usage for `tenet verify`: provide a readable CI event file.","fix":"Run `tenet verify --help` for valid arguments and flags."}]}
 ```
 
 ## with-minimal-tenet-yaml
@@ -61,7 +61,7 @@ Category: node-library-jest
 ### onboard --inventory-only --json
 
 - Exit code: 0
-- Run time: 6.453 seconds
+- Run time: 3.649 seconds
 - Problem: ok
 
 ```text
@@ -71,7 +71,7 @@ Category: node-library-jest
 ### check --json
 
 - Exit code: 1
-- Run time: 12.876 seconds
+- Run time: 3.376 seconds
 - Problem: ok
 
 ```text
@@ -81,17 +81,17 @@ Category: node-library-jest
 ### board --json
 
 - Exit code: 0
-- Run time: 4.634 seconds
+- Run time: 2.374 seconds
 - Problem: ok
 
 ```text
-{"ok":true,"command":"board","version":"0.0.0","result":{"schema_version":1,"as_of":"2026-11-24T04:23:35.422Z","read":{"main":"dc0309ba94b910b95902bced9f1b195fa6064d73","branches":[],"records":null},"specs":[],"pending_blessings":[],"spec_debt":[]},"errors":[]}
+{"ok":true,"command":"board","version":"0.0.0","result":{"schema_version":1,"as_of":"2026-11-24T06:48:06.940Z","read":{"main":"dc0309ba94b910b95902bced9f1b195fa6064d73","branches":[],"records":null},"specs":[],"pending_blessings":[],"spec_debt":[]},"errors":[]}
 ```
 
 ### context --query test --budget-tokens 2000 --json
 
 - Exit code: 0
-- Run time: 3.193 seconds
+- Run time: 1.698 seconds
 - Problem: ok
 
 ```text
@@ -101,10 +101,10 @@ Category: node-library-jest
 ### verify --run-checks --json
 
 - Exit code: 2
-- Run time: 2.645 seconds
+- Run time: 1.620 seconds
 - Problem: ok
 
 ```text
-{"ok":false,"command":"verify","version":"0.0.0","result":null,"errors":[{"code":"TN-USAGE-VERIFY","severity":"error","rule":null,"file":null,"line":null,"message":"Invalid usage for `tenet verify`: choose exactly one of --run-checks, --bundle, or --record.","fix":"Run `tenet verify --help` for valid arguments and flags."}]}
+{"ok":false,"command":"verify","version":"0.0.0","result":null,"errors":[{"code":"TN-USAGE-VERIFY","severity":"error","rule":null,"file":null,"line":null,"message":"Invalid usage for `tenet verify`: provide a readable CI event file.","fix":"Run `tenet verify --help` for valid arguments and flags."}]}
 ```
 

@@ -9,7 +9,7 @@ Category: baseline
 ### onboard --inventory-only --json
 
 - Exit code: 0
-- Run time: 7.817 seconds
+- Run time: 4.530 seconds
 - Problem: ok
 
 ```text
@@ -18,42 +18,42 @@ Category: baseline
 
 ### check --json
 
-- Exit code: 1
-- Run time: 4.569 seconds
-- Problem: TN-INTERNAL
+- Exit code: 3
+- Run time: 1.420 seconds
+- Problem: TN-POLICY-MISSING
 
 ```text
-{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-INTERNAL","severity":"error","rule":null,"file":null,"line":null,"message":"The command could not run","fix":"Policy file tenet.yaml was not found."}]}
+{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-POLICY-MISSING","severity":"error","rule":null,"file":"tenet.yaml","line":null,"message":"Policy file tenet.yaml was not found.","fix":"Run `tenet init` to create tenet.yaml."}]}
 ```
 
 ### board --json
 
-- Exit code: 1
-- Run time: 3.707 seconds
-- Problem: TN-INTERNAL
+- Exit code: 3
+- Run time: 1.436 seconds
+- Problem: TN-POLICY-MISSING
 
 ```text
-{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-INTERNAL","severity":"error","rule":null,"file":null,"line":null,"message":"The command could not run","fix":"Policy file tenet.yaml was not found."}]}
+{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-POLICY-MISSING","severity":"error","rule":null,"file":"tenet.yaml","line":null,"message":"Policy file tenet.yaml was not found.","fix":"Run `tenet init` to create tenet.yaml."}]}
 ```
 
 ### context --query test --budget-tokens 2000 --json
 
-- Exit code: 1
-- Run time: 4.536 seconds
-- Problem: TN-INTERNAL
+- Exit code: 3
+- Run time: 1.478 seconds
+- Problem: TN-POLICY-MISSING
 
 ```text
-{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-INTERNAL","severity":"error","rule":null,"file":null,"line":null,"message":"The command could not run","fix":"Policy file tenet.yaml was not found."}]}
+{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-POLICY-MISSING","severity":"error","rule":null,"file":"tenet.yaml","line":null,"message":"Policy file tenet.yaml was not found.","fix":"Run `tenet init` to create tenet.yaml."}]}
 ```
 
 ### verify --run-checks --json
 
 - Exit code: 2
-- Run time: 3.298 seconds
+- Run time: 1.489 seconds
 - Problem: ok
 
 ```text
-{"ok":false,"command":"verify","version":"0.0.0","result":null,"errors":[{"code":"TN-USAGE-VERIFY","severity":"error","rule":null,"file":null,"line":null,"message":"Invalid usage for `tenet verify`: choose exactly one of --run-checks, --bundle, or --record.","fix":"Run `tenet verify --help` for valid arguments and flags."}]}
+{"ok":false,"command":"verify","version":"0.0.0","result":null,"errors":[{"code":"TN-USAGE-VERIFY","severity":"error","rule":null,"file":null,"line":null,"message":"Invalid usage for `tenet verify`: provide a readable CI event file.","fix":"Run `tenet verify --help` for valid arguments and flags."}]}
 ```
 
 ## with-minimal-tenet-yaml
@@ -61,7 +61,7 @@ Category: baseline
 ### onboard --inventory-only --json
 
 - Exit code: 0
-- Run time: 8.792 seconds
+- Run time: 4.972 seconds
 - Problem: ok
 
 ```text
@@ -71,7 +71,7 @@ Category: baseline
 ### check --json
 
 - Exit code: 1
-- Run time: 4.816 seconds
+- Run time: 1.869 seconds
 - Problem: ok
 
 ```text
@@ -81,17 +81,17 @@ Category: baseline
 ### board --json
 
 - Exit code: 0
-- Run time: 3.453 seconds
+- Run time: 2.570 seconds
 - Problem: ok
 
 ```text
-{"ok":true,"command":"board","version":"0.0.0","result":{"schema_version":1,"as_of":"2026-11-24T04:20:52.772Z","read":{"main":"72799814e5c60115aca7bb47ee59716319fd4f5f","branches":[],"records":null},"specs":[],"pending_blessings":[],"spec_debt":[]},"errors":[]}
+{"ok":true,"command":"board","version":"0.0.0","result":{"schema_version":1,"as_of":"2026-11-24T06:45:47.629Z","read":{"main":"72799814e5c60115aca7bb47ee59716319fd4f5f","branches":[],"records":null},"specs":[],"pending_blessings":[],"spec_debt":[]},"errors":[]}
 ```
 
 ### context --query test --budget-tokens 2000 --json
 
 - Exit code: 0
-- Run time: 2.019 seconds
+- Run time: 1.509 seconds
 - Problem: ok
 
 ```text
@@ -101,10 +101,10 @@ Category: baseline
 ### verify --run-checks --json
 
 - Exit code: 2
-- Run time: 1.919 seconds
+- Run time: 1.458 seconds
 - Problem: ok
 
 ```text
-{"ok":false,"command":"verify","version":"0.0.0","result":null,"errors":[{"code":"TN-USAGE-VERIFY","severity":"error","rule":null,"file":null,"line":null,"message":"Invalid usage for `tenet verify`: choose exactly one of --run-checks, --bundle, or --record.","fix":"Run `tenet verify --help` for valid arguments and flags."}]}
+{"ok":false,"command":"verify","version":"0.0.0","result":null,"errors":[{"code":"TN-USAGE-VERIFY","severity":"error","rule":null,"file":null,"line":null,"message":"Invalid usage for `tenet verify`: provide a readable CI event file.","fix":"Run `tenet verify --help` for valid arguments and flags."}]}
 ```
 

@@ -49,10 +49,16 @@ function firstLines(value) {
 function classify(result) {
   if (result.elapsed > 60 || result.timedOut) return "slow";
   const value = text(result);
+  let envelope = null;
+  try {
+    envelope = JSON.parse(value);
+  } catch {}
+  const codes = envelope?.errors?.map((error) => error.code).filter(Boolean) || [];
   if (/UnhandledPromiseRejection|TypeError|ReferenceError|SyntaxError|Traceback|^\s*at\s/m.test(value)) return "crash";
-  if (/TN-INTERNAL/.test(value)) return "TN-INTERNAL";
-  if (/"ok"\s*:\s*true/.test(value) && result.exit !== 0) return "contradictory";
-  if (/"ok"\s*:\s*false/.test(value) && result.exit === 0) return "contradictory";
+  if (codes.includes("TN-POLICY-MISSING") || /TN-POLICY-MISSING/.test(value)) return "TN-POLICY-MISSING";
+  if (codes.includes("TN-INTERNAL") || /TN-INTERNAL/.test(value)) return "TN-INTERNAL";
+  if (envelope?.ok === true && result.exit !== 0) return "contradictory";
+  if (envelope?.ok === false && result.exit === 0) return "contradictory";
   return "ok";
 }
 
