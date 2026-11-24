@@ -6,8 +6,8 @@ sections:
   2-skills: {state: draft, digest: sha256:20287d61c9dbc4b4b96ba823ae54e498fa4c7377faf55b97b09cb143fbc2b9bf, flags: []}
   3-tagging-tests: {state: draft, digest: sha256:26cd385062914ff516f332c6758619e54cddbf01f33a3cf6f58a78d7c7c26c78, flags: []}
   4-skills-from-010: {state: draft, digest: sha256:64b3a968b15cc773e8a9988f4f3b698c8ec522cb95ac359531db5fdc0030da23, flags: []}
-  5-loops: {state: draft, digest: sha256:881ba8b92d091f728f53d3175197884ed116db89bb7e7f61c23234ada4142380, flags: []}
-  6-adapters-and-the-reference-runner-010: {state: draft, digest: sha256:e61178122adfacec45d7e6603de41a0595dff64052d588b742982e46c0f465db, flags: []}
+  5-loops: {state: draft, digest: sha256:af93e70a7f84b73dde49366e20eeacaf671f0f54f943c240684af6cf85a868e2, flags: []}
+  6-adapters-and-the-reference-runner-010: {state: draft, digest: sha256:30fa2dc1a36f383e6250128c882bdc5e57ff5ade77d5cf6d3747ba3ff2f99c90, flags: []}
 ---
 # Tenet technical specification: what agents are given
 > L2 · Version 0.12 · Draft · [Tech spec](../tech-spec.md) · Budget: 6,000 tokens · L-0024 · Previous: `archive/specs/tech-spec/agents.md@0.11.md`
@@ -133,7 +133,7 @@ An acceptance tag counts for a pull request only on lines that pull request adds
 
 ## 5. Loops
 
-A loop is data in `kit/loops/<name>.yaml` (schema `kit/schemas/loop.json`, CP-0049). The pack names one **station loop** per station and lane (`define`, `build`, `verify`); they share the **fix loop**. Projects may only narrow a loop: fewer rounds, more checks, stricter cards.
+A loop is data in `kit/loops/<name>.yaml` (`kit/schemas/loop.json` validates structure and `route.on` keys; graph checks stay in `check --pack`, CP-0049). The pack names one **station loop** per station and lane (`define`, `build`, `verify`); they share the **fix loop**. Projects may only narrow a loop: fewer rounds, more checks, stricter cards.
 
 | Field | Meaning |
 |---|---|
@@ -219,38 +219,36 @@ The `command` adapter runs a configured executable and arguments, substituting `
 External engines implement the same contract.
 
 **Runner** (`tenet-runner start <work> [--adapter <name>] [--until approval|pull-request|done] [--parallel <n>]`):
-1. On `start` for a new item, establish its **draft pull request** before the definition approval (`gh pr create --draft`). If the forge requires an ahead commit, first publish the accepted initial work or shaper definition. Publish the accepted definition revision before asking for approval, and bind the approval to the definition digest. Then read the next action (`tenet_next`). If a person acts next, print the decision request and poll every 30 s, or exit under `--until`.
+1. On `start` for new work, create a **draft PR** before definition approval (`gh pr create --draft`). If the forge needs an ahead commit, push the initial shaper work first. Push accepted definition edits before requesting approval (bound to definition digest), then read `tenet_next`. If a person acts next, print the request and poll every 30 s, or exit under `--until`.
 2. **Agent step:**
-   - take a lease on the work item (30 minutes, renewed on every poll), with the attempt ID and process ID in `.tenet/runs/<work>/runner.json`
-   - create or reuse the worktree `.tenet/runs/<work>/worktree/` on its branch
-   - `tenet assign` writes the assignment
-   - adapter `start` runs the step's card and skill
-   - poll `status` every 10 s until the run ends or its timeout or budget is reached
-   - submit the outputs through `tenet result` for validation. Publish only accepted output. Commit accepted outputs with the trailer `Tenet-Agent: <card>`
+   - lease the work item (30 min, renewed each poll) with attempt/PID in `.tenet/runs/<work>/runner.json`
+   - create or reuse worktree `.tenet/runs/<work>/worktree/` on its branch
+   - write assignment (`tenet assign`), start adapter, poll `status` every 10 s until done, timeout, or budget limit
+   - submit outputs via `tenet result`, publish accepted output only, commit with `Tenet-Agent: <card>`
 3. **Script step:** run the named `tenet` command in the worktree.
-4. **After producing the accepted candidate:** push the branch before the CI wait. Mark the pull request ready when the loop requests it with the forge's own command-line tool (`gh`). The runner never reads or stores credentials.
+4. **After an accepted candidate:** push before waiting for CI; mark PR ready via `gh` when requested. Never read or store credentials.
 5. Wait for the card, then return to step 1.
-6. A stop threshold or `limits.steps` stops the run and calls `tenet escalate`.
+6. Stop thresholds or `limits.steps` halt execution and call `tenet escalate`.
 
-Each step records `run.started` and `run.ended` with actor chain (runner → adapter → card), usage and cost status. **Limits.** One repository; no scheduler or daemon. It runs locally or in CI only while the command runs. At most `--parallel` items (default 1), each in its own worktree. Atomic local reservations allow one active attempt per item. Cross-clone ownership is advisory (R-037). **Trust.** The runner executes; CI supplies evidence. The card treats the runner like any host. `tenet-runner doctor` prints adapter capabilities and recommends a `bots[]` identity (trust assumption 4).
+Each step records `run.started`/`run.ended` with actor chain (runner → adapter → card), usage, and cost status. **Limits:** single repo, no daemon, up to `--parallel` items (default 1) in isolated worktrees, one active attempt per item (cross-clone ownership advisory, R-037). **Trust:** runner executes, CI supplies evidence, cards treat runner as a host; `tenet-runner doctor` prints adapter capabilities and recommends `bots[]` (T4).
 
-**Spawning.** Adapters spawn hosts with argument arrays, without a shell. On Windows set `MSYS_NO_PATHCONV=1`; Spike A found Git Bash converted `/tenet approve` to a path before posting.
+**Spawning.** Adapters use argument arrays without a shell (`MSYS_NO_PATHCONV=1` on Windows so Git Bash passes `/tenet approve` literally).
 
 ### Durable attempts and recovery
 
-Persist a work, station, step and attempt key in the runner journal along with the assignment digest, lease generation, process identity, expected revision and external receipts. Keep the journal outside the worktree so it survives replacement. Reserve the item locally before dispatch. Renew the recorded lease as described above. Recheck authority and the lease generation before accepting a result, pushing or changing a PR. A replaced attempt cannot submit a result.
+Persist work, station, step, attempt key, assignment digest, lease generation, process ID, expected revision, and receipts outside the worktree so they survive replacement. Reserve locally and renew leases; recheck authority and lease generation before accepting results, pushing, or updating a PR (replaced attempts cannot submit).
 
 | Point | Recovery |
 |---|---|
-| Assignment | Reuse the exact stored assignment for the attempt. Reassess when its inputs change. |
-| Process start | Record launch intent first. Require the persisted run ID to resolve through the adapter after a runner restart. If the launch acknowledgement was lost, reconcile by attempt key against a durable process or result receipt. Ambiguous launch waits for reconciliation without dispatching another attempt. |
-| Result or commit | Verify output hashes and lease. Reuse the accepted receipt and commit for that attempt. Preserve a dirty or ambiguous worktree. |
-| Push | Persist intended revision before pushing. Read back remote state after an interruption. Reconcile an unexpected revision before continuing. |
-| Draft or ready PR | Match repository, head and target or use the recorded PR ID. Reuse a unique matching result. Wait if the association is ambiguous. |
-| Human approval | Poll the exact request. Persist its receipt before continuing. An expired or changed request remains pending. |
+| Assignment | Reuse the attempt's stored assignment; reassess when inputs change. |
+| Process start | Persist launch intent first; resolve stored `run_id` via adapter after restart or reconcile via attempt key against durable process/result receipts. Ambiguous launch waits; never double-dispatch. |
+| Result or commit | Verify output hashes and lease; reuse accepted receipt and commit. Keep dirty/ambiguous worktrees. |
+| Push | Persist intended revision before push; read back remote state after interruption and reconcile before continuing. |
+| Draft or ready PR | Match repo, head and target or recorded PR ID; reuse unique match; wait if ambiguous. |
+| Human approval | Poll the exact request and persist its receipt; expired or changed requests remain pending. |
 
-`status <work>` reports phase, attempt and recovery action. `stop <work>` cancels the recorded process tree after validating process identity. Use a process group on POSIX and the recorded tree on Windows. Confirm termination before starting a replacement. Preserve uncommitted work. An uncertain stop stays visible. Host logs remain local and are omitted from run records. `doctor` reports the installed adapter version and measured capabilities.
+`status <work>` reports phase, attempt and recovery action. `stop <work>` cancels the recorded process tree after validating PID (process group on POSIX, tree on Windows), confirms exit before replacement, preserves uncommitted files, and keeps uncertain stops visible. Host logs stay local and never enter run records. `doctor` prints adapter version and measured capabilities.
 
-One qualifying named adapter plus the command adapter can satisfy plan §1. With none, the command adapter stays available for development and the release gate stays open for the Owner. Report unavailable cost or containment.
+One named qualifying adapter plus `command` satisfies plan §1 (if none qualifies, `command` supports development while the release gate stays open for the Owner). Report unavailable cost or containment.
 
 **Package.** Publish `runner/` as `@vedprakash-m/tenet-runner` at the Tenet version, with only Tenet and Node built-ins as dependencies.
