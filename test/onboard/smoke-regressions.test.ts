@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import type { Envelope } from "../../dist/core/output.js";
@@ -39,4 +41,22 @@ test("inventory-only JSON agrees with the process exit status", async (t) => {
     message: "tenet.yaml does not match the alpha.0 schema: / must be object.",
     fix: "Fix tenet.yaml or remove fields that are not available in alpha.0.",
   }]);
+});
+
+test("inventory-only uses onboarding defaults before tenet.yaml exists", async (t) => {
+  const repo = await tmpRepo("onboard-defaults");
+  t.after(repo.cleanup);
+  await repo.write("src/ready.ts", "export const ready = true;\n");
+  repo.git(["add", "src/ready.ts"]);
+  repo.git(["commit", "-qm", "first source"]);
+
+  const { status, envelope } = inventoryOnly(repo.path);
+  assert.equal(status, 0);
+  assert.equal(envelope.ok, true);
+  assert.deepEqual(envelope.errors, []);
+  assert.deepEqual(envelope.result.inventory.sources.files.map(({ path }) => path), ["src/ready.ts"]);
+  assert.ok(envelope.result.findings.some(({ kind, path }) => kind === "no-test-report" && path === "tenet.yaml"));
+  const output = await readFile(path.join(repo.path, envelope.result.assignment.inventory), "utf8");
+  assert.deepEqual(JSON.parse(output), envelope.result.inventory);
+  await assert.rejects(readFile(path.join(repo.path, "tenet.yaml")), { code: "ENOENT" });
 });
