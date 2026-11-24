@@ -96,3 +96,4 @@ Moved into the §2 table when `CP-0007` and `CP-0050` add their entries to `src/
 - `TN-DEC-KEY-REVOKED`: `"Signing key for actor {actor} was revoked at {revoked}."` Fix: `"Sign with an active registered owner key."`
 - `TN-DEC-SELF-VERIFY`: `"Actor {actor} cannot approve their own pull request at level {level}."` Fix: `"Have another owner or reviewer submit the decision."`
 - `TN-DEC-STALE`: `"Reply targets evaluation {actual}, but current evaluation is {expected}."` Fix: `"Review the latest card and reply against {expected}."`
+- `TN-RECORD-TIP`: `"Records ref tip drifted from {expected} to {actual} during board read."` Fix: `"Re-run \`tenet board --fetch\` to read a consistent snapshot."`

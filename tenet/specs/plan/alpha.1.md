@@ -47,8 +47,8 @@
 **CP-0008 · Full board · R-032, R-073, R-082, R-216**
 1. *Needs:* CP-0050; TS §8; C §§5, 8; K §§1, 2, 4.
 2. *Owns:* Remaining `src/views/`, board publication, `--since`, `--fetch`, `--open`, `test/views/`, board fixture gallery.
-3. *Exports:* `projectBoard(snapshot, now, since?)`, `renderBoard(board) → {markdown, html}` and the board JSON result.
-4. *Behavior:* Use one snapshot across formats. Read CP-0049 decision records using fixtures before CP-0019 integration. Preserve apparent and justified state, conflicting heads, cost availability, modes, next actions, flow and friction. Read external refs only on an allowed explicit fetch. Generated views stay untracked.
+3. *Exports:* `projectBoard(snapshot, now, since?)`, `renderBoard(board) → {markdown, html}` (`<!doctype html>`, zero external scripts/styles; LF Markdown `Waiting for you|Blocked|Changed since you looked|Friction|Flow`) and the board JSON result.
+4. *Behavior:* Use one snapshot across formats. Read CP-0049 decision records using fixtures before CP-0019 integration. Preserve apparent and justified state, conflicting heads, cost availability, modes, next actions, flow (`verified_per_week_by_lane`, `lead_time_hours`, `lane_mix_quick_express_pct`, `decision_wait_hours`, `cost`, `escapes`, `autonomy_share`), `self_accepted`, and friction (`flagged_for_demotion` when `not_useful_pct > 10 || false_blocks_per_100 > 2`). `--since` filters `items`/`decision_queue`/`review_queue`/`specs` (`TN-USAGE-REF` on invalid ref); stale trust (`> 7d`) degrades to `detected`; tampered events or ref drift emit `TN-EV-DUP`/`TN-RECORD-TIP`. Read external refs only on an allowed explicit fetch. Generated views stay untracked.
 5. *Edge cases:* Empty change set, missing cost, old records, changed ref, conflict, stale trust and cold large workload.
 6. *Out of scope:* External store, campaigns and current policy re-evaluation.
 7. *Fixtures:* `test/views/{empty,legacy,tentative,conflict,friction,no-cost,changed}` plus the R-082 workload.
