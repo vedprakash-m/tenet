@@ -9,7 +9,7 @@ Category: monorepo-packages
 ### onboard --inventory-only --json
 
 - Exit code: 0
-- Run time: 5.264 seconds
+- Run time: 5.344 seconds
 - Problem: ok
 
 ```text
@@ -18,42 +18,42 @@ Category: monorepo-packages
 
 ### check --json
 
-- Exit code: 1
-- Run time: 1.860 seconds
-- Problem: TN-INTERNAL
+- Exit code: 3
+- Run time: 1.557 seconds
+- Problem: TN-POLICY-MISSING
 
 ```text
-{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-INTERNAL","severity":"error","rule":null,"file":null,"line":null,"message":"The command could not run","fix":"Policy file tenet.yaml was not found."}]}
+{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-POLICY-MISSING","severity":"error","rule":null,"file":"tenet.yaml","line":null,"message":"Policy file tenet.yaml was not found.","fix":"Run `tenet init` to create tenet.yaml."}]}
 ```
 
 ### board --json
 
-- Exit code: 1
-- Run time: 1.339 seconds
-- Problem: TN-INTERNAL
+- Exit code: 3
+- Run time: 1.554 seconds
+- Problem: TN-POLICY-MISSING
 
 ```text
-{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-INTERNAL","severity":"error","rule":null,"file":null,"line":null,"message":"The command could not run","fix":"Policy file tenet.yaml was not found."}]}
+{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-POLICY-MISSING","severity":"error","rule":null,"file":"tenet.yaml","line":null,"message":"Policy file tenet.yaml was not found.","fix":"Run `tenet init` to create tenet.yaml."}]}
 ```
 
 ### context --query test --budget-tokens 2000 --json
 
-- Exit code: 1
-- Run time: 1.338 seconds
-- Problem: TN-INTERNAL
+- Exit code: 3
+- Run time: 1.538 seconds
+- Problem: TN-POLICY-MISSING
 
 ```text
-{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-INTERNAL","severity":"error","rule":null,"file":null,"line":null,"message":"The command could not run","fix":"Policy file tenet.yaml was not found."}]}
+{"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-POLICY-MISSING","severity":"error","rule":null,"file":"tenet.yaml","line":null,"message":"Policy file tenet.yaml was not found.","fix":"Run `tenet init` to create tenet.yaml."}]}
 ```
 
 ### verify --run-checks --json
 
 - Exit code: 2
-- Run time: 1.309 seconds
+- Run time: 1.537 seconds
 - Problem: ok
 
 ```text
-{"ok":false,"command":"verify","version":"0.0.0","result":null,"errors":[{"code":"TN-USAGE-VERIFY","severity":"error","rule":null,"file":null,"line":null,"message":"Invalid usage for `tenet verify`: choose exactly one of --run-checks, --bundle, or --record.","fix":"Run `tenet verify --help` for valid arguments and flags."}]}
+{"ok":false,"command":"verify","version":"0.0.0","result":null,"errors":[{"code":"TN-USAGE-VERIFY","severity":"error","rule":null,"file":null,"line":null,"message":"Invalid usage for `tenet verify`: provide a readable CI event file.","fix":"Run `tenet verify --help` for valid arguments and flags."}]}
 ```
 
 ## with-minimal-tenet-yaml
@@ -61,7 +61,7 @@ Category: monorepo-packages
 ### onboard --inventory-only --json
 
 - Exit code: 0
-- Run time: 5.105 seconds
+- Run time: 5.116 seconds
 - Problem: ok
 
 ```text
@@ -71,7 +71,7 @@ Category: monorepo-packages
 ### check --json
 
 - Exit code: 1
-- Run time: 16.711 seconds
+- Run time: 6.827 seconds
 - Problem: ok
 
 ```text
@@ -81,17 +81,17 @@ Category: monorepo-packages
 ### board --json
 
 - Exit code: 0
-- Run time: 2.252 seconds
+- Run time: 2.496 seconds
 - Problem: ok
 
 ```text
-{"ok":true,"command":"board","version":"0.0.0","result":{"schema_version":1,"as_of":"2026-11-24T04:28:18.944Z","read":{"main":"cfe5242c87336bc1e8082f382509070962225b8c","branches":[],"records":null},"specs":[],"pending_blessings":[],"spec_debt":[]},"errors":[]}
+{"ok":true,"command":"board","version":"0.0.0","result":{"schema_version":1,"as_of":"2026-11-24T06:51:02.092Z","read":{"main":"cfe5242c87336bc1e8082f382509070962225b8c","branches":[],"records":null},"specs":[],"pending_blessings":[],"spec_debt":[]},"errors":[]}
 ```
 
 ### context --query test --budget-tokens 2000 --json
 
 - Exit code: 0
-- Run time: 1.398 seconds
+- Run time: 1.569 seconds
 - Problem: ok
 
 ```text
@@ -101,10 +101,10 @@ Category: monorepo-packages
 ### verify --run-checks --json
 
 - Exit code: 2
-- Run time: 1.319 seconds
+- Run time: 1.552 seconds
 - Problem: ok
 
 ```text
-{"ok":false,"command":"verify","version":"0.0.0","result":null,"errors":[{"code":"TN-USAGE-VERIFY","severity":"error","rule":null,"file":null,"line":null,"message":"Invalid usage for `tenet verify`: choose exactly one of --run-checks, --bundle, or --record.","fix":"Run `tenet verify --help` for valid arguments and flags."}]}
+{"ok":false,"command":"verify","version":"0.0.0","result":null,"errors":[{"code":"TN-USAGE-VERIFY","severity":"error","rule":null,"file":null,"line":null,"message":"Invalid usage for `tenet verify`: provide a readable CI event file.","fix":"Run `tenet verify --help` for valid arguments and flags."}]}
 ```
 
