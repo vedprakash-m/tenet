@@ -616,6 +616,23 @@ test("fix and check distinguish conflicting IDs across branches", async () => {
   }
 });
 
+test("check recomputes stale stored flags without a schema error", async () => {
+  const repo = await tmpRepo("check-stale-flags");
+  try {
+    await seed(repo);
+    const filename = "tenet/specs/prd.md";
+    const source = await readFile(path.join(repo.path, filename), "utf8");
+    await repo.write(filename, source.replace('"flags": []', '"flags": ["edited"]'));
+    repo.git(["add", "."]);
+    repo.git(["commit", "-qm", "stale stored flags"]);
+    const result = await check({ cwd: repo.path });
+    assert.equal(result.findings.some((finding) =>
+      finding.code === "TN-SCHEMA" && finding.file === filename), false);
+  } finally {
+    await repo.cleanup();
+  }
+});
+
 test("split moves a section, leaves a pointer, and rewrites links", async () => {
   const repo = await tmpRepo("split");
   try {

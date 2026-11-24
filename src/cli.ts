@@ -55,6 +55,7 @@ export type CommandSpec = {
   usage?: string;
   options?: CommandOption[] | string[];
   network?: boolean;
+  checkEnvironment?: boolean;
   run?: (context: CommandContext) => unknown | Promise<unknown>;
   handler?: (context: CommandContext) => unknown | Promise<unknown>;
 };
@@ -134,8 +135,9 @@ async function loadCommands(): Promise<void> {
   const commands = await import("./commands/index.js");
   if (loadedCommands) return;
   for (const spec of [
-    commands.blessCommand, commands.boardCommand, commands.checkCommand, commands.contextCommand, commands.fixCommand,
-    commands.onboardCommand, commands.splitCommand, commands.verifyCommand,
+    commands.blessCommand, commands.boardCommand, commands.checkCommand, commands.contextCommand, commands.doctorCommand,
+    commands.fixCommand, commands.initCommand, commands.onboardCommand, commands.removeCommand, commands.splitCommand,
+    commands.upgradeCommand, commands.verifyCommand,
   ]) registerCommand(spec as CommandSpec);
   registerCommand({
     name: "mcp",
@@ -347,11 +349,13 @@ export async function run(argv: readonly string[], input: CliIo = {}): Promise<0
       return 2;
     }
 
-    const environment = await environmentFindings(io);
-    if (environment.length > 0) {
-      if (parsed.json) emitJson(io.stdout, command || "tenet", null, environment);
-      else emitHuman(io, null, environment, false);
-      return exitCodeFor(environment);
+    if (spec?.checkEnvironment !== false) {
+      const environment = await environmentFindings(io);
+      if (environment.length > 0) {
+        if (parsed.json) emitJson(io.stdout, command || "tenet", null, environment);
+        else emitHuman(io, null, environment, false);
+        return exitCodeFor(environment);
+      }
     }
 
     if (parsed.special === "version") {

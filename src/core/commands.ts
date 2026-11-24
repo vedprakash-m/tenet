@@ -37,6 +37,7 @@ export type CommandSpec = {
   usage?: string;
   options?: CommandOption[] | string[];
   network?: boolean;
+  checkEnvironment?: boolean;
   run?: (context: CommandContext) => unknown | Promise<unknown>;
   handler?: (context: CommandContext) => unknown | Promise<unknown>;
 };

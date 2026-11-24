@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { parseDocument } from "yaml";
 import { confine } from "../core/fs.js";
 import { catFileBatch, git } from "../core/git.js";
-import { sha256 } from "../core/hash.js";
+import { sha256, sha256Text } from "../core/hash.js";
 import { readYaml } from "../core/yaml.js";
 import { validate } from "../core/schema.js";
 import type { Lock } from "../types/generated.js";
@@ -101,7 +101,7 @@ function kitDigest(files: Array<{ name: string; contents: Buffer }>): string {
   const lines = files
     .map((file) => ({ name: file.name.replaceAll("\\", "/"), contents: file.contents }))
     .sort((left, right) => Buffer.compare(Buffer.from(left.name, "utf8"), Buffer.from(right.name, "utf8")))
-    .map((file) => `${file.name}\0${sha256(file.contents)}`);
+    .map((file) => `${file.name}\0${sha256Text(file.contents)}`);
   return sha256(lines.join("\n"));
 }
 
