@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { test, type TestContext } from "node:test";
@@ -9,6 +9,7 @@ import { run } from "../../../dist/cli.js";
 import { runBless } from "../../../dist/onboard/bless.js";
 import { onboardingCard } from "../../../dist/onboard/card.js";
 import { parseDoc } from "../../../dist/specs/parse.js";
+import { writeAtomic } from "../../../dist/core/fs.js";
 import { validate } from "../../../dist/core/schema.js";
 import { fakeTty } from "../../helpers/fakeTty.ts";
 import { tmpRepo, type TemporaryRepository } from "../../helpers/tmpRepo.ts";
@@ -366,4 +367,46 @@ test("a checked conflict with uppercase Resolution is accepted without a new pro
   assert.deepEqual(result.findings, []);
   assert.equal(result.result?.blessed, 1);
   assert.doesNotMatch(result.text, /Conflict CF-1/);
+});
+
+test("blessed copy names preserve case and reject slash versus double-underscore collisions", async (t) => {
+  const repo = await setup(t);
+  await repo.write("tenet/Spec/Intent.md", spec("## Requirements\n- R-1 Keep records. {origin: asked}"));
+  await repo.write("tenet/Spec__Intent.md", spec("## Requirements\n- R-2 Keep receipts. {origin: asked}"));
+  await repo.write("tenet.yaml", config.replace("path: intent.md", "path: Spec/Intent.md"));
+  const result = await speak(repo, "1\nbless\n");
+  assert.equal(result.findings[0]?.code, "TN-SCHEMA");
+  assert.equal(result.result?.blessed, 0);
+  await unlink(path.join(repo.path, "tenet/Spec__Intent.md"));
+  assert.equal((await speak(repo, "1\nbless\n")).result?.blessed, 1);
+  assert.match(await raw(repo, "tenet/blessed/tenet__Spec__Intent.md/requirements.md"), /Keep records/);
+});
+
+test("confirm reports a missing anchor source and preserves both prior files", async (t) => {
+  const repo = await setup(t, `## Requirements\n${requirement}`);
+  await repo.write("src/retry.ts", "const times = 1;  \t\r\n");
+  await speak(repo, "1\nbless\n");
+  const before = await raw(repo, copy);
+  const sidecar = await raw(repo, `${copy}.anchors.json`);
+  assert.deepEqual(JSON.parse(sidecar), { "src/retry.ts:1": "const times = 1;" });
+  await unlink(path.join(repo.path, "src/retry.ts"));
+  const result = await speak(repo, "1\nconfirm\ny\n");
+  assert.match(result.text, /New src\/retry.ts:1:\n\(unavailable\)/);
+  assert.equal(result.findings[0]?.code, "TN-CITE-FILE");
+  assert.equal(await raw(repo, copy), before);
+  assert.equal(await raw(repo, `${copy}.anchors.json`), sidecar);
+});
+
+test("a concurrent spec edit during the action survives rollback of copy and sidecar", async (t) => {
+  const repo = await setup(t, `## Requirements\n${requirement}`);
+  const changed = (await raw(repo)).replace("Retry once.", "Retry at most once.");
+  const result = await speak(repo, "1\nbless\n", {
+    write: async (file: string, bytes: string) => {
+      await writeAtomic(file, bytes);
+      if (file.endsWith(".anchors.json")) await repo.write(filename, changed);
+    },
+  });
+  assert.equal(result.findings[0]?.code, "TN-SUBJ-DIRTY");
+  assert.equal(await raw(repo), changed);
+  for (const file of [copy, `${copy}.anchors.json`, log]) await assert.rejects(raw(repo, file), { code: "ENOENT" });
 });
