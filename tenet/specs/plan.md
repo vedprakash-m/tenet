@@ -1,6 +1,17 @@
+---
+tenet: {spec: 1, doc: plan, level: L2, version: "0.14", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:b48ebbe1a148da96f85e78ef58f3730b7b5bfd76371a567ab2ed87d74ddacca4, flags: []}
+  0-status-and-next-actions: {state: draft, digest: sha256:9adec36e8d9d4e45f657afb651678e9c9460538f204ce90503580c6f16222de0, flags: []}
+  1-milestones: {state: draft, digest: sha256:54ee86d0e5dabb39a28ebf671417842931af59e548a5c5d295502d7de563c34f, flags: []}
+  2-waves: {state: draft, digest: sha256:4876aec1399cc2a420c4bf014837b2a8103114609fd798b158a8275837878252, flags: []}
+  3-m0-packets: {state: draft, digest: sha256:d41cc8b76c79c69393817b2f85b1bed77f42a51a6c6f2dc9adfb3b876bb4b977, flags: []}
+  4-build-contract: {state: draft, digest: sha256:0b73585bbfd8456bac7220d85d89b1495302f389ddc75b34fb3db5ee747100bd, flags: []}
+  5-after-01x: {state: draft, digest: sha256:a0370710579461de1360609a91950bd297d4d7388e1cc3a8daa3c05c31575bf5, flags: []}
+---
 # Tenet plan
 
-> Level L2 · Version 0.14 · Status: **draft, awaiting the Owner's approval** · Implements [prd.md](prd.md) §6 · Every item below is a packet in `tenet/packets/` · Budget: 6,000 tokens · Previous version: `archive/specs/plan.md@0.13.md` · Release parts: [alpha.0](plan/alpha.0.md) and [alpha.0b](plan/alpha.0b.md), [alpha.1](plan/alpha.1.md), [alpha.2](plan/alpha.2.md), [0.1.0](plan/0.1.0.md), [0.1.x](plan/0.1.x.md)
+> L2 · Version 0.14 · Draft · [PRD §6](prd.md#6-milestones-and-releases) · Packets in `tenet/packets/` · Budget: 6,000 tokens · Previous version: `archive/specs/plan.md@0.13.md` · Release parts: [alpha.0](plan/alpha.0.md) and [alpha.0b](plan/alpha.0b.md), [alpha.1](plan/alpha.1.md), [alpha.2](plan/alpha.2.md), [0.1.0](plan/0.1.0.md), [0.1.x](plan/0.1.x.md)
 
 **Context card.** Two tracks (DEC-57). The **build track** runs without calendar waits: M0 runs the spikes in parallel on day 1, writes the kernel and **every** release's contracts, tries them on a medium-effort model, then building proceeds wave after wave, gated only by automatic checks. The **evidence track** (interviews, outside maintainers, dogfooding, pilots) runs alongside and never blocks building; it gates only announcing a release and claiming a horizon. Releases are published as snapshots when their build gate is green. M1 ships in four releases, all on one CI shape: a test job and a recorder (DEC-48).
 - **alpha.0, intent and proof:** install from npm; onboarding that drafts specifications your agent grounds in your code and you bless; agent context; an advisory proof card that opens with the blessed requirements a change touches; a board of specifications. Nothing blocks.
@@ -8,7 +19,7 @@
 - **alpha.2, verify:** a sealed test job and signed records that cannot be forged.
 - **0.1.0:** the careful lane, reference agents, work commands and a minimal reference runner that chains them through your own agent tool.
 
-**§0 says where the work stands and what to do next; keep it current.** This file holds order and gates. Each release part holds a **build contract** per packet (§4), so a builder never decides who decides, what stays binding, what counts as evidence or what the user sees.
+**Keep §0 current with status and next actions.** This file orders work and sets gates. Each release part’s **build contracts** (§4) fix authority, binding text, evidence and user output.
 
 ## 0. Status and next actions
 
@@ -33,7 +44,7 @@ Updated 2026-11-23 by the M0 session after round 2 merged (L-0034, L-0035, L-003
 
 ## 1. Milestones
 
-| ID | Release | Packets | Build gate (automatic; publishes the snapshot) | Status |
+| Milestone ID | Release | Packets | Build gate (automatic; publishes the snapshot) | Status |
 |---|---|---|---|---|
 | M0 | — | CP-0001–0003, CP-0015, CP-0017, CP-0040, CP-0041, CP-0056, CP-0058 | The ready-for-pilot checklist holds; the Owner signs `vision.md` v1 and approves the specifications, at named versions and digests | in progress |
 | M1 | 0.1.0-alpha.0 | CP-0004, CP-0005, CP-0006, CP-0009, CP-0010, CP-0012, CP-0018, CP-0044, CP-0045, CP-0048, CP-0051, CP-0052, CP-0053, CP-0054, CP-0057 | First findings in ≤10 minutes on the fixture repositories; the onboarding evaluation (≥90% kept and recalled, none invented, ALG-13) and the scenario suite pass; the fresh-session check passes; the packed artifact installs and runs both UX Part 1 journeys on three platforms; this repository passes its own `tenet check` | not started |
