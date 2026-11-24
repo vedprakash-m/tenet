@@ -1,0 +1,18 @@
+{
+  "decision": {
+    "kind": "approve",
+    "actor": "ved"
+  },
+  "observations": [
+    {
+      "forge_source_id": "rev-601",
+      "state": "dismissed",
+      "reviewed_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "forge_source_id": "rev-602",
+      "state": "approved",
+      "reviewed_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ]
+}
