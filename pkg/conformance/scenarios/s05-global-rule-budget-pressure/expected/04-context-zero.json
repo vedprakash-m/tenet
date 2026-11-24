@@ -1,7 +1,7 @@
 {
   "ok": false,
   "command": "tenet",
-  "version": "0.0.0",
+  "version": "{{version}}",
   "result": null,
   "errors": [
     {

@@ -1,7 +1,7 @@
 {
   "ok": true,
   "command": "init",
-  "version": "0.0.0",
+  "version": "{{version}}",
   "result": {
     "plan": {
       "created": [

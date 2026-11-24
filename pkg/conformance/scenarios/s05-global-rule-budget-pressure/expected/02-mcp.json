@@ -11,7 +11,7 @@
       },
       "serverInfo": {
         "name": "tenet",
-        "version": "0.0.0"
+        "version": "{{version}}"
       }
     }
   },
