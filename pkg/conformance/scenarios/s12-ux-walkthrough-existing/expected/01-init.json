@@ -4,12 +4,100 @@
   "version": "0.0.0",
   "result": {
     "plan": {
-      "ci_mode": "existing-ci"
+      "created": [
+        ".agents/skills/tenet-draft-specs/SKILL.md",
+        ".agents/skills/tenet-review-with-findings/SKILL.md",
+        ".agents/skills/tenet-work-a-change/SKILL.md",
+        ".claude/skills/tenet-draft-specs/SKILL.md",
+        ".claude/skills/tenet-review-with-findings/SKILL.md",
+        ".claude/skills/tenet-work-a-change/SKILL.md",
+        ".tenet/manifest.json",
+        "tenet.lock",
+        "tenet.yaml"
+      ],
+      "blocks": [
+        {
+          "path": ".gitattributes",
+          "kind": "yaml"
+        },
+        {
+          "path": ".gitignore",
+          "kind": "yaml"
+        },
+        {
+          "path": "AGENTS.md",
+          "kind": "markdown"
+        },
+        {
+          "path": "CLAUDE.md",
+          "kind": "markdown"
+        }
+      ],
+      "keys": [
+        {
+          "path": ".mcp.json",
+          "pointer": "/mcpServers/tenet"
+        }
+      ],
+      "local_keys": [],
+      "hosts": [
+        {
+          "id": "agents",
+          "capability": "skills+mcp"
+        },
+        {
+          "id": "claude",
+          "capability": "skills+mcp"
+        }
+      ],
+      "ci_mode": "none",
+      "ci_reason": "non-GitHub remote: local checks and specifications are enabled; CI proof cards require GitHub in alpha.0"
     },
     "wrote": {
-      "createdCount": 6
+      "created": [
+        ".agents/skills/tenet-draft-specs/SKILL.md",
+        ".agents/skills/tenet-review-with-findings/SKILL.md",
+        ".agents/skills/tenet-work-a-change/SKILL.md",
+        ".claude/skills/tenet-draft-specs/SKILL.md",
+        ".claude/skills/tenet-review-with-findings/SKILL.md",
+        ".claude/skills/tenet-work-a-change/SKILL.md",
+        ".tenet/manifest.json",
+        "tenet.lock",
+        "tenet.yaml"
+      ],
+      "blocks": [
+        {
+          "path": ".gitattributes",
+          "kind": "yaml"
+        },
+        {
+          "path": ".gitignore",
+          "kind": "yaml"
+        },
+        {
+          "path": "AGENTS.md",
+          "kind": "markdown"
+        },
+        {
+          "path": "CLAUDE.md",
+          "kind": "markdown"
+        }
+      ],
+      "keys": [
+        {
+          "path": ".mcp.json",
+          "pointer": "/mcpServers/tenet"
+        }
+      ],
+      "local_keys": []
     },
-    "findings": []
+    "findings": [
+      {
+        "kind": "local-integrity",
+        "path": "tenet.lock",
+        "message": "@vedprakash-m/tenet@0.0.0 is not on the registry, so Tenet used local package integrity. CI workflows cannot verify it until the package is published and re-pinned with `tenet upgrade`."
+      }
+    ]
   },
   "errors": []
 }
