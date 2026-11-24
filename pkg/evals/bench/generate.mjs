@@ -52,18 +52,28 @@ async function main() {
   const documents = [];
   await mkdir(path.join(out, "tenet", "specs"), { recursive: true });
   for (let index = 1; index <= specs; index += 1) {
-    const docName = index === 1 ? "prd.md" : `spec-${String(index).padStart(2, "0")}.md`;
-    const docPath = `specs/${docName}`;
-    const level = index === 1 ? "L1" : "L2";
-    const slug = index === 1 ? "requirements" : `design-${index}`;
+    const names = ["vision.md", "prd.md", "tech-spec.md", "ux-spec.md", "plan.md"];
+    const docName = index <= names.length ? names[index - 1] : `spec-${String(index).padStart(2, "0")}.md`;
+    const docPath = index === 1 ? "vision.md" : docName.startsWith("spec-") ? `specs/${docName}` : `specs/${docName}`;
+    const level = index === 1 ? "L0" : index === 2 ? "L1" : "L2";
+    const doc = index === 1 ? "vision" : index === 2 ? "prd" : index === 3 ? "tech-spec" : index === 4 ? "ux-spec" : index === 5 ? "plan" : "design";
+    const slug = index === 1 ? "purpose" : index === 2 ? "requirements" : index === 3 ? "design" : index === 4 ? "experience" : index === 5 ? "plan" : `design-${index}`;
+    const digest = randomHex(`section-${index}`, 64);
+    const owner = "bench";
+    const heading = index === 1 ? "Purpose" : index === 2 ? "Requirements" : index === 3 ? "Design" : index === 4 ? "Experience" : index === 5 ? "Plan" : `Design ${index}`;
+    const body = index === 1
+      ? `- V-${index} Fixed benchmark vision ${randomHex(`vision-${index}`, 32)}. {origin: asked}`
+      : index === 2
+        ? `- R-${index} Fixed benchmark requirement ${randomHex(`requirement-${index}`, 32)}. {origin: asked}`
+        : `Fixed benchmark content ${randomHex(`requirement-${index}`, 32)}.`;
     const text = [
       "---",
-      `tenet: {"spec":1,"doc":"bench-${index}","level":"${level}","version":"0.1","owner":"bench"}`,
+      `tenet: {spec: 1, doc: ${doc}, level: ${level}, version: "0.1", owner: ${owner}}`,
       "sections:",
-      `  ${slug}: {"state":"draft","digest":"sha256:${randomHex(`section-${index}`, 64)}","flags":[]}`,
+      `  ${slug}: {state: draft, digest: sha256:${digest}, blessed_digest: null, blessed_at_rev: null, anchors: {}, flags: []}`,
       "---",
-      `## ${index === 1 ? "Requirements" : `Design ${index}`}`,
-      `- R-${index} Fixed benchmark requirement ${randomHex(`requirement-${index}`, 32)}.`,
+      `## ${heading}`,
+      body,
       "",
     ].join("\n");
     await writeFile(path.join(out, "tenet", docPath), text, "utf8");
@@ -72,6 +82,7 @@ async function main() {
 
   const yaml = [
     'standard: "~0.1.0-alpha.0"',
+    "kit_path: kit",
     "paths:",
     "  records: tenet",
     "level: observe",
@@ -81,6 +92,8 @@ async function main() {
     ...documents,
   ].join("\n") + "\n";
   await writeFile(path.join(out, "tenet.yaml"), yaml, "utf8");
+  await mkdir(path.join(out, "kit"), { recursive: true });
+  await writeFile(path.join(out, "kit", "TENET.md"), "# Benchmark kit\n", "utf8");
   await mkdir(path.join(out, "src"), { recursive: true });
   await writeFile(path.join(out, "src", "bench.ts"), "export const bench = true;\n", "utf8");
 
