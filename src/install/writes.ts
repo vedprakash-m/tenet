@@ -690,6 +690,10 @@ export async function planWriteSet(
         .replaceAll("<Project>", project)
         .replace("Checkout recovers cleanly from transient gateway timeouts for returning shoppers.",
           purpose)
+        .replace(
+          "Requests enter `src/checkout/gateway.ts`, use `src/checkout/retry.ts` for timeout handling, and emit structured events without card payloads.",
+          "Requests use bounded timeout handling and emit structured events without card payloads.",
+        )
         .replace(/\r\n/g, "\n")
         .replace(/\n+$/, "")}\n`,
     });
