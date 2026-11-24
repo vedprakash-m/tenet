@@ -7,8 +7,8 @@
 **CP-0042 · Replay, trust and safe failure · R-026, R-035, R-110, R-217**
 1. *Needs:* Alpha.1; TS §§4–5; ALG-07; CI §§7, 8, 10; K §§1–3, 5.
 2. *Owns:* `src/kernel/replay.ts`, `src/verify/{trust,safe-failure}.ts`, computed close endpoint, doctor trust output, replay and trust tests.
-3. *Exports:* `replay(history, snapshot, asOf) → {transitions, state, findings}`, `observeTrust`, `requiredOutcome → {conclusion, guarantee, reasons}`.
-4. *Behavior:* Reproduce the historical evaluation time and record. Compute closure and tentative expiry. Record T1–T3 and declared or observed T4 separately from required-status availability. Apply CI §10 and label explicit overrides accepted without verification.
+3. *Exports:* `replay(history, snapshot, asOf) → {transitions: [{event_id, type, status, reason?}], state: {..., endpoint}, findings}`, `observeTrust(input, asOf) → {t1, t2, t3, t4, merge_requires_status, observed_at, stale, guarantee}`, `requiredOutcome(input) → {conclusion, guarantee, reasons, degraded}`.
+4. *Behavior:* Reproduce the historical evaluation time and record. Compute `state.endpoint` (`checked|integrated|implemented-unverified|cancelled|superseded`) and tentative expiry (`pending-evidence` -> `unjustified`). Record T1–T3 and T4 (`enforced|declared|unknown`) separately from `merge_requires_status` (`enforced*` only when all hold, T4 is `enforced`, status is required, and observation age `<= 7d`). Apply CI §10 (`store-loss` -> `"results not kept"`, `shared-decision-account` -> `detected`), and label explicit overrides `accepted-without-verification`.
 5. *Edge cases:* Expiry boundary, late evidence, store loss, stale trust, unavailable protection and shared decision account.
 6. *Out of scope:* Signing, host containment and the GA close command pending release-boundary reconciliation.
 7. *Fixtures:* `test/kernel/replay/{tentative,expiry,late,policy-change,close}/`, `test/verify/trust/{t1-t4,unavailable,override,outcome-table}/`.
