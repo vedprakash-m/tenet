@@ -428,7 +428,7 @@ for (const name of names) {
         }
         if (step.expectedJson && step.kind !== "verify" &&
             !(step.kind === "cli" && (step.interrupt || step.compareTreeToCleanRun))) {
-          if (actual && typeof actual === "object" && /"(revision|drafted_at_rev|snapshot)"/.test(JSON.stringify(expected))) {
+          if (actual && typeof actual === "object" && /"(revision|drafted_at_rev|main)"/.test(JSON.stringify(expected))) {
             bindRevisionFields(expected, actual, git(cwd, "rev-parse", "HEAD"), refs);
           }
           assert.deepEqual(actual, replaceRefs(expected, refs));
