@@ -44,7 +44,7 @@ export function makeOnboardCommand(deps: OnboardDeps) {
           if (options["--inventory-only"] || options["--refresh"] || layout) {
             return { findings: [diagnostic("TN-USAGE-ONBOARD", { command: "onboard", detail: onboardingCardText.incompatible })] };
           }
-          return { value: await onboardingCard({ cwd }) };
+          return { value: json ? await onboardingCard({ cwd, format: "result" }) : await onboardingCard({ cwd }) };
         }
         const { value, diagnostics } = await prepareOnboard({
           cwd,

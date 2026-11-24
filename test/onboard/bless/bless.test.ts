@@ -278,7 +278,15 @@ test("onboard --card counts sources and origins, records the draft commit, and r
   const output = fakeTty();
   assert.equal(await run(["onboard", "--card"], { cwd: repo.path, ...output, checkEnvironment: false }), 0);
   assert.match(output.stdout.text, /gh pr checkout <n>/);
+  const jsonOutput = fakeTty();
+  assert.equal(await run(["--json", "onboard", "--card"], {
+    cwd: repo.path, ...jsonOutput, checkEnvironment: false,
+  }), 0);
+  const jsonResult = JSON.parse(jsonOutput.stdout.text).result;
+  assert.equal(typeof jsonResult, "object");
+  assert.deepEqual(Object.keys(jsonResult).sort(), ["card", "drafted_at_rev"]);
   const result = await onboardingCard({ cwd: repo.path, format: "result" });
+  assert.deepEqual(jsonResult, result);
   assert.deepEqual(Object.keys(result).sort(), ["card", "drafted_at_rev"]);
   assert.equal(result.drafted_at_rev, draft);
   assert.match(result.card, /gh pr checkout <n>/);

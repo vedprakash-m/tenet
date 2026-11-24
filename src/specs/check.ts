@@ -12,7 +12,6 @@ import type { Policy } from "../policy/types.js";
 import type { Finding } from "../types/generated.js";
 import { citationParts } from "./anchors.js";
 import { resolveCitations } from "./citations.js";
-import { flags } from "./flags.js";
 import { ladder, type LadderEntry } from "./ladder.js";
 import { parseDoc, itemLine, sectionLocation, type ParsedDoc, type Requirement, type SpecSection } from "./parse.js";
 import { sectionDigest } from "./sections.js";
@@ -326,23 +325,6 @@ async function checkSections(
     findings.push(...localProblems(entry));
     if (entry.doc.front) findings.push(...schemaFindings(entry.path, "spec-front-matter", entry.doc.front));
     for (const section of entry.doc.sections) {
-      const computed = flags(section, (filename) => {
-        const normalized = portable(filename);
-        try {
-          return readFileSync(path.join(cwd, ...normalized.split("/")), "utf8") as string;
-        } catch {
-          return null;
-        }
-      });
-      const expected = [...computed].sort();
-      const actual = [...section.flags].sort();
-      if (JSON.stringify(expected) !== JSON.stringify(actual)) {
-        findings.push(makeFinding("TN-SCHEMA", "error", entry.path, null, {
-          path: entry.path,
-          schema: "spec-front-matter",
-          pointer: `/sections/${section.slug}/flags`,
-        }));
-      }
       if (section.state !== "blessed") continue;
       const raw = sectionRecord(entry.doc.front, section.slug);
       const copy = section.blessed_copy;
@@ -574,6 +556,11 @@ async function duplicateIdsOnOtherBranches(
     return [{ ref, commit }];
   });
   if (refs.length === 0) return [];
+  const repository = (await git(["rev-parse", "--show-toplevel"], { cwd }).catch(() => cwd)).trim() || cwd;
+  const repositoryPrefix = path.relative(repository, cwd).replaceAll("\\", "/");
+  const gitPathspecs = pathspecs.map((itemPath) => repositoryPrefix
+    ? path.posix.join(repositoryPrefix, itemPath.replaceAll("\\", "/"))
+    : itemPath.replaceAll("\\", "/"));
   const all = new Map<string, Array<{
     state: string;
     source: string;
@@ -601,7 +588,7 @@ async function duplicateIdsOnOtherBranches(
   collect(current, "working-tree");
   for (const { ref } of refs) {
     const listing = await git(
-      ["ls-tree", "-r", "-z", "--name-only", ref, "--", ...pathspecs],
+      ["ls-tree", "-r", "-z", "--name-only", ref, "--", ...gitPathspecs],
       { cwd },
     ).catch(() => "");
     const paths = listing.split("\0").filter((filename) => filename.endsWith(".md"));

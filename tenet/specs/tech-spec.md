@@ -238,7 +238,7 @@ Every command, its release, inputs, writes, `--json` schema, exit codes and idem
 
 ## 11. Loops and bindings
 
-Loops (`kit/loops/<name>.yaml`) use five step kinds (`agent`, `script`, `human_gate`, `set`, `route`): a station loop per station and lane, sharing the `fix` loop (capped at `limits.rounds`, default 2). Format, assignment and result records, static checks and the worked `define` and `build` loops: [agents.md §5](tech-spec/agents.md#5-loops). 0.1.0 ships the `minimal` pack's loops.
+Loops (`kit/loops/<name>.yaml`) use five step kinds (`agent`, `script`, `human_gate`, `set`, `route`): a station loop per station and lane, sharing the `fix` loop (until agreement or `limits.rounds`, whichever comes first; default 5). Format, assignment and result records, static checks and the worked `define` and `build` loops: [agents.md §5](tech-spec/agents.md#5-loops). 0.1.0 ships the `minimal` pack's loops.
 
 | Binding | Emits | Release |
 |---|---|---|
