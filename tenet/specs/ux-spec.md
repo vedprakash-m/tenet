@@ -4,8 +4,8 @@ sections:
   _preamble: {state: draft, digest: sha256:caefd4ed3b03bc8a46272886e7afaaad147177db6fd59c206aef7b3732d130b4, flags: []}
   part-0-get-tenet: {state: draft, digest: sha256:9b8dd29eadb5615e6764c5318068b20bfba80cf70c8681989f48f5a563831728, flags: []}
   part-1-start-here: {state: draft, digest: sha256:e8e663bd3c11f9c9383c8ee838ff3a20f0ce4e0add41510117c7384e7e864b1b, flags: []}
-  part-2-the-daily-loop: {state: draft, digest: sha256:a900a748a50c86d6eb271f2100f82b8082bc2b434eca94af2acec46a3b8bb953, flags: []}
-  part-3-when-you-want-more: {state: draft, digest: sha256:516aee348d277c9144a088d5147e5f1429ff2b5c319675dbe7189fd634bd33f9, flags: []}
+  part-2-the-daily-loop: {state: draft, digest: sha256:a032dea20e6dab7c1507f20efe84724c80b52bdae538dadba6246d3aceba4984, flags: []}
+  part-3-when-you-want-more: {state: draft, digest: sha256:4ef2b427a1050bb147af23731961557ebda8825815b7076fcf57146bf045a75a, flags: []}
   part-4-keeping-tenet-current: {state: draft, digest: sha256:18b766dd5353867e0413ef076f4fcf8191d39eb8568a58019fb59c6cc791a66a, flags: []}
   part-5-the-agents-side: {state: draft, digest: sha256:2806567daf1eff601904629e0e24acfda02c989737b19320424a9799443e774d, flags: []}
   part-6-reference: {state: draft, digest: sha256:bc0bbbdc46af8aaa669aaa0c90676ff5b558f4643e1e2e906990475c83c65988, flags: []}
@@ -170,15 +170,15 @@ Spec debt (1)
   Design cites src/legacy/queue.ts, which no longer exists
 ```
 
-**Change a specification.** When your agent finds a spec wrong, it proposes the change in the same pull request; the card shows it with the requirements it touches and asks whoever must approve it. Approving the review approves it (alpha.1; before then, `tenet bless`).
+**Change a specification.** When your agent finds a spec wrong, it proposes the change in the same pull request; the card shows it with touched requirements and asks required approvers (alpha.1 via review approval; before then, `tenet bless`).
 
 ## Part 3: when you want more
 
-**Turn on rules (alpha.1).** `tenet rules` shows, per rule, what it would have blocked and how often findings were marked not useful (`/tenet not-useful`). `tenet rules enforce tests-not-weakened` makes one block; `tenet level protect` turns on the rules that level recommends. At `protect` a rule stops honest mistakes; a pull request that changes Tenet's own workflow is flagged on the card, and full enforcement starts at `verify`.
+**Turn on rules (alpha.1).** `tenet rules` shows what each rule would block and its `/tenet not-useful` rate. `tenet rules enforce tests-not-weakened` blocks on that rule; `tenet level protect` enables the level's defaults. At `protect`, rules stop honest mistakes and workflow edits flag the card; full enforcement starts at `verify`.
 
-**Decisions (alpha.1).** Approve the review, or reply `/tenet pick 2` to a decision with options. A reply counts for what the latest card showed (its commit, acceptance list and the blessed text it implements); if any of that changed, you're asked to look again.
+**Decisions (alpha.1).** Approve the review, or reply `/tenet pick 2`. Replies bind what the latest card showed (commit, acceptance list, blessed text); if any changed, you're asked again.
 
-**Careful and deep work (0.1.0).** By policy, risky changes (authentication, data, payments) go to the careful or deep lane. Run `tenet new feature "<title>"`, then `tenet-runner start <id>` (the optional runner, installed like Tenet): the shaper drafts the definition and stops for your one approval; a separate test writer writes the tests, the builder works until they pass, the judge reviews, and a pull request arrives with its card. Prefer your own agent or factory? It takes the same steps from `tenet_next`. Accepting a known shortfall is a waiver with a reason and an expiry.
+**Careful and deep work (0.1.0).** Policy routes risky changes (authentication, data, payments) to careful or deep lanes. Run `tenet new feature "<title>"` and `tenet-runner start <id>`: shaper drafts the definition and stops for your approval; an independent test writer adds tests, builder satisfies them, judge reviews, and a PR opens with its card. Or drive your own agent/factory via `tenet_next`. Shortfalls require a dated waiver with reason.
 
 **Stuck work.** After repeated failures (by default, a card failing three times in a row), or when work and a spec disagree, your agent stops and Tenet asks one question: "C-3 says 'never retry', C-1 says 'retry once' · 1. Stop 2. C-3 wins 3. C-1 wins 4. Talk it through".
 
