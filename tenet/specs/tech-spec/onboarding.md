@@ -74,7 +74,7 @@ The **last blessed text stays in force** (the blessed copy):
 
 `init` runs the preflight (R-020) and writes, all recorded in `.tenet/manifest.json` (ALG-12, UTF-8 with LF and one trailing `\n`):
 - `tenet.yaml`: synthesized check `checks.test` with the runner command and setup of [ci.md §2](ci.md#2-running-checks); `package.json` is never edited
-- `tenet.lock` (published releases record registry `dist.integrity`; `0.0.0`, unpublished prereleases/release candidates, or `--offline` with no registry override compute deterministic `sha512-…` over sorted installed package files with `x-integrity-source: "local"` and warn that CI needs a published pin; malformed integrity fails `TN-LOCK-INVALID`, never `TN-INTERNAL`)
+- `tenet.lock` (queries registry `dist.integrity` except `0.0.0` or `--offline`; if offline/unpublished, hashes sorted installed files with `x-integrity-source: "local"`, which CI checks over installed files as advisory below `verify`; `doctor` verifies that digest and notes CI advisory until `tenet upgrade`; bad integrity fails `TN-LOCK-INVALID`, never `TN-INTERNAL`)
 - the `AGENTS.md` block (agents.md §1)
 - on GitHub remotes, the recorder workflow, and either Tenet's test workflow or the existing-CI step (`ci_mode: "existing-ci"|"tenet-workflow"`); on non-GitHub remotes, workflows and `.github/pull_request_template.md` are omitted (`ci_mode: "none"`, `ci_reason: "non-GitHub remote: local checks and specifications are enabled; CI proof cards require GitHub in alpha.0"`)
 - the pull-request template block (GitHub) and the `.gitignore` and `.gitattributes` blocks
