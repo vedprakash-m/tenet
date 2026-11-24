@@ -1,7 +1,6 @@
 name: CI
 
-# Private-repository minutes are metered (macOS counts 10x, Windows 2x), so:
-# pull requests run Linux and Windows; macOS runs once per merge to main or on demand.
+# Each pull request runs once (no duplicate branch-push run); a newer push cancels the older run.
 on:
   push:
     branches: [main]
@@ -17,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ github.event_name == 'pull_request' && fromJSON('["ubuntu-latest","windows-latest"]') || fromJSON('["ubuntu-latest","windows-latest","macos-latest"]') }}
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
