@@ -37,8 +37,8 @@
 **CP-0019 · Decisions on pull requests · R-090, R-101, R-102, R-108, R-123, R-177, R-203**
 1. *Needs:* CP-0050; CI §§3, 4, 6; K §3 and observed parts of L-0030.
 2. *Owns:* `src/verify/decisions.ts`, forge review and reply binding, attributed blessing and usefulness marks, `test/verify/decisions/`.
-3. *Exports:* `makeRequest(input)`, `recordAnswer(request, event, snapshot) → {decision?, observation, findings}`, `renderRequest(request)` and CI §6 replies.
-4. *Behavior:* Persist the presentation before matching. Require actor, current request, evaluation and proof. Keep stale, withdrawn or ambiguous observations visible. Record self-acceptance at its real strength. Attach usefulness marks to the precise finding. Verify new recorder triggers in the sandbox.
+3. *Exports:* `makeRequest(input)` (`"tenet.decision.request.v1"` RFC 8785 tuple), `recordAnswer(request, event, snapshot) → {decision?, observation, findings}` (`TN-DEC-*`), `renderRequest(request)` and CI §6 replies.
+4. *Behavior:* Persist the presentation before matching. Require actor, current request, evaluation and proof. Keep stale, withdrawn or ambiguous observations visible. Record below-`verify` self-acceptance with `proof.self_accepted: true` (`TN-DEC-SELF-VERIFY` at `verify+`). Store `/tenet bless` as `approve` (`name: "bless-section"`, `recorded: "forge"`) and `/tenet not-useful` as an observation (`kind: "not-useful"`, `finding_id`, `decision: null`). Verify new recorder triggers in the sandbox.
 5. *Edge cases:* Two pending requests, same-commit edit, unlisted actor, late or concurrent reply, revocation, repeated delivery and exact section blessing.
 6. *Out of scope:* Person-present activation and unobserved host guarantees.
 7. *Fixtures:* `test/verify/decisions/{approve,late,edited,concurrent,unlisted,bless,self-accepted,not-useful,duplicate}/`.

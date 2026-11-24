@@ -89,3 +89,10 @@ Moved into the §2 table when `CP-0007` and `CP-0050` add their entries to `src/
 - `TN-EV-RESOLVE`: `"Resolution {id} omits one or more active conflict heads."` Fix: `"Record a \`resolve\` event whose \`prev\` includes every active conflict head."`
 - `TN-GATE-SELF-WAIVE`: `"Actor {actor} cannot waive claim {claim} broken by their own change."` Fix: `"Have another authorized decision-maker waive {claim} or satisfy the check."`
 - `TN-POLICY-RULE-DECISION`: `"Promoting rule {rule} to {mode} requires an approved change-policy decision."` Fix: `"Record an approved \`change-policy\` decision first, then re-run \`tenet rules\`."`
+- `TN-DEC-ACTOR`: `"Forge actor {actor} is not eligible to answer this request."` Fix: `"Have an authorized owner from allowed_actors submit the decision."`
+- `TN-DEC-AMBIGUOUS`: `"Unqualified reply matches {count} open decision requests."` Fix: `"Specify @<evaluation_id> or target choice on the reply."`
+- `TN-DEC-CONFLICT`: `"Competing decision choices ({choices}) leave request {id} unresolved."` Fix: `"Record an authorized resolve decision or issue a fresh request."`
+- `TN-DEC-EXPIRED`: `"Decision reply arrived after request {id} expired at {expires_at}."` Fix: `"Open a fresh decision request before replying."`
+- `TN-DEC-KEY-REVOKED`: `"Signing key for actor {actor} was revoked at {revoked}."` Fix: `"Sign with an active registered owner key."`
+- `TN-DEC-SELF-VERIFY`: `"Actor {actor} cannot approve their own pull request at level {level}."` Fix: `"Have another owner or reviewer submit the decision."`
+- `TN-DEC-STALE`: `"Reply targets evaluation {actual}, but current evaluation is {expected}."` Fix: `"Review the latest card and reply against {expected}."`
