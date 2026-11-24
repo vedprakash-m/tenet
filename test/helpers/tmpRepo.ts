@@ -1,6 +1,5 @@
 import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
@@ -11,7 +10,7 @@ export type TemporaryRepository = {
   cleanup(): Promise<void>;
 };
 
-const testRoot = path.join(tmpdir(), "tenet-tests", String(process.pid));
+const testRoot = path.resolve(".test-tmp");
 
 function run(args: string[], cwd: string, input?: string | Uint8Array): string {
   const child = spawnSync("git", args, {
