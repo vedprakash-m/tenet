@@ -17,8 +17,8 @@
 **CP-0046 · Signed evidence and candidate checks · R-100**
 1. *Needs:* CP-0042; CI §§3–7, 10; C §11; K §§2, 3, 5; L-0030.
 2. *Owns:* Sealed workflow, recorder signing, `src/core/sign.ts`, signed store, upgrade wiring, fixed-candidate binding and person-present wire fixtures.
-3. *Exports:* `signReceipt`, `verifyReceipt`, `personPresentPayload(request, choice, actor, challenge)`, `recordCandidate`.
-4. *Behavior:* Keep the approved two-job boundary. Validate provenance, completeness and size before reading reports or applying a result. Use the documented signing backend where confirmed. Write immutable receipts and apply CI §10 to the exact candidate. Validate the canonical payload and report whether presence is available.
+3. *Exports:* `signReceipt(receipt, key) → {receipt, envelope: {algorithm, key_id, signature, store_path}}`, `verifyReceipt(input) → {valid, evidence_state, backend, store_path}`, `personPresentPayload(request, choice, actor, challenge)`, `verifyPersonPresent` (`{valid, accepted, user_presence: "observed"|"unavailable"|"none", challenge_consumed, error_kind?}`), `recordCandidate` (`candidates/<id>/<rev>.json` on `refs/tenet/records`).
+4. *Behavior:* Keep the approved two-job boundary. Validate provenance, completeness and size before reading reports or applying a result (`TN-SEALED-DIRTY` when sealed check mutates tracked files; `TN-RECORD-BUNDLE` on wrong run ID). Use the documented signing backend (`sigstore|ed25519|oidc`). Write immutable receipts at `refs/tenet/evidence/<subject-digest>/<id>.json` and apply CI §10 to the exact candidate. Validate the canonical payload and report whether presence is available (`user_presence: "unavailable"` on ordinary keys).
 5. *Edge cases:* Missing key, partial shards, wrong run, retry, fork, superseded merge candidate and unknown security-key presence.
 6. *Out of scope:* Assure activation and full later R-152 functionality. Preserve unresolved scope in the evidence track.
 7. *Fixtures:* `test/verify/attest/{signed,tampered,wrong-run,partial-shards,candidate-stale,retry,fork,person-present}/`.
