@@ -143,7 +143,7 @@ In [evidence.md §1](evidence.md#1-evidence-payloads).
 
 ## 13. Error codes
 
-Every error carries its code, plain words and a fix (R-083). What each situation concludes on the forge, at each level, is [ci.md §10](ci.md#10-outcomes). **Structural** codes always fail `check` (exit 1); **rule** codes fail only when their rule is in `enforce` (otherwise they print as "would have blocked" and exit 0).
+Every error carries its code, plain words and a fix (R-083). What each situation concludes on the forge, at each level, is [ci.md §10](ci.md#10-outcomes). **Structural** codes always fail `check` (exit 1); **rule** codes fail only when `enforce` under `--ci --base`/gates (`observe`/`advise` advise exit 0); direct local `check` keeps `TN-CITE-*` as `error` (exit 1).
 
 Message and fix text for every code: [messages.md](messages.md).
 
