@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "coverage": {
+    "complete": true,
+    "analyzed_modules": [
+      "A",
+      "B"
+    ]
+  },
+  "scope_digest": "sha256:8c0247ca568f0e12eeda72fd83211c7bbbd7dab898a3723d4084965f2542bfc3",
+  "entries": [
+    {
+      "kind": "finding_set",
+      "area": "payments",
+      "indicator": "payment-health",
+      "findings": [],
+      "architecture_graph": {
+        "modules": [
+          "A",
+          "B"
+        ],
+        "edges": [
+          {
+            "from_module": "A",
+            "to_module": "B"
+          }
+        ]
+      }
+    }
+  ]
+}

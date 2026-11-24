@@ -1,0 +1,110 @@
+{
+  "operation": "check-health-tamper",
+  "target_policy": {
+    "standard": "0.1.1",
+    "level": "verify",
+    "rules": {
+      "health-ratchet": "enforce"
+    },
+    "owners": [
+      {
+        "id": "payments",
+        "name": "Payments owner",
+        "roles": [
+          "owner"
+        ],
+        "forge_accounts": [
+          "pay-owner"
+        ]
+      },
+      {
+        "id": "alternate",
+        "name": "Second payments owner",
+        "roles": [
+          "owner"
+        ],
+        "forge_accounts": [
+          "pay-alt"
+        ]
+      },
+      {
+        "id": "docs",
+        "name": "Documentation owner",
+        "roles": [
+          "owner"
+        ],
+        "forge_accounts": [
+          "docs-owner"
+        ]
+      }
+    ],
+    "checks": {
+      "check-payments": {
+        "run": "example-checker",
+        "report": "tenet-health-json",
+        "inputs": [
+          "checks/config.json"
+        ],
+        "tool": {
+          "name": "example-checker",
+          "version": "1.0.0",
+          "config_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "suppression_patterns": [
+          "// pinned-disable"
+        ]
+      }
+    },
+    "areas": {
+      "payments": {
+        "paths": [
+          "src/payments/**"
+        ],
+        "owners": [
+          "payments"
+        ]
+      },
+      "docs": {
+        "paths": [
+          "docs/**"
+        ],
+        "owners": [
+          "docs"
+        ]
+      }
+    },
+    "health": {
+      "indicators": {
+        "payment-health": {
+          "check": "check-payments",
+          "area": "payments",
+          "kind": "finding_set",
+          "mode": "enforce",
+          "scope": "touched_files",
+          "scope_globs": [
+            "src/payments/**"
+          ],
+          "max_new": 0
+        }
+      }
+    },
+    "protect": [
+      "checks/config.json"
+    ]
+  },
+  "diff": [
+    {
+      "status": "M",
+      "old_path": ".gitattributes",
+      "path": ".gitattributes",
+      "hunks": [
+        {
+          "old_start": 1,
+          "old_count": 1,
+          "new_start": 1,
+          "new_count": 1
+        }
+      ]
+    }
+  ]
+}

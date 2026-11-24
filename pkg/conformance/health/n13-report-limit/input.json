@@ -1,0 +1,8 @@
+{
+  "operation": "admit-health-report",
+  "format": "tenet-health-json",
+  "generate": {
+    "limit": "50 MB",
+    "overBy": 1
+  }
+}

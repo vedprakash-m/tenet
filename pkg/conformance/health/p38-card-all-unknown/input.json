@@ -1,0 +1,12 @@
+{
+  "operation": "render-health-card",
+  "health": [
+    {
+      "area": "payments",
+      "indicator": "payment-health",
+      "status": "unknown"
+    }
+  ],
+  "conclusion": "failure",
+  "configured": true
+}

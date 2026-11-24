@@ -1,0 +1,15 @@
+{
+  "operation": "map-diff",
+  "synthetic_tree": {
+    "deleted": {
+      "count": 1001,
+      "path_prefix": "old/item-",
+      "text_prefix": "before "
+    },
+    "added": {
+      "count": 1001,
+      "path_prefix": "new/item-",
+      "text_prefix": "after "
+    }
+  }
+}

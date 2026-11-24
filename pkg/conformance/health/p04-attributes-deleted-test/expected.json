@@ -1,0 +1,8 @@
+{
+  "removedPaths": [
+    "test/sample.test.ts"
+  ],
+  "weakening": [
+    "file-deleted"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "operation": "map-diff",
+  "subject": {
+    "base": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "tested": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "repo": {
+    "base": {
+      "src/payments/a.ts": "base\n",
+      "src/payments/unrelated.ts": "target-only\n"
+    },
+    "tested": {
+      "src/payments/a.ts": "head\n"
+    },
+    "head_only": true,
+    "merge_base": {
+      "src/payments/a.ts": "base\n"
+    }
+  }
+}

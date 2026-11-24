@@ -1,0 +1,16 @@
+{
+  "operation": "render-health-card",
+  "health": [
+    {
+      "area": "payments",
+      "indicator": "payment-health",
+      "status": "unknown"
+    }
+  ],
+  "conclusion": "failure",
+  "shared_head": [
+    1,
+    2
+  ],
+  "budget": 60000
+}

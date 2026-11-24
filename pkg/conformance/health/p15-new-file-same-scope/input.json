@@ -1,0 +1,159 @@
+{
+  "operation": "evaluate-health",
+  "subject": {
+    "base": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "tested": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "policy": {
+    "standard": "0.1.1",
+    "level": "verify",
+    "rules": {
+      "health-ratchet": "enforce"
+    },
+    "owners": [
+      {
+        "id": "payments",
+        "name": "Payments owner",
+        "roles": [
+          "owner"
+        ],
+        "forge_accounts": [
+          "pay-owner"
+        ]
+      },
+      {
+        "id": "alternate",
+        "name": "Second payments owner",
+        "roles": [
+          "owner"
+        ],
+        "forge_accounts": [
+          "pay-alt"
+        ]
+      },
+      {
+        "id": "docs",
+        "name": "Documentation owner",
+        "roles": [
+          "owner"
+        ],
+        "forge_accounts": [
+          "docs-owner"
+        ]
+      }
+    ],
+    "checks": {
+      "check-payments": {
+        "run": "example-checker",
+        "report": "tenet-health-json",
+        "inputs": [
+          "checks/config.json"
+        ],
+        "tool": {
+          "name": "example-checker",
+          "version": "1.0.0",
+          "config_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+        }
+      }
+    },
+    "areas": {
+      "payments": {
+        "paths": [
+          "src/payments/**"
+        ],
+        "owners": [
+          "payments"
+        ]
+      },
+      "docs": {
+        "paths": [
+          "docs/**"
+        ],
+        "owners": [
+          "docs"
+        ]
+      }
+    },
+    "health": {
+      "indicators": {
+        "payment-health": {
+          "kind": "scalar",
+          "area": "payments",
+          "check": "check-payments",
+          "mode": "enforce",
+          "scope_globs": [
+            "src/payments/**"
+          ],
+          "exclude_globs": [],
+          "population": "area",
+          "unit": "ratio",
+          "direction": "up",
+          "tolerance": {
+            "kind": "absolute",
+            "value": 0
+          }
+        }
+      }
+    }
+  },
+  "diff": [
+    {
+      "status": "A",
+      "old_path": null,
+      "path": "src/payments/new.ts",
+      "hunks": [
+        {
+          "old_start": 0,
+          "old_count": 0,
+          "new_start": 1,
+          "new_count": 1
+        }
+      ]
+    }
+  ],
+  "reports": [
+    {
+      "check": "check-payments",
+      "format": "tenet-health-json",
+      "exit_code": 0,
+      "file": "report.json"
+    }
+  ],
+  "lane_checks": [],
+  "evaluated_at": "2026-11-24T12:00:00Z",
+  "baseline": {
+    "schema_version": 1,
+    "entries": {
+      "payments::payment-health": {
+        "area": "payments",
+        "indicator": "payment-health",
+        "kind": "scalar",
+        "tool": "example-checker",
+        "tool_version": "1.0.0",
+        "config_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "scope_digest": "sha256:23d044cc115bef52d62ac19e0f61870abbdf2db3f81baae7a213a19087ea9eb2",
+        "value": 1,
+        "numerator": 10,
+        "denominator": 10
+      }
+    }
+  },
+  "digest_inputs": [
+    {
+      "digest": "sha256:23d044cc115bef52d62ac19e0f61870abbdf2db3f81baae7a213a19087ea9eb2",
+      "object": {
+        "kind": "scalar",
+        "area": "payments",
+        "area_paths": [
+          "src/payments/**"
+        ],
+        "area_source_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "scope_globs": [
+          "src/payments/**"
+        ],
+        "exclude_globs": [],
+        "unit": "ratio"
+      }
+    }
+  ]
+}

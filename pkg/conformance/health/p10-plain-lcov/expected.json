@@ -1,0 +1,16 @@
+{
+  "mode": "advise",
+  "gateCredit": 0,
+  "scope": "area",
+  "tool": {
+    "name": "example-checker",
+    "version": "1.0.0",
+    "config_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "numerator": 1,
+  "denominator": 1,
+  "missingMetadata": [
+    "coverage.complete",
+    "scope_digest"
+  ]
+}
