@@ -7,6 +7,13 @@
   ],
   "next": {
     "who": "owner",
-    "action": "resolve"
+    "action": "resolve",
+    "command": "tenet resolve"
+  },
+  "blocking": {
+    "row": 2,
+    "rule": "always-enforce",
+    "claim_id": null,
+    "reason": "TN-GATE-CONFLICT"
   }
 }

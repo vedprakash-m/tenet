@@ -1,0 +1,21 @@
+{
+  "scenarios": [
+    {
+      "name": "default-no-fetch",
+      "argv": [
+        "board",
+        "--json"
+      ],
+      "remote_records_present": true
+    },
+    {
+      "name": "offline-plus-fetch",
+      "argv": [
+        "board",
+        "--fetch",
+        "--offline",
+        "--json"
+      ]
+    }
+  ]
+}

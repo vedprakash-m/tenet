@@ -1,0 +1,8 @@
+{
+  "valid": true,
+  "kinds": [
+    "proof",
+    "simulation",
+    "differential"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "valid": true,
+  "schemas": {
+    "subject": "subject",
+    "actor": "actor",
+    "claim": "claim",
+    "evidence": "evidence",
+    "decision": "decision",
+    "event": "event"
+  }
+}

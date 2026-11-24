@@ -6,19 +6,19 @@
 
 **CP-0049 · Kernel schemas · R-010, R-173, R-179, R-180**
 1. *Needs:* Alpha.0; TS §3; C §§1, 11; evidence §1; K §§1–3.
-2. *Owns:* Kernel primitive, work, criteria, step assignment, result, loop and evidence payload schemas in `kit/schemas/`, `pkg/migrations/`, `test/schemas/kernel/`.
-3. *Exports:* Named schemas and `migratePacket(old) → {work, events, problems}`.
-4. *Behavior:* Validate minimal and full records. Preserve legacy identities and observed history. Create no inferred authority. Use only specified defaults. Leave originals intact.
-5. *Edge cases:* Unknown keys, extension keys, incomplete claims, duplicate history and repeat migration.
+2. *Owns:* `kit/schemas/{subject,actor,claim,evidence,decision,event,work,criteria,step-assignment,step-result,loop}.json` (`$defs` payloads inside `evidence.json`; onboarding keeps `assignment.json`), `pkg/migrations/`, `test/schemas/kernel/`.
+3. *Exports:* Named schemas (`…/schemas/0.1/<name>.json`) and `migratePacket(old) → {work, events, problems}`.
+4. *Behavior:* Validate minimal and full records. `evidence.json` conditionally validates `kind` payloads (`evidence §1`, rejecting unlocated non-incomplete `review` findings; `proof`/`simulation`/`differential` accepted as data). `loop.json` validates structure (`steps` default `20`, all 3 `route.on` branches); cross-step graph rules stay in `check --pack`. `migratePacket` emits deterministic Crockford-Base32 ULIDs (`48-bit ms + 80-bit sha256(rfc8785({work, index, entry}))`), `problems` as `finding.json`, preserves legacy identities/history (including `standard` lane and duplicates), creates no inferred authority, leaves originals intact.
+5. *Edge cases:* Unknown keys, `^x-` extensions, incomplete claims, duplicate history, malformed entries and repeat migration.
 6. *Out of scope:* Evaluation, signing and execution. Reserve proof, simulation and differential names until their methods ship.
 7. *Fixtures:* `test/schemas/kernel/<schema>/` with at least two positive and three negative inputs each, plus legacy and migrated packets.
 8. *Proving:* `npm test -- test/schemas/kernel`. Named invalid fixtures fail as expected. All current packet files migrate and validate twice with identical output.
 
 **CP-0007 · Events and reduction · R-018, R-030, R-037, R-039, R-091, R-185, R-186, R-200, R-201, R-203**
 1. *Needs:* CP-0049; TS §§3, 5; ALG-01, ALG-05; CI §§3–4; L-0030; K §§1–2.
-2. *Owns:* `src/kernel/{subjects,events,reduce,aliases,leases}.ts`, forge state observations, `test/kernel/{subjects,events}/`, conformance fixtures `alg-01`, `alg-05`, `alpha.0-records`.
-3. *Exports:* `subject(revision, exclusions)`, `readEvents(revision, work)`, `reduce(events, pack, asOf) → {state, conflicts, findings, applied, held}`, `recordForgeEvent(input)`, `readProofRecord(path, bytes)`.
-4. *Behavior:* Use one batched committed-record read. Reduce as K §1. Use the action and stable delivery or resource identity in the CP-0040 event table. Record ready, draft, merged and unmerged closed observations. Prove unobserved triggers with fixtures on the build track and mark them unobserved until the real binding checks run. Record their provenance and preserve signed and unsigned history. Alpha.0 compatibility is read-only. Working-copy leases stay advisory.
+2. *Owns:* `src/kernel/{subjects,events,reduce,aliases,leases}.ts`, forge state observations, `test/kernel/{subjects,events}/`, conformance fixtures `events/` (`alg-01`, `alg-05`, `alpha.0-records`).
+3. *Exports:* `subject(revision, exclusions)`, `readEvents(revision, work)`, `reduce(events, pack, asOf) → {state, justified_station, tentative_moves, conflicts, findings, applied, held}`, `recordForgeEvent(input)`, `readProofRecord(path, bytes)`, `deriveAlias(ulid, existingAliases)`, `activeLeases(events, asOf)`.
+4. *Behavior:* Use one batched committed-record read. Reduce as K §1 (`tentative_moves` flip to `unjustified` at `asOf >= deadline`; structural errors emit `TN-EV-DUP`, `TN-EV-ORPHAN`, `TN-EV-CYCLE`, `TN-EV-CROSS-WORK`, `TN-EV-NO-CREATE`, `TN-EV-RESOLVE`). `recordForgeEvent` records `ready_for_review`, `converted_to_draft`, `closed` (`merged` -> `"integrated"`, unmerged -> `null`) with `data.forge` (`signed: false`) and returns `{recorded: false, reason: "stale-forge-event", observation}` when stale. `readProofRecord` returns `{kind, schema_version, data, unknown_fields}` read-only (throwing `TN-SCHEMA` on unsupported versions). Working-copy leases stay advisory.
 5. *Edge cases:* Cycle, transitive orphan, duplicate, delayed input, repeated resolve, stale forge event, unsupported legacy version and unusual paths.
 6. *Out of scope:* Gate decisions, signatures and exclusive leases.
 7. *Fixtures:* `test/kernel/events/{cycles,orphans,duplicate,conflict,resolve,close}` and golden alpha.0 proof, latest pointer and rule observations.
@@ -26,9 +26,9 @@
 
 **CP-0050 · Gate, levels and rule modes · R-031, R-202, R-215**
 1. *Needs:* CP-0007; TS §§4, 6.1; ALG-06 and ALG-07; CI §10; K §§2, 4.
-2. *Owns:* `src/kernel/gate.ts`, `src/policy/modes.ts`, `level`, `rules`, recorder outcome mapping, `test/kernel/gate/`, conformance `alg-06`, `alg-07` and backtest.
-3. *Exports:* `evaluateGate(input) → GateResult`, `ruleMode(policy, rule)` and the `level` and `rules` commands.
-4. *Behavior:* Validate target policy and freshness. Evaluate every applicable row and return verdict, disposition, blocking reason and next action. Rule promotion requires its approved decision. Derive recorder conclusion from CI §10. Backtest the fixed 100-PR cohort and time active overhead per K §4.
+2. *Owns:* `src/kernel/gate.ts`, `src/policy/modes.ts`, `level`, `rules`, `kit/schemas/results/{level,rules}.json`, recorder outcome mapping, `test/kernel/gate/`, conformance `gate/` (`alg-06`, `alg-07`, backtest).
+3. *Exports:* `evaluateGate(input) → GateResult`, `ruleMode(policy, rule)`, `level(target, opts) → {previous_level, level, mode_changes, warnings}`, `rules(ruleId?, mode?, opts)`.
+4. *Behavior:* Validate target policy and freshness. Evaluate every applicable row and return verdict, disposition, blocking (`{row, rule, claim_id, reason}`), ordered `reasons` and next action (`ALG-07`). Rule promotion (`observe -> advise|enforce`) requires an approved `change-policy` decision (`TN-POLICY-RULE-DECISION`); self-waivers fail with `TN-GATE-SELF-WAIVE`. Derive recorder conclusion from CI §10. Backtest the fixed 100-PR cohort (`TN-BACKTEST-INCOMPLETE` when incomplete) and time active overhead per K §4.
 5. *Edge cases:* Advisory and enforced failures together, expiry boundary, stronger policy, changed requirement, missing inputs and incomplete backtest.
 6. *Out of scope:* Signing, forge replies and undeclared policy changes.
 7. *Fixtures:* `test/kernel/gate/{mixed,expired,stale,stop,unknown}/`, an input per ALG-07 row and the evaluator trial and backtest manifests.

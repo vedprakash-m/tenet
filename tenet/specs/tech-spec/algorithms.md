@@ -127,7 +127,7 @@ Each applicable claim's result is `satisfied`, `waived`, `failed`, `unsatisfied`
 - **Lead reason and next action:** the first matching row with the verdict's value. All matching reasons are listed.
 - Property: adding an applicable claim that is enforced and unsatisfied never yields a more permissive verdict or disposition.
 
-**Output:** `{claims: [{id, result, reason}], verdict, disposition: blocks|advises|records, lead, reasons, next: {who, action, command}, blocking?, evaluated_at, snapshot}`. When the disposition is `blocks`, `blocking` names the earliest enforcing match, by row and then claim ID (L-0032).
+**Output:** `{claims: [{id, result, reason}], verdict, disposition: blocks|advises|records, lead, reasons, next: {who, action, command}, blocking?, evaluated_at, snapshot}`. Order `reasons` by row (`1..8`), then ASCII `claim_id`; `blocking` is `{row, rule, claim_id, reason}` (`claim_id: null` for rows 1–5) for the earliest enforcing match (L-0032); live `next.command` is `tenet resolve|decide|escalate|fix` or `null`. Author self-waiver sets claim reason `TN-GATE-SELF-WAIVE` and `verdict: "refuse"`.
 
 Fixtures: one per row; an advisory review (row 7) beside an enforced failed claim (row 8): verdict refuse, disposition blocks; an advisory failure beside an enforced pass; a stop threshold with all claims passing.
 
