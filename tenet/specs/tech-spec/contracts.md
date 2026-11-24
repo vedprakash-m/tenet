@@ -18,7 +18,7 @@
 | Evaluation ID | First 16 hex characters of SHA-256 over RFC 8785 `{repository, work, tested_commit, base, acceptance_digest, implemented: [{id, blessed_digest}], policy_blob, tenet_version}` (`policy_blob` is the git blob ID of the target's `tenet.yaml`); a reply or approval binds it (ci.md §6). One evaluation can have several runs; each record is keyed by run and attempt (ci.md §4) |
 | `tenet.lock` | `{schema_version: 1, package: "@vedprakash-m/tenet", version, integrity: "sha512-…", kit_sha256}`; `integrity` is the registry's `dist.integrity`, recorded at install; CI installs with `npm install --no-save` and refuses a tarball that doesn't match it; whether the kit is vendored follows from `kit_path` |
 | `.tenet/` | `manifest.json` (§10), `manifest.pending.json`, `onboard/` (§4), `reports/`, `cache/`, `runs/`; all git-ignored except `manifest.json` and a vendored `kit/` (`init` writes the `.gitignore` block) |
-| `<records>/blessed/` | Copies of blessed section text and `log.jsonl` (one line per blessing session: `{doc, section, by, at, minutes, statements: {drafted, kept, edited, adopted, added}}`, where statement counts are `null` when unavailable), committed (ALG-03, ALG-13) |
+| `<records>/blessed/` | Copies of blessed section text and `log.jsonl` (one line per finished section action: `{doc, section, action: bless|confirm|reject|defer, by, at, minutes, statements: {drafted, kept, edited, adopted, added}, session_id?}`, where `statements` fields are `null` when unavailable), committed (ALG-03, ALG-13) |
 
 ## 2. Pull-request acceptance block
 
@@ -35,7 +35,7 @@ Parsing: heading text exact (`## Acceptance` or `### Acceptance`); optional `Imp
 **Front matter** (YAML, first lines of the file):
 
 ```yaml
-tenet: {spec: 1, doc: intent, level: L1, version: "0.1", owner: ved, drafted_from: 9f3c2e1, drafted_at_rev: 9f3c2e1}
+tenet: {spec: 1, doc: intent, level: L1, version: "0.1", owner: ved, drafted_from: 9f3c2e1, drafted_at_rev: 9f3c2e1}   # version uses /^\d+(?:\.\d+)*$/ (tenet fix defaults missing to "0.1")
 # drafted_from: the inventory's revision (information only; onboarding drafts only); drafted_at_rev: the commit holding the agent's draft, set by `onboard --card` (ALG-13). Both optional before then
 sections:
   requirements:                     # section slug (ALG-02)

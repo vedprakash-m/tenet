@@ -32,17 +32,17 @@ Fixtures: CRLF and LF give one digest; editing one section leaves the others unc
   - no open conflict or question naming the section (`TN-BLESS-OPEN-CONFLICT`)
   - no `origin: inferred` statement left (`TN-BLESS-INFERRED`; each is edited, or adopted, which sets `origin: asked; adopted_by`)
 
-  The person picks who they are from `owners[]`; `recorded: self`.
+  The person picks who they are from `owners[]` (falling back to `ownersFor` when empty; `alpha.0` allows any configured owner, `recorded: self`). Before blessing, resolve each open conflict (`section` match or document-wide `null`; optional `affects: ID1, ID2`; `Resolution:` read case-insensitively): ask which drafted statement ID it contradicts (or `no`), open the editor, and require that statement's text to change or vanish before writing `resolution:` (else postpone or fail `TN-BLESS-OPEN-CONFLICT`).
 - **Blessing writes:**
   - `state: blessed`, `blessed_digest` = the current digest, `blessed_at_rev` = `HEAD` (information only)
-  - `anchors`: per citation, `sha256` over its cited lines (CRLF→LF, trailing `[ \t]` trimmed; file trailing `\n` dropped before 1-based split) and raw lines saved in `<blessed copy>.anchors.json`. A `test:` citation anchors from the matching declaration line up to (exclusive of) the next outer/peer `ALG-09` declaration or EOF; a `doc:` citation anchors that section's digest.
-  - a copy of the text at `<records>/blessed/<document path with / as __>/<slug>.md`
+  - `anchors`: per citation, `sha256` over its cited lines (CRLF→LF, trailing `[ \t]` trimmed; file trailing `\n` dropped before 1-based split). Sidecar `<blessed copy>.anchors.json` maps `{citationKey: normalizedLinesText}`. A `test:` citation anchors from the matching declaration line up to (exclusive of) the next outer/peer `ALG-09` declaration or EOF; a `doc:` citation anchors that section's digest.
+  - a copy of the text at `<records>/blessed/<document path with / as __>/<slug>.md` (confined under `<records>/blessed/`, UTF-8 LF, refusing `/` vs `__` collisions with `TN-SCHEMA`)
   - a line in `<records>/blessed/log.jsonl` (ALG-13)
 
-  It prints the `git commit` command; it never commits.
+  Persist per finished section (copy, sidecar, atomic spec write after checking concurrent edits with `TN-SUBJ-DIRTY`, then log append); roll back that section's files on error. `EOF`/`SIGINT` keeps finished sections; prints `git commit` and never commits.
 - **Session actions:** (`bless` prompts owner from `owners[]`, conflicts with numbered choices plus `Decide later`, then each section with `bless / edit / reject / later` or `confirm` when `sources-changed`; `later` records `defer`):
-  - bless (and bump the document's `version` when blessed text changed)
-  - **confirm**: only for `sources-changed` sections. It shows each changed anchor's old and new lines, prompts `[y/N]`, then keeps the text, re-anchors and records a blessing.
+  - bless (on first blessing keep `version`; when blessed text changes, increment the final integer of dotted numeric `version` e.g. `0.1` → `0.2`, or increment trailing `.<n>` / append `.1` on legacy strings)
+  - **confirm**: only for `sources-changed` sections. It shows each changed anchor's old and new lines (or `(unavailable)` and fails `TN-CITE-FILE` if missing, keeping the prior blessed copy), prompts `[y/N]`, then keeps the text, re-anchors and records a blessing.
   - **edit**: opens `$VISUAL`, else `$EDITOR`, else `notepad` on Windows or `vi`, then re-parses.
   - **reject** and **defer**: on a section that was never blessed, they set `rejected` (excluded from context) or `deferred` (returned as a hint). On an `edited` blessed section, they act on the edit: the blessed copy stays in force, and `"Restore the document's section from its blessed copy? [y/N] "` offers to overwrite the document section (`y` restores `digest === blessed_digest` and clears `edited`; `n` keeps the edited draft flagged `edited`).
 - **Flags**, recomputed by `check` and `board` at the current revision (return `[]` when `section.state !== "blessed"`):
