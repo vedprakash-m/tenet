@@ -1,3 +1,23 @@
+---
+tenet: {spec: 1, doc: tech-spec, level: L2, version: "0.13", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:8bcb2421cf77ef3b6528a3377cac44cbb567e69e7af1565b9e0e4836b0ebf757, flags: []}
+  1-architecture: {state: draft, digest: sha256:df6256d55fc112385f5376112ce467aab8353f061ec0291691ea10c67e2a6038, flags: []}
+  2-repository-and-package: {state: draft, digest: sha256:82facd0e673eac23fe0bf59432082c098c953dc87a32a46461efa29a59413e05, flags: []}
+  3-the-seven-primitives: {state: draft, digest: sha256:4c1c991fdd8b533339ba434fc39c69b4d05d23bb41673ee2b3831d17afee1be0, flags: []}
+  4-the-gate-rule: {state: draft, digest: sha256:af8461e41698129d1d6903f3d6f5600e1d6dd3a721f25540310e3c1a8564249e, flags: []}
+  5-events-reduction-and-replay: {state: draft, digest: sha256:d5d04a523aaeba0bb5d998970443ab5c0cab0b95852a03aa21146f46945d97f2, flags: []}
+  6-policy: {state: draft, digest: sha256:10dfab7718095cd3a343271f44a0b3a37b298f2b6177d6cc88b4c7afb27959ae, flags: []}
+  7-verification-and-authority: {state: draft, digest: sha256:469c73ee583c94aa8610017f23a0248060cfc35f60869a4127bae874c620e0b5, flags: []}
+  8-views: {state: draft, digest: sha256:6be01c982212581a6f6a74515aac19a78c9b692f569524be9dae23fc19ff644a, flags: []}
+  9-context-budgets-and-rollover: {state: draft, digest: sha256:1d583381b20aff40646436b584466608a2ec46d1372ce88e5683f1c20f2a5da1, flags: []}
+  10-commands: {state: draft, digest: sha256:cb38194079fe10c6b4176057758b95f1154e45721b6ebec81aaf933f61680ba4, flags: []}
+  11-loops-and-bindings: {state: draft, digest: sha256:09764bdb3eb55a506bebd9d2143b1434f0343872ea3baaa4fdc0f51198358a73, flags: []}
+  12-install-and-upgrade: {state: draft, digest: sha256:299cc8a67d4d328d58bb7eaf4c5f0b5aba251678aa6664b5db53b189e8166a4f, flags: []}
+  13-conformance-red-team-and-self-verification: {state: draft, digest: sha256:0910b394b84f7b1f6536d5647503b8c86871d07a245595fe3eab29b238f7feab, flags: []}
+  14-security: {state: draft, digest: sha256:8b704689e4138c097d98a63925ce3ee3c0a82cc489a90b04899d1abc1590bc3b, flags: []}
+  15-testing: {state: draft, digest: sha256:f14bfae4e2bf8f7d7a5d34b4f37e6000ad7597e231453fd556a7d8ea0e5c3c4e, flags: []}
+---
 # Tenet technical specification
 
 > Level L2 · Version 0.13 · Status: **draft, awaiting the Owner's approval** · Implements [prd.md](prd.md) and its parts · Parts: [kernel](tech-spec/kernel.md) (kernel algorithms and interfaces), [contracts](tech-spec/contracts.md) (formats and interfaces), [messages](tech-spec/messages.md) (error message and fix templates), [algorithms](tech-spec/algorithms.md), [CI and authority](tech-spec/ci.md), [agents](tech-spec/agents.md), [evidence](tech-spec/evidence.md), [onboarding](tech-spec/onboarding.md) · Normative until CP-0015 writes the kernel: this specification, its parts and the PRD; `kit/TENET.md` is superseded except where its banner says · Sections marked `<!-- provisional -->` are intended invariants: they need the Owner to change, and become `<!-- invariant -->` once the spikes (CP-0017, CP-0040, CP-0041) and the first implementation confirm them · Budget: 12,000 tokens · Previous version: `archive/specs/tech-spec.md@0.12.md`
