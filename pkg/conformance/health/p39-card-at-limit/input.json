@@ -9,5 +9,9 @@
   ],
   "conclusion": "failure",
   "budget": 60000,
-  "filler": "fill-to-limit"
+  "filler": {
+    "section": "blocking_regressed",
+    "character": "x",
+    "unboundedCharacters": 60000
+  }
 }

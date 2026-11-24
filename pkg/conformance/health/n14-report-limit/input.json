@@ -1,8 +1,17 @@
 {
   "operation": "admit-health-report",
-  "format": "tenet-health-json",
+  "format": "sarif",
   "generate": {
-    "limit": "depth 64",
-    "overBy": 1
+    "kind": "nest-sarif-property",
+    "seed": "../p09-sarif-enforce/report.json",
+    "propertyPath": [
+      "runs",
+      0,
+      "properties",
+      "fixture_depth"
+    ],
+    "container": "array",
+    "depth": 65,
+    "leaf": null
   }
 }

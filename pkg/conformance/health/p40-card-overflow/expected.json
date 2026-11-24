@@ -1,0 +1,22 @@
+{
+  "summaryLength": 60000,
+  "overflow": true,
+  "overflow_ref": "proof/pr-8/eval-health/run-40-2-card.md",
+  "record": {
+    "ref": "refs/tenet/records",
+    "path": "proof/pr-8/eval-health/run-40-2-card.md",
+    "matchesFullCard": true,
+    "lineEndings": "LF"
+  },
+  "degraded": [
+    "check summary exceeded 60,000 characters; full proof card in refs/tenet/records"
+  ],
+  "whyText": [
+    "check summary exceeded 60,000 characters; full proof card in refs/tenet/records"
+  ],
+  "summary": {
+    "essentialPrefixLength": 59925,
+    "pointer": "\n… (truncated at 60,000 characters · full proof card in refs/tenet/records)"
+  },
+  "conclusion": "failure"
+}

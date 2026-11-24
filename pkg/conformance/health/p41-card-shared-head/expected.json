@@ -1,0 +1,14 @@
+{
+  "order": [
+    1,
+    2
+  ],
+  "headings": [
+    "Pull request #1\n",
+    "Pull request #2\n"
+  ],
+  "separator": "\n",
+  "overhead": 33,
+  "perPrBudget": 29983,
+  "conclusion": "failure"
+}
