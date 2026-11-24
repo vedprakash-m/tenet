@@ -139,7 +139,7 @@ A loop is data in `kit/loops/<name>.yaml` (schema `kit/schemas/loop.json`, CP-00
 |---|---|
 | `loop`, `kind` | Name; `station` or `fix` |
 | `applies` | `{station, lanes}` |
-| `limits` | `{rounds}` (default 2; `tenet.yaml` may lower it) and `{steps}`, a total cap (default 20) |
+| `limits` | `{rounds}` (default 5; `tenet.yaml` may lower it) and `{steps}`, a total cap (default 40). A loop stops at agreement or at `limits.rounds`, whichever comes first: agreement means the critic step returns no blocking finding, so the route advances |
 | `steps[]` | In order; each has an `id` and a `kind` |
 
 | Step kind | Fields | Does |
@@ -170,7 +170,7 @@ A route maps `records` and `advises` to `advance`. For `blocks`, use the first e
 loop: define                      # kit/loops/define.yaml
 kind: station
 applies: {station: define, lanes: [careful, deep]}
-limits: {rounds: 2}
+limits: {rounds: 5}
 steps:
   - {id: shape, kind: agent, card: shaper, inputs: [intake, context], outputs: [definition]}
   - {id: review, kind: agent, card: spec-reviewer, inputs: [definition, context], outputs: [findings], tools: read-only}
@@ -185,7 +185,7 @@ steps:
 loop: build                       # kit/loops/build.yaml
 kind: station
 applies: {station: build, lanes: [quick, careful, deep]}
-limits: {rounds: 2}
+limits: {rounds: 5}
 steps:
   - {id: work, kind: agent, card: builder, inputs: [assignment, context, tests], outputs: [result]}
   - {id: checks, kind: script, run: verify --run-checks --local}   # writes a local advisory card for the judge
