@@ -421,13 +421,10 @@ async function countDraft(entry: SectionState, current: SpecSection, ws: Workspa
   return counts;
 }
 
-function bumpVersion(version: unknown, filename: string): string {
-  if (typeof version !== "string" || !/^\d+(?:\.\d+)*$/.test(version)) {
-    throw diagnostic("TN-SCHEMA", { path: filename, schema: "spec-front-matter", pointer: "/tenet/version" });
-  }
-  const parts = version.split(".");
-  const last = parts.pop() ?? "0";
-  return [...parts, String(BigInt(last) + 1n)].join(".");
+function bumpVersion(version: unknown): string {
+  const text = typeof version === "string" && version ? version : "0.1";
+  if (!/^\d+$/.test(text) && !/\.\d+$/.test(text)) return `${text}.1`;
+  return text.replace(/\d+$/, (last) => String(BigInt(last) + 1n));
 }
 
 async function copyFor(entry: SectionState, read: ReturnType<typeof reader>): Promise<string> {
@@ -495,7 +492,7 @@ async function writeAction(ws: Workspace, entry: SectionState, action: Completed
       const copyPath = `${ws.records}/blessed/${checked.doc.path.replaceAll("/", "__")}/${section.slug}.md`;
       const digest = sectionDigest(subject.text);
       if (action === "bless" && section.blessed_digest && section.blessed_digest !== digest) {
-        front.yaml.setIn(["tenet", "version"], bumpVersion(front.yaml.getIn(["tenet", "version"]), checked.doc.path));
+        front.yaml.setIn(["tenet", "version"], bumpVersion(front.yaml.getIn(["tenet", "version"])));
       }
       set("state", "blessed");
       set("digest", section.digest);
@@ -515,6 +512,7 @@ async function writeAction(ws: Workspace, entry: SectionState, action: Completed
         front.body = matter(restored.text).body;
         set("digest", restored.section.digest);
         set("flags", flags(restored.section, read));
+        measured = restored.section;
       } else {
         set("digest", section.digest);
         set("flags", flags(section, read));
@@ -527,7 +525,7 @@ async function writeAction(ws: Workspace, entry: SectionState, action: Completed
     patches.push({ path: checked.doc.path, text: documentText(front) });
     const counts = await countDraft(checked, measured, ws);
     await persist(ws, patches, {
-      doc: checked.doc.path, section: section.slug, by, at: utcSeconds(ws.now),
+      doc: checked.doc.path, section: section.slug, action, by, at: utcSeconds(ws.now),
       minutes: Math.max(0, ws.now().valueOf() - ws.started) / 60_000, statements: counts,
     });
     return [];

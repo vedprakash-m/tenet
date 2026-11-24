@@ -144,7 +144,7 @@ test("an interruption preserves finished sections and the matching log entry", a
   const lines = (await raw(repo, log)).trim().split("\n");
   assert.equal(lines.length, 1);
   assert.deepEqual(JSON.parse(lines[0]), {
-    doc: filename, section: "requirements", by: "ved", at: date, minutes: 0,
+    doc: filename, section: "requirements", action: "bless", by: "ved", at: date, minutes: 0,
     statements: { drafted: null, kept: null, edited: null, adopted: null, added: null },
   });
   assert.match(result.text, /git commit -m "Bless specifications"/);
@@ -314,4 +314,32 @@ test("self blessing offers configured IDs and falls back to ownersFor", async (t
   assert.deepEqual(result.findings, []);
   assert.match(result.text, /Who is blessing\? 1\. @platform/);
   assert.equal(JSON.parse(await raw(repo, log)).by, "@platform");
+});
+
+test("re-blessing increments a legacy suffix or appends one when absent", async (t) => {
+  const repo = await setup(t, `## Requirements\n${requirement}`);
+  await repo.write(filename, (await raw(repo)).replace('"0.1"', '"v1"'));
+  assert.equal((await speak(repo, "1\nbless\n")).result?.blessed, 1);
+  assert.match(await raw(repo), /version: "?v1"?,/);
+  await repo.write(filename, (await raw(repo)).replace("Retry once.", "Retry twice."));
+  assert.equal((await speak(repo, "1\nbless\n")).result?.blessed, 1);
+  assert.match(await raw(repo), /version: "?v1\.1"?,/);
+  await repo.write(filename, (await raw(repo)).replace("Retry twice.", "Retry again."));
+  assert.equal((await speak(repo, "1\nbless\n")).result?.blessed, 1);
+  assert.match(await raw(repo), /version: "?v1\.2"?,/);
+});
+
+test("the log keeps one action per finished section and accounts for kept adoptions and deletions", async (t) => {
+  const draftBody = "## Requirements\n- R-1 Retry once. {origin: inferred}\n- R-2 Keep a receipt. {origin: asked}\n\n## Design\nKeep local state.";
+  const repo = await setup(t, draftBody);
+  const draft = repo.git(["rev-parse", "HEAD"]).trim();
+  await repo.write(filename, spec(draftBody.replace("- R-2 Keep a receipt. {origin: asked}\n", ""), `, drafted_at_rev: "${draft}"`));
+  const result = await speak(repo, "1\nbless\nadopt\nlater\n");
+  assert.deepEqual(result.findings, []);
+  assert.deepEqual(result.result, { blessed: 1, confirmed: 0, rejected: 0, deferred: 1, minutes: 0 });
+  const rows = (await raw(repo, log)).trim().split("\n").map((line) => JSON.parse(line));
+  assert.deepEqual(rows.map(({ section, action, statements }) => [section, action, statements]), [
+    ["requirements", "bless", { drafted: 2, kept: 1, edited: 1, adopted: 1, added: 0 }],
+    ["design", "defer", { drafted: 1, kept: 1, edited: 0, adopted: 0, added: 0 }],
+  ]);
 });
