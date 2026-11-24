@@ -3,3 +3,4 @@ dist/
 coverage/
 *.tsbuildinfo
 .test-tmp/
+.tenet/health/

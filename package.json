@@ -24,11 +24,12 @@
     "runner"
   ],
   "scripts": {
-    "build": "tsc --target ES2023 --module NodeNext --moduleResolution NodeNext --strict --noUncheckedIndexedAccess --exactOptionalPropertyTypes --verbatimModuleSyntax --noEmitOnError --skipLibCheck --outDir dist --rootDir src --declaration src/cli.ts src/sdk.ts && node -e \"require('node:fs').chmodSync('dist/cli.js',0o755)\"",
+    "build": "tsc --target ES2023 --module NodeNext --moduleResolution NodeNext --strict --noUncheckedIndexedAccess --exactOptionalPropertyTypes --verbatimModuleSyntax --noEmitOnError --skipLibCheck --outDir dist --rootDir src --declaration --sourceMap src/cli.ts src/sdk.ts && node -e \"require('node:fs').chmodSync('dist/cli.js',0o755)\"",
     "gen:types": "node src/core/schema.ts --generate-types",
     "lint": "biome lint .",
     "prepack": "npm run build",
-    "test": "npm run build && node -e \"const fs=require('node:fs');const path=require('node:path');const {spawnSync}=require('node:child_process');const roots=process.argv.slice(1);if(roots.length===0)roots.push('test');const files=[];const visit=p=>{const stat=fs.statSync(p);if(stat.isDirectory()){for(const name of fs.readdirSync(p))visit(path.join(p,name));}else if(/\\.test\\.[jt]s$/.test(p))files.push(p);};for(const root of roots)visit(root);const child=spawnSync(process.execPath,['--test',...files],{stdio:'inherit'});process.exit(child.status??1);\"",
+    "test": "npm run build && node scripts/run-tests.mjs",
+    "coverage": "npm run build && node scripts/run-tests.mjs --coverage",
     "eval:onboarding": "node pkg/evals/onboarding/run.mjs",
     "check:examples": "node scripts/check-examples.mjs"
   },
