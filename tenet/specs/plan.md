@@ -1,7 +1,7 @@
 ---
 tenet: {spec: 1, doc: plan, level: L2, version: "0.14", owner: ved}
 sections:
-  _preamble: {state: draft, digest: sha256:b48ebbe1a148da96f85e78ef58f3730b7b5bfd76371a567ab2ed87d74ddacca4, flags: []}
+  _preamble: {state: draft, digest: sha256:54a5afe4b6c58c6869cf63d934a91aa4e328cdda2136ac2fa23f4614214e1bb4, flags: []}
   0-status-and-next-actions: {state: draft, digest: sha256:9adec36e8d9d4e45f657afb651678e9c9460538f204ce90503580c6f16222de0, flags: []}
   1-milestones: {state: draft, digest: sha256:54ee86d0e5dabb39a28ebf671417842931af59e548a5c5d295502d7de563c34f, flags: []}
   2-waves: {state: draft, digest: sha256:4876aec1399cc2a420c4bf014837b2a8103114609fd798b158a8275837878252, flags: []}
@@ -13,8 +13,8 @@ sections:
 
 > L2 · Version 0.14 · Draft · [PRD §6](prd.md#6-milestones-and-releases) · Packets in `tenet/packets/` · Budget: 6,000 tokens · Previous version: `archive/specs/plan.md@0.13.md` · Release parts: [alpha.0](plan/alpha.0.md) and [alpha.0b](plan/alpha.0b.md), [alpha.1](plan/alpha.1.md), [alpha.2](plan/alpha.2.md), [0.1.0](plan/0.1.0.md), [0.1.x](plan/0.1.x.md)
 
-**Context card.** Two tracks (DEC-57). The **build track** runs without calendar waits: M0 runs the spikes in parallel on day 1, writes the kernel and **every** release's contracts, tries them on a medium-effort model, then building proceeds wave after wave, gated only by automatic checks. The **evidence track** (interviews, outside maintainers, dogfooding, pilots) runs alongside and never blocks building; it gates only announcing a release and claiming a horizon. Releases are published as snapshots when their build gate is green. M1 ships in four releases, all on one CI shape: a test job and a recorder (DEC-48).
-- **alpha.0, intent and proof:** install from npm; onboarding that drafts specifications your agent grounds in your code and you bless; agent context; an advisory proof card that opens with the blessed requirements a change touches; a board of specifications. Nothing blocks.
+**Context card.** Two tracks (DEC-57): the **build track** runs without calendar waits (M0 spikes on day 1, frozen kernel and contracts tried on a medium model, then wave-by-wave builds gated by automatic checks); the **evidence track** (interviews, maintainers, dogfooding, pilots) runs alongside and gates only announcements and horizon claims. Releases publish as snapshots when their build gate is green, all on one CI shape (test job + recorder, DEC-48):
+- **alpha.0, intent and proof:** npm install; onboarding drafts specs grounded in code that you bless; agent context; advisory proof cards opening with touched blessed requirements; a spec board. Nothing blocks.
 - **alpha.1, protect:** rules the Owner turns on block honest mistakes; decisions on pull requests.
 - **alpha.2, verify:** a sealed test job and signed records that cannot be forged.
 - **0.1.0:** the careful lane, reference agents, work commands and a minimal reference runner that chains them through your own agent tool.
