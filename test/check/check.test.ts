@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
-import { cleanupTestRoot, tmpRepo } from "../helpers/tmpRepo.ts";
+import { tmpRepo } from "../helpers/tmpRepo.ts";
 import { sectionDigest } from "../../dist/specs/sections.js";
 import { check } from "../../dist/specs/check.js";
 import { fix } from "../../dist/specs/fix.js";
@@ -575,6 +575,3 @@ test("check processes 500 specification documents with one discovery pass", asyn
   }
 });
 
-test.after(async () => {
-  await cleanupTestRoot();
-});
