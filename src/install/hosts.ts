@@ -9,7 +9,7 @@ function emptyPlan(): HostWritePlan {
 }
 
 function skillWrites(prefix: string): string[] {
-  return skillNames.map((name) => `${prefix}/${name}/SKILL.md`);
+  return skillNames.map((name) => `${prefix}/tenet-${name}/SKILL.md`);
 }
 
 function localKey(

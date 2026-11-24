@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { rm } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
+import { pathToFileURL } from "node:url";
 import { cleanupTestRoot, tmpRepo } from "../helpers/tmpRepo.ts";
 
+const output = path.resolve(`.install-preflight-dist-${process.pid}`);
 const compile = spawnSync(process.execPath, [
   path.resolve("node_modules/typescript/bin/tsc"),
   "--target", "ES2023",
@@ -16,13 +19,15 @@ const compile = spawnSync(process.execPath, [
   "--noEmitOnError",
   "--skipLibCheck",
   "--declaration",
-  "--outDir", "dist",
+  "--outDir", output,
   "--rootDir", "src",
   "src/install/index.ts",
 ], { encoding: "utf8", shell: false, windowsHide: true });
 assert.equal(compile.status, 0, compile.stderr || compile.stdout);
 
-const { detectHosts, hostDescriptors, preflight } = await import("../../dist/install/index.js");
+const { detectHosts, hostDescriptors, preflight } = await import(
+  pathToFileURL(path.join(output, "install", "index.js")).href
+);
 
 const githubEnvironment = {
   git: {
@@ -43,7 +48,10 @@ async function commit(repo: Awaited<ReturnType<typeof tmpRepo>>): Promise<void> 
   repo.git(["commit", "-qm", "fixture"]);
 }
 
-test.after(cleanupTestRoot);
+test.after(async () => {
+  await cleanupTestRoot();
+  await rm(output, { recursive: true, force: true });
+});
 
 test("host descriptors detect markers and own their exact shared writes", async (t) => {
   const repo = await tmpRepo("install-hosts");
@@ -67,9 +75,9 @@ test("host descriptors detect markers and own their exact shared writes", async 
   assert.deepEqual(writes.blocks, [{ path: "CLAUDE.md", kind: "markdown" }]);
   assert.deepEqual(writes.keys, [{ path: ".mcp.json", pointer: "/mcpServers/tenet" }]);
   assert.deepEqual(writes.created, [
-    ".claude/skills/draft-specs/SKILL.md",
-    ".claude/skills/review-with-findings/SKILL.md",
-    ".claude/skills/work-a-change/SKILL.md",
+    ".claude/skills/tenet-draft-specs/SKILL.md",
+    ".claude/skills/tenet-review-with-findings/SKILL.md",
+    ".claude/skills/tenet-work-a-change/SKILL.md",
   ]);
 });
 

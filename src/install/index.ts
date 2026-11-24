@@ -1,4 +1,6 @@
 export { HOST_DESCRIPTORS, compareUtf16, detectHosts, hostDescriptors } from "./hosts.js";
+export { init } from "./init.js";
+export { applyPlan, planWriteSet } from "./writes.js";
 export { preflight, preflightInit } from "./preflight.js";
 export type {
   CiJobFact,
@@ -7,8 +9,17 @@ export type {
   HostContext,
   HostDescriptor,
   HostWritePlan,
+  InitOptions,
   InitPlan,
+  InitResult,
+  InitWrote,
   InstallFinding,
+  InstallManifest,
+  ManifestBlock,
+  ManifestCreated,
+  ManifestKey,
+  PendingManifest,
+  PendingWrite,
   PlannedBlock,
   PlannedHost,
   PlannedKey,
@@ -22,4 +33,5 @@ export type {
   ProjectKind,
   RunnerFact,
   RunnerKind,
+  WriteSet,
 } from "./types.js";

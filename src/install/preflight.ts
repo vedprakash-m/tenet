@@ -1,5 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseDocument } from "yaml";
 import { git } from "../core/git.js";
 import { message } from "../core/messages.js";
@@ -368,6 +369,17 @@ async function emptyRootNames(cwd: string): Promise<Set<string>> {
   }
 }
 
+async function listKitFiles(root: string, relative = ""): Promise<string[]> {
+  const entries = await readdir(path.join(root, ...relative.split("/").filter(Boolean)), { withFileTypes: true });
+  const files: string[] = [];
+  for (const entry of entries.sort((left, right) => compareUtf16(left.name, right.name))) {
+    const name = relative ? `${relative}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) files.push(...(await listKitFiles(root, name)));
+    else if (entry.isFile()) files.push(name);
+  }
+  return files;
+}
+
 export async function preflight(options: PreflightOptions = {}): Promise<PreflightResult> {
   const cwd = path.resolve(options.cwd ?? process.cwd());
   const environment = options.environment ?? {};
@@ -457,6 +469,10 @@ export async function preflight(options: PreflightOptions = {}): Promise<Preflig
     ".tenet/manifest.json",
     ...hostPlan.created,
   ];
+  if (options.vendor) {
+    const kitRoot = environment.kitPath ?? path.resolve(fileURLToPath(new URL("../../kit/", import.meta.url)));
+    for (const relative of await listKitFiles(kitRoot)) created.push(`.tenet/kit/${relative}`);
+  }
   const blocks: PlannedBlock[] = [
     { path: ".gitignore", kind: "yaml" },
     { path: ".gitattributes", kind: "yaml" },

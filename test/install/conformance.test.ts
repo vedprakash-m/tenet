@@ -1,0 +1,412 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { cp, mkdir, mkdtemp, readFile, readlink, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import path from "node:path";
+import test from "node:test";
+import { pathToFileURL } from "node:url";
+import { cleanupTestRoot, tmpRepo, type TemporaryRepository } from "../helpers/tmpRepo.ts";
+
+const output = path.resolve(".test-tmp", `install-dist-${process.pid}`);
+const compile = spawnSync(process.execPath, [
+  path.resolve("node_modules/typescript/bin/tsc"),
+  "--target", "ES2023",
+  "--module", "NodeNext",
+  "--moduleResolution", "NodeNext",
+  "--strict",
+  "--noUncheckedIndexedAccess",
+  "--exactOptionalPropertyTypes",
+  "--verbatimModuleSyntax",
+  "--noEmitOnError",
+  "--skipLibCheck",
+  "--declaration",
+  "--outDir", output,
+  "--rootDir", "src",
+  "src/install/index.ts",
+], { encoding: "utf8", shell: false, windowsHide: true });
+assert.equal(compile.status, 0, compile.stderr || compile.stdout);
+
+const { init, planWriteSet, preflight } = await import(
+  pathToFileURL(path.join(output, "install", "index.js")).href
+);
+
+const casesRoot = path.resolve("pkg/conformance/install");
+const kitPath = path.resolve("kit");
+const baseEnvironment = JSON.parse(
+  await readFile(path.join(casesRoot, "environment.json"), "utf8"),
+) as Record<string, unknown>;
+
+type CaseArguments = {
+  schema: number;
+  platform?: string;
+  hostProfile?: {
+    windowsCommandShimRequired?: string[];
+    settingsScope?: string;
+  };
+  links?: Array<{ path: string; fixtureTarget: string; kind: string }>;
+  outsideFiles?: Record<string, string>;
+  steps: Array<{
+    run: string[];
+    answers?: Record<string, unknown>;
+    interrupt?: {
+      at: string;
+      oneFreshCopyPerPoint?: boolean;
+    };
+    beforeRun?: {
+      write: Record<string, string>;
+    };
+  }>;
+  git?: Record<string, unknown>;
+};
+
+type CaseSetup = {
+  repo: TemporaryRepository;
+  options: Record<string, unknown>;
+  args: CaseArguments;
+  sandbox: string;
+};
+
+function merge(left: Record<string, unknown>, right: Record<string, unknown>): Record<string, unknown> {
+  const output = { ...left };
+  for (const [key, value] of Object.entries(right)) {
+    const old = output[key];
+    if (old && value && typeof old === "object" && typeof value === "object" &&
+      !Array.isArray(old) && !Array.isArray(value)) {
+      output[key] = merge(old as Record<string, unknown>, value as Record<string, unknown>);
+    } else {
+      output[key] = value;
+    }
+  }
+  return output;
+}
+
+async function copyFixture(caseName: string, repo: TemporaryRepository): Promise<void> {
+  const before = path.join(casesRoot, caseName, "before");
+  for (const entry of await readdir(before, { withFileTypes: true })) {
+    if (entry.name === ".gitkeep") continue;
+    await cp(path.join(before, entry.name), path.join(repo.path, entry.name), {
+      recursive: true,
+      force: true,
+      preserveTimestamps: true,
+    });
+  }
+}
+
+async function makeCase(caseName: string): Promise<CaseSetup> {
+  const repo = await tmpRepo(`install-${caseName}`);
+  const args = JSON.parse(
+    await readFile(path.join(casesRoot, caseName, "args.json"), "utf8"),
+  ) as CaseArguments;
+  await copyFixture(caseName, repo);
+  const sandbox = await mkdtemp(path.join(path.dirname(repo.path), `${caseName}-sandbox-`));
+  for (const [relative, contents] of Object.entries(args.outsideFiles ?? {})) {
+    const filename = path.join(sandbox, ...relative.split("/"));
+    await mkdir(path.dirname(filename), { recursive: true });
+    await writeFile(filename, contents);
+  }
+  for (const link of args.links ?? []) {
+    const target = path.join(sandbox, ...link.fixtureTarget.split("/"));
+    await mkdir(target, { recursive: true });
+    await symlink(target, path.join(repo.path, ...link.path.split("/")), "junction");
+  }
+  const environment = merge(baseEnvironment, {
+    ...(args.git ? { git: args.git } : {}),
+    ...(args.platform ? { platform: args.platform } : {}),
+    kitPath,
+  });
+  const git = environment.git as Record<string, unknown>;
+  if (git.state === "not-a-repository" || git.state === "tool-unavailable") {
+    if (git.state === "not-a-repository") await rm(path.join(repo.path, ".git"), { recursive: true, force: true });
+  } else if (git.state === "committed") {
+    repo.git(["add", "-A"]);
+    repo.git(["commit", "-qm", "fixture"]);
+  }
+  const step = args.steps[0];
+  if (!step) throw new Error(`Missing first step for ${caseName}.`);
+  const yes = step.run.includes("--yes");
+  const vendor = step.run.includes("--vendor");
+  const force = step.run.includes("--force");
+  const profileRoot = args.hostProfile?.settingsScope === "isolated-user-profile"
+    ? path.join(sandbox, "profile")
+    : undefined;
+  if (profileRoot) await mkdir(profileRoot, { recursive: true });
+  const options = {
+    cwd: repo.path,
+    yes,
+    vendor,
+    force,
+    answers: step.answers ?? {},
+    environment: {
+      ...environment,
+      ...(profileRoot ? { localProfileRoot: profileRoot } : {}),
+      ...(args.hostProfile?.windowsCommandShimRequired
+        ? { windowsCommandShimRequired: args.hostProfile.windowsCommandShimRequired }
+        : {}),
+    },
+  };
+  return { repo, options, args, sandbox };
+}
+
+async function dispose(setup: CaseSetup): Promise<void> {
+  await setup.repo.cleanup();
+  await rm(setup.sandbox, { recursive: true, force: true });
+}
+
+async function tree(root: string): Promise<Record<string, string>> {
+  const output: Record<string, string> = {};
+  async function visit(directory: string, relative = ""): Promise<void> {
+    for (const entry of await readdir(path.join(directory, ...relative.split("/").filter(Boolean)), {
+      withFileTypes: true,
+    })) {
+      if (entry.name === ".git") continue;
+      const name = relative ? `${relative}/${entry.name}` : entry.name;
+      if (entry.isSymbolicLink()) output[name] = `link:${await readlink(path.join(directory, ...name.split("/")))}`;
+      else if (entry.isDirectory()) await visit(directory, name);
+      else output[name] = (await readFile(path.join(directory, ...name.split("/")))).toString("base64");
+    }
+  }
+  await visit(root);
+  return output;
+}
+
+function findingCode(error: unknown): string | undefined {
+  return (error as { finding?: { code?: string } })?.finding?.code;
+}
+
+test.after(async () => {
+  await cleanupTestRoot();
+  await rm(output, { recursive: true, force: true });
+});
+
+const positiveCases = [
+  "p01-empty",
+  "p02-node-vitest",
+  "p03-node-existing-ci",
+  "p04-node-matrix",
+  "p05-python-pytest",
+  "p06-go",
+  "p07-existing-agents-md",
+  "p08-existing-mcp",
+  "p09-init-repeat-upgrade-remove",
+  "p10-remove-keeps-user-edits",
+  "p12-windows-local-host",
+  "p13-existing-ci-with-services",
+  "p14-reusable-workflow",
+  "p15-non-github-forge",
+  "p16-vendor-fresh-clone",
+  "p17-upgrade-pins-and-policy",
+  "p18-accepted-reporter-edit",
+];
+
+for (const caseName of positiveCases) {
+  test(`init conformance: ${caseName}`, async (t) => {
+    const setup = await makeCase(caseName);
+    t.after(() => dispose(setup));
+    const result = await init(setup.options);
+    assert.equal(result.cancelled, undefined);
+    assert.ok(result.plan);
+    await readFile(path.join(setup.repo.path, "tenet.yaml"));
+    await readFile(path.join(setup.repo.path, "tenet.lock"));
+    const manifestPath = path.join(setup.repo.path, ".tenet", "manifest.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as { version: string };
+    assert.equal(manifest.version, "0.1.0-alpha.0");
+    await assert.rejects(readFile(path.join(setup.repo.path, ".tenet", "manifest.pending.json")));
+    assert.ok(result.plan.created
+      .filter((itemPath) => /^\.(?:agents|claude)\/skills\//.test(itemPath))
+      .every((itemPath) => /\/skills\/tenet-[^/]+\/SKILL\.md$/.test(itemPath)));
+    await readFile(path.join(setup.repo.path, ".agents", "skills", "tenet-draft-specs", "SKILL.md"));
+    await assert.rejects(readFile(path.join(setup.repo.path, ".agents", "skills", "draft-specs", "SKILL.md")));
+
+    const first = await tree(setup.repo.path);
+    if (caseName === "p07-existing-agents-md") {
+      const before = await readFile(path.join(casesRoot, caseName, "before", "AGENTS.md"), "utf8");
+      const after = await readFile(path.join(setup.repo.path, "AGENTS.md"), "utf8");
+      const start = before.indexOf("<!-- tenet:begin");
+      const end = before.indexOf("<!-- tenet:end -->") + "<!-- tenet:end -->".length;
+      assert.ok(after.startsWith(before.slice(0, start)));
+      assert.ok(after.endsWith(before.slice(end)));
+      const installed = JSON.parse(await readFile(manifestPath, "utf8")) as {
+        blocks: Array<{ path: string; previous_block: string | null }>;
+      };
+      assert.equal(
+        installed.blocks.find((block) => block.path === "AGENTS.md")?.previous_block,
+        before.slice(start, end),
+      );
+    }
+    if (caseName === "p08-existing-mcp") {
+      const before = await readFile(path.join(casesRoot, caseName, "before", ".mcp.json"), "utf8");
+      const after = JSON.parse(await readFile(path.join(setup.repo.path, ".mcp.json"), "utf8")) as {
+        mcpServers: Record<string, unknown>;
+      };
+      assert.deepEqual(after.mcpServers.search, JSON.parse(before).mcpServers.search);
+      const installed = JSON.parse(await readFile(manifestPath, "utf8")) as {
+        keys: Array<{ path: string; previous_raw?: string }>;
+      };
+      assert.equal(
+        installed.keys.find((key) => key.path === ".mcp.json")?.previous_raw,
+        before,
+      );
+    }
+    if (caseName === "p12-windows-local-host") {
+      const localRoot = (
+        setup.options.environment as { localProfileRoot: string }
+      ).localProfileRoot;
+      const local = JSON.parse(await readFile(path.join(localRoot, "Code", "User", "mcp.json"), "utf8")) as {
+        servers: { tenet: { command: string; args: string[] } };
+      };
+      assert.equal(local.servers.tenet.command, "cmd");
+      assert.deepEqual(local.servers.tenet.args.slice(0, 3), ["/c", "npx", "-y"]);
+      const shared = JSON.parse(await readFile(path.join(setup.repo.path, ".vscode", "mcp.json"), "utf8")) as {
+        servers: { tenet: { command: string } };
+      };
+      assert.equal(shared.servers.tenet.command, "npx");
+    }
+    if (caseName === "p18-accepted-reporter-edit") {
+      const workflow = await readFile(path.join(setup.repo.path, ".github", "workflows", "ci.yml"), "utf8");
+      assert.match(workflow, /- id: tenet-tests/);
+      assert.match(workflow, /--outputFile\.junit=\.tenet\/reports\/test\.xml/);
+      assert.match(workflow, /TENET_TEST_OUTCOME: "\$\{\{ steps\.tenet-tests\.outcome \}\}"/);
+    }
+    const testWorkflow = path.join(setup.repo.path, ".github", "workflows", "tenet-tests.yml");
+    if (caseName === "p02-node-vitest") {
+      const workflow = await readFile(testWorkflow, "utf8");
+      assert.match(workflow, /node-version: "22"/);
+      assert.doesNotMatch(workflow, /<toolchain step>/);
+    }
+    if (caseName === "p05-python-pytest") {
+      const workflow = await readFile(testWorkflow, "utf8");
+      assert.match(workflow, /actions\/setup-python@[0-9a-f]{40} # v5\.6\.0/);
+      assert.match(workflow, /python-version: "3\.12"/);
+      assert.doesNotMatch(workflow, /<toolchain step>/);
+    }
+    if (caseName === "p06-go") {
+      const workflow = await readFile(testWorkflow, "utf8");
+      assert.match(workflow, /actions\/setup-go@[0-9a-f]{40} # v5\.0\.2/);
+      assert.match(workflow, /go-version: "1\.23"/);
+      assert.doesNotMatch(workflow, /<toolchain step>/);
+    }
+    const repeat = await init(setup.options);
+    assert.deepEqual(repeat.wrote, { created: [], blocks: [], keys: [], local_keys: [] });
+    assert.deepEqual(await tree(setup.repo.path), first);
+
+    if (caseName === "p15-non-github-forge") {
+      await assert.rejects(readFile(path.join(setup.repo.path, ".github", "workflows", "tenet.yml")));
+      assert.equal(result.plan.ci_mode, "none");
+    }
+  });
+}
+
+test("p11 interruption checkpoints replay to the clean tree", async (t) => {
+  const clean = await makeCase("p11-interrupted-install-resumes");
+  t.after(() => dispose(clean));
+  const checked = await preflight(clean.options);
+  const planned = await planWriteSet(checked, clean.options);
+  await init(clean.options);
+  const expected = await tree(clean.repo.path);
+  const checkpoints: Array<"pending" | string> = ["pending", ...planned.writes.map((write) => write.id)];
+  for (const checkpoint of checkpoints) {
+    const replay = await makeCase("p11-interrupted-install-resumes");
+    await assert.rejects(
+      init({ ...replay.options, fault: { after: checkpoint } }),
+      (error: unknown) => (error as { code?: string }).code === "INSTALL_INTERRUPTED",
+    );
+    await readFile(path.join(replay.repo.path, ".tenet", "manifest.pending.json"));
+    await init(replay.options);
+    assert.deepEqual(await tree(replay.repo.path), expected, checkpoint);
+    await dispose(replay);
+  }
+});
+
+test("n04 confined planning rejects an outside symlink before any write", async (t) => {
+  const setup = await makeCase("n04-init-symlink-outside");
+  t.after(() => dispose(setup));
+  const before = await tree(setup.repo.path);
+  await assert.rejects(init(setup.options), (error: unknown) => findingCode(error) === "TN-PATH-ESCAPE");
+  assert.deepEqual(await tree(setup.repo.path), before);
+  assert.equal(
+    await readFile(path.join(setup.sandbox, "github-sibling", "workflows", "sentinel.yml"), "utf8"),
+    "name: Outside fixture\n",
+  );
+});
+
+test("accepted reporter edit appends flags inside a multiline YAML run block", async (t) => {
+  const setup = await makeCase("p18-accepted-reporter-edit");
+  t.after(() => dispose(setup));
+  await setup.repo.write(".github/workflows/ci.yml", [
+    "name: Checkout CI",
+    "on: [push, pull_request]",
+    "jobs:",
+    "  test:",
+    "    runs-on: ubuntu-latest",
+    "    steps:",
+    "      - uses: actions/checkout@v4",
+    "      - run: npm ci",
+    "      - run: |",
+    "          npx vitest run",
+    "          echo tests-finished",
+    "",
+  ].join("\n"));
+  const result = await init(setup.options);
+  assert.equal(result.plan.ci_mode, "existing-ci");
+  const workflow = await readFile(path.join(setup.repo.path, ".github", "workflows", "ci.yml"), "utf8");
+  assert.match(workflow, /- id: tenet-tests\n        run: \|\n          npx vitest run --reporter=default --reporter=junit --outputFile\.junit=\.tenet\/reports\/test\.xml\n          echo tests-finished\n/);
+  assert.doesNotMatch(workflow, /run: \| --reporter/);
+  assert.equal((workflow.match(/\n          echo tests-finished\n/) ?? []).length, 1);
+});
+
+test("Tenet test workflow binds the Node toolchain from .nvmrc", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  await setup.repo.write(".nvmrc", "20.11.1\n");
+  await init(setup.options);
+  const workflow = await readFile(
+    path.join(setup.repo.path, ".github", "workflows", "tenet-tests.yml"),
+    "utf8",
+  );
+  assert.match(workflow, /node-version: "20\.11\.1"/);
+  assert.doesNotMatch(workflow, /<toolchain step>/);
+});
+
+test("n05 refuses an unmanaged created workflow without leaving a pending plan", async (t) => {
+  const setup = await makeCase("n05-conflicting-created-workflow");
+  t.after(() => dispose(setup));
+  const before = await tree(setup.repo.path);
+  await assert.rejects(init(setup.options), (error: unknown) => findingCode(error) === "TN-INIT-EXISTS");
+  assert.deepEqual(await tree(setup.repo.path), before);
+});
+
+test("n06 keeps a pending plan and refuses drift during replay", async (t) => {
+  const setup = await makeCase("n06-interrupted-plan-drift");
+  t.after(() => dispose(setup));
+  await assert.rejects(
+    init({ ...setup.options, fault: { after: "pending" } }),
+    (error: unknown) => (error as { code?: string }).code === "INSTALL_INTERRUPTED",
+  );
+  await setup.repo.write("AGENTS.md", "# Owner edit since planning\n");
+  await assert.rejects(init(setup.options), (error: unknown) => findingCode(error) === "TN-INIT-EXISTS");
+  await readFile(path.join(setup.repo.path, ".tenet", "manifest.pending.json"));
+  assert.equal(await readFile(path.join(setup.repo.path, "AGENTS.md"), "utf8"), "# Owner edit since planning\n");
+});
+
+test("n08 cancellation preserves the exact repository tree", async (t) => {
+  const setup = await makeCase("n08-preflight-declined");
+  t.after(() => dispose(setup));
+  const before = await tree(setup.repo.path);
+  const result = await init(setup.options);
+  assert.equal(result.cancelled, true);
+  assert.deepEqual(result.wrote, { created: [], blocks: [], keys: [], local_keys: [] });
+  assert.deepEqual(await tree(setup.repo.path), before);
+});
+
+test("n01 and n02 expose structured preflight findings without writes", async (t) => {
+  for (const [caseName, code] of [
+    ["n01-git-executable-missing", "TN-ENV-GIT"],
+    ["n02-not-a-git-repository", "TN-ENV-NOT-GIT"],
+  ] as const) {
+    const setup = await makeCase(caseName);
+    await assert.rejects(init(setup.options), (error: unknown) => findingCode(error) === code);
+    assert.deepEqual(await tree(setup.repo.path), { "README.md": (await readFile(
+      path.join(casesRoot, caseName, "before", "README.md"),
+    )).toString("base64") });
+    await dispose(setup);
+  }
+});

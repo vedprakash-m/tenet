@@ -65,6 +65,7 @@ export type PreflightAnswers = {
   purpose?: string;
   kind?: ProjectKind;
   allowReporterEdit?: boolean;
+  continue?: boolean;
 };
 
 export type InjectedGitEnvironment = {
@@ -86,11 +87,18 @@ export type PreflightEnvironment = {
     git?: string | null;
     node?: string | null;
   };
+  installedVersion?: string;
+  registry?: {
+    package?: string;
+    releases?: Record<string, { integrity: string }>;
+  };
+  kitPath?: string;
 };
 
 export type PreflightOptions = {
   cwd?: string;
   yes?: boolean;
+  vendor?: boolean;
   answers?: PreflightAnswers;
   environment?: PreflightEnvironment;
 };
@@ -151,4 +159,76 @@ export type PreflightResult = {
   diagnostics: Finding[];
   prompts: PreflightPrompt[];
   facts: PreflightFacts;
+};
+
+export type InitOptions = PreflightOptions & {
+  force?: boolean;
+  fault?: {
+    after?: "pending" | string | number;
+  };
+};
+
+export type ManifestCreated = {
+  path: string;
+  sha256: string;
+};
+
+export type ManifestBlock = PlannedBlock & {
+  marker: string;
+  previous_block?: string | null;
+  prefix_sep?: "" | "\n" | "\r\n";
+};
+
+export type ManifestKey = PlannedKey & {
+  previous: unknown;
+  installed: unknown;
+  previous_raw?: string;
+};
+
+export type InstallManifest = {
+  schema_version: 1;
+  version: string;
+  created: ManifestCreated[];
+  blocks: ManifestBlock[];
+  keys: ManifestKey[];
+};
+
+export type PendingWrite = {
+  id: string;
+  kind: "file" | "block" | "key" | "local_key";
+  path: string;
+  pointer?: string;
+  before_sha256: string | null;
+  after_sha256: string;
+  content?: string;
+};
+
+export type PendingManifest = {
+  schema_version: 1;
+  version: string;
+  writes: PendingWrite[];
+  manifest: InstallManifest;
+};
+
+export type WriteSet = {
+  cwd: string;
+  version: string;
+  plan: InitPlan;
+  writes: PendingWrite[];
+  manifest: InstallManifest;
+  localProfileRoot?: string;
+};
+
+export type InitWrote = {
+  created: string[];
+  blocks: PlannedBlock[];
+  keys: PlannedKey[];
+  local_keys: PlannedLocalKey[];
+};
+
+export type InitResult = {
+  plan: InitPlan;
+  wrote: InitWrote;
+  findings: InstallFinding[];
+  cancelled?: boolean;
 };
