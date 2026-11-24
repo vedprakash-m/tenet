@@ -1,5 +1,6 @@
 import { message, onboardText } from "../core/messages.js";
 import { fail, type Finding } from "../core/output.js";
+import { onboardingCard, onboardingCardText } from "../onboard/card.js";
 import { prepareOnboard } from "../onboard/assignment.js";
 import type { OnboardDeps } from "../onboard/refresh.js";
 
@@ -30,7 +31,7 @@ export function makeOnboardCommand(deps: OnboardDeps) {
   return {
     name: "onboard",
     description: onboardText.description,
-    options: ["--inventory-only", "--refresh", "--layout <layout>"],
+    options: ["--inventory-only", "--refresh", "--layout <layout>", "--card"],
     async handler({ cwd, args, options, json }: OnboardCommandContext) {
       const layout = options["--layout"];
       if (args.length || (layout !== undefined && layout !== "one-file" && layout !== "separate")) {
@@ -38,6 +39,12 @@ export function makeOnboardCommand(deps: OnboardDeps) {
         return { findings: [diagnostic("TN-USAGE-ONBOARD", { command: "onboard", detail })] };
       }
       try {
+        if (options["--card"] === true) {
+          if (options["--inventory-only"] || options["--refresh"] || layout) {
+            return { findings: [diagnostic("TN-USAGE-ONBOARD", { command: "onboard", detail: onboardingCardText.incompatible })] };
+          }
+          return { value: await onboardingCard({ cwd }) };
+        }
         const { value, diagnostics } = await prepareOnboard({
           cwd,
           inventoryOnly: options["--inventory-only"] === true,
