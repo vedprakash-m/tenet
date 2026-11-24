@@ -40,7 +40,7 @@ Only the Owner (Ved) can execute or authorize the following items:
 1. **Merge remaining alpha.0 work and close Owner gates:** Land `CP-0010`, `CP-0052`, `CP-0009` (`pending-r13.md`), `CP-0054` (+ `deferred-edits.md` + `vision.md` patch), `CP-0057` (`tenet bless`), and confirm `node dist/cli.js check --json` passes on this repository.
 2. **Rewrite history and publish schemas:** Complete Owner history rewrite on `vedprakash-m/tenet` before public visibility; publish `kit/schemas/*.json` to GitHub Pages (`https://vedprakash-m.github.io/tenet/schemas/0.1/`, `CP-0002` / `L-0031`).
 3. **Bump version and update changelog (`onboarding.md §4` step 1):** Set `"version": "0.1.0-alpha.0"` in `package.json` (confirm lockstep policy for `workspaces: [".", "runner"]` even though `runner/` ships in `0.1.0`) and append a `0.1.0-alpha.0` entry to `kit/CHANGELOG.md` using structured fields (`kind: rule-added | rule-clarified | field-added | breaking`).
-4. **Build and pack once per package (`onboarding.md §4` step 2 & `release.yml`):** Tag `v0.1.0-alpha.0` (triggering `.github/workflows/release.yml` across `ubuntu-latest`, `windows-latest`, `macos-latest`), run `npm run lint`, `npm test`, and `npm pack --json` once; record each `.tgz` SHA-256 digest and assert the tarball file list matches §4.
+4. **Build and pack once per package (`onboarding.md §4` step 2 & `release.yml`):** Tag `v0.1.0-alpha.0`. The Ubuntu package job runs lint and tests, packs once, records `pack.json` and `SHA256SUMS`, and uploads the tarball for the Windows, macOS and Linux journey jobs.
 5. **Cross-platform clean install and journey verification (`onboarding.md §4` step 3):** Install **the same `.tgz` artifacts** on clean Windows, macOS, and Linux environments (`release.yml` smoke test plus full UX Part 1A & 1B journeys and `pkg/conformance/scenarios/`).
 6. **Publish to npm (`onboarding.md §4` step 4):** Publish **the same `.tgz` files** with `npm publish --provenance --tag next` via trusted publishing (a short-lived granular token may be used for the initial publish of `@vedprakash-m/tenet`; retry using the same version if needed).
 7. **Create GitHub Release (`onboarding.md §4` step 5):** Publish the `v0.1.0-alpha.0` GitHub Release attaching the `.tgz` tarball(s), the `kit/` archive, and `SHA256SUMS`.
@@ -54,7 +54,7 @@ Only the Owner (Ved) can execute or authorize the following items:
   - `package.json`, `LICENSE`, `README.md`
   - `dist/` compiled JS and `.d.ts` files (`dist/cli.js`, `dist/sdk.js`, `dist/commands/index.js`, `dist/core/{fs,yaml,git,hash,output,clock}.js`, etc.)
   - `kit/` (`kit/TENET.md`, `kit/CHANGELOG.md`, `kit/README.md`, `kit/defaults/`, `kit/hooks/`, `kit/packs/`, `kit/practices/`, `kit/schemas/`, `kit/skills/`, `kit/templates/`, `kit/workflows/`, `kit/agents/`)
-  - `pkg/migrations/`, `pkg/conformance/`, `pkg/hosts/` (only entries matching `LICENSE`, `README.md`, `package.json`, `dist/`, `kit/`, `pkg/migrations/`, `pkg/conformance/`, `pkg/hosts/`)
+  - `pkg/conformance/` suites for alpha.0, as listed in `package.json`. See [the open suite-selection question](escalations/pending-r15.md).
 - **Must NOT contain** (`release.yml` `forbidden` list & `AGENTS.md`):
   - `pkg/evals/` (including `pkg/evals/bench/`, `pkg/evals/onboarding/`)
   - `tenet/` (this repository's own records, specs, packets, ledger, `holdout/`)

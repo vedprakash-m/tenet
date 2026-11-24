@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -21,10 +22,43 @@ function runNpm(args: string[], cwd: string, env = process.env): string {
   return execFileSync(process.execPath, [npm, ...args], { cwd, env, encoding: "utf8", windowsHide: true, timeout: 120_000 });
 }
 
-test("the packed npm release contains the alpha.0 layout", async (t) => {
+async function consumerEnv(scratch: string): Promise<NodeJS.ProcessEnv> {
+  const home = path.join(scratch, "home");
+  const temp = path.join(scratch, "tmp");
+  const appData = path.join(home, "appdata");
+  const config = path.join(home, "config");
+  const [cache, registry] = ["cache", "registry"].map((key) => runNpm(["config", "get", key], project).trim());
+  await Promise.all([appData, config, temp].map((folder) => mkdir(folder, { recursive: true })));
+  const userconfig = path.join(home, "npmrc");
+  const globalconfig = path.join(home, "global-npmrc");
+  await Promise.all([writeFile(userconfig, ""), writeFile(globalconfig, "")]);
+  const isolated: NodeJS.ProcessEnv = {
+    HOME: home, USERPROFILE: home, APPDATA: appData, LOCALAPPDATA: appData, XDG_CONFIG_HOME: config,
+    TMPDIR: temp, TEMP: temp, TMP: temp, npm_config_userconfig: userconfig, npm_config_globalconfig: globalconfig,
+    npm_config_cache: cache, npm_config_registry: registry, GIT_CONFIG_GLOBAL: globalconfig, GIT_CONFIG_NOSYSTEM: "1",
+  };
+  if (process.platform === "win32") {
+    const root = path.parse(home).root;
+    isolated.HOMEDRIVE = root.slice(0, -1);
+    isolated.HOMEPATH = home.slice(root.length - 1);
+  }
+  const keys = new Set([...Object.keys(isolated).map((key) => key.toLowerCase()), "homedrive", "homepath"]);
+  const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
+    !keys.has(key.toLowerCase()) && !/^git_|^npm_config_/i.test(key)));
+  return { ...inherited, ...isolated };
+}
+
+function git(cwd: string, env: NodeJS.ProcessEnv, ...args: string[]) {
+  return execFileSync("git", ["-c", "core.autocrlf=false", "-c", "core.safecrlf=false", ...args], {
+    cwd, env, encoding: "utf8", windowsHide: true, timeout: 30_000,
+  }).trim();
+}
+
+test("the alpha.0 npm tarball has the release layout and runs the installed CLI", { timeout: 180_000 }, async (t) => {
   const scratch = await mkdtemp(path.join(os.tmpdir(), "tenet-packed-"));
   t.after(() => rm(scratch, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
-  const destination = process.env.TENET_RELEASE_TARBALL_DIR ?? scratch;
+  const reused = process.env.TENET_RELEASE_PACKED_DIR;
+  const destination = reused ?? process.env.TENET_RELEASE_TARBALL_DIR ?? scratch;
   await mkdir(destination, { recursive: true });
   const manifest = JSON.parse(await readFile(path.join(project, "package.json"), "utf8"));
   assert.deepEqual(manifest.bin, { tenet: "dist/cli.js" });
@@ -33,7 +67,11 @@ test("the packed npm release contains the alpha.0 layout", async (t) => {
   assert.deepEqual(manifest.files, ["dist", "kit", ...suites.map((suite) => `pkg/conformance/${suite}`)]);
 
   // npm test builds dist before starting Node's test runner.
-  const items = JSON.parse(runNpm(["pack", "--json", "--ignore-scripts", "--pack-destination", destination], project));
+  const packRecord = path.join(destination, "pack.json");
+  const metadata = reused ? await readFile(packRecord, "utf8") :
+    runNpm(["pack", "--json", "--ignore-scripts", "--pack-destination", destination], project);
+  if (process.env.TENET_RELEASE_TARBALL_DIR && !reused) await writeFile(packRecord, metadata);
+  const items = JSON.parse(metadata);
   assert.equal(items.length, 1);
   const [packed] = items;
   assert.equal(packed.name, manifest.name);
@@ -52,4 +90,57 @@ test("the packed npm release contains the alpha.0 layout", async (t) => {
     ...["fs", "yaml", "git", "hash", "output", "clock"].map((name) => `dist/core/${name}.js`)]) {
     assert.ok(files.includes(required), `Missing ${required}`);
   }
+  const tarball = path.join(destination, packed.filename);
+  assert.equal(`sha512-${createHash("sha512").update(await readFile(tarball)).digest("base64")}`, packed.integrity);
+  const consumer = path.join(scratch, "consumer");
+  await mkdir(consumer);
+  await writeFile(path.join(consumer, "package.json"), JSON.stringify({ name: "tenet-release-test", private: true }));
+  const env = await consumerEnv(scratch);
+  runNpm(["install", "--ignore-scripts", "--no-audit", "--no-fund", "--prefer-offline",
+    "--fetch-retries=0", "--fetch-timeout=25000", tarball], consumer, env);
+  const installed = path.join(consumer, "node_modules", ...manifest.name.split("/"));
+  const installedManifest = JSON.parse(await readFile(path.join(installed, "package.json"), "utf8"));
+  assert.equal(installedManifest.version, manifest.version);
+
+  const input = JSON.parse(await readFile(path.join(installed, "pkg/conformance/check/p02-path-citation/input.json"), "utf8"));
+  const cwd = path.join(consumer, "checkout");
+  for (const [file, content] of Object.entries(input.repo.files as Record<string, string>)) {
+    const target = path.join(cwd, file);
+    await mkdir(path.dirname(target), { recursive: true });
+    await writeFile(target, content);
+  }
+  git(cwd, env, "init", "--quiet");
+  git(cwd, env, "config", "--local", "user.name", "Tenet Release Test");
+  git(cwd, env, "config", "--local", "user.email", "release-test@example.invalid");
+  git(cwd, env, "add", ".");
+  git(cwd, env, "commit", "-qm", "Copy packed conformance fixture");
+  const revision = git(cwd, env, "rev-parse", "HEAD");
+  const tenet = (...args: string[]) => runNpm(["exec", "--offline", "--no", "--", "tenet", "--cwd", cwd, ...args], consumer, env);
+  assert.equal(tenet("--version").trim(), manifest.version);
+  for (const [command, ...args] of [["version", "--version"], ["help", "--help"],
+    ["onboard", "onboard", "--inventory-only"], ["check", "check"], ["board", "board"]]) {
+    const output = JSON.parse(tenet(...args, "--json"));
+    assert.equal(output.command, command);
+    assert.equal(output.ok, true, JSON.stringify(output.errors));
+    assert.equal(output.version, manifest.version);
+    if (command === "version") assert.equal(output.result.version, manifest.version);
+    if (command === "help") assert.match(output.result.text, /onboard[\s\S]*check|check[\s\S]*onboard/);
+    if (command === "onboard") {
+      assert.equal(output.result.preflight.revision, revision);
+      assert.ok(output.result.inventory.sources.files.some(({ path: file }: { path: string }) => file === "src/retry.ts"));
+      const assignment = JSON.parse(await readFile(path.join(cwd, ".tenet/onboard/assignment.json"), "utf8"));
+      assert.deepEqual(assignment, output.result.assignment);
+    }
+    if (command === "check") assert.deepEqual(output.result.summary, { errors: 0, warnings: 0, advises: 0 });
+    if (command === "board") {
+      assert.equal(output.result.read.main, revision);
+      assert.ok(output.result.specs.some(({ path: file }: { path: string }) => file === "tenet/specs/prd.md"));
+    }
+  }
+
+  const sdk = execFileSync(process.execPath, ["--input-type=module", "-e",
+    `console.log(JSON.stringify(Object.keys(await import(${JSON.stringify(manifest.name)})).sort()))`],
+  { cwd: consumer, env, encoding: "utf8", windowsHide: true, timeout: 30_000 });
+  assert.deepEqual(JSON.parse(sdk), ["alias", "catFileBatch", "clockNow", "confine", "fail", "git", "jcs", "lastChangedMap",
+    "readYaml", "registerCommand", "result", "run", "sha256", "ulid", "utcSeconds", "writeAtomic", "writeRefFiles"]);
 });
