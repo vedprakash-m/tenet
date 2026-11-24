@@ -130,7 +130,7 @@ jobs:
       - run: npx -y @vedprakash-m/tenet@<locked> verify --record
 ```
 
-Both install the locked version with `npm install --no-save` and check it against the lock's `integrity` (contracts §1).
+Both install the locked version with `npm install --no-save` and check it against the lock's `integrity` (contracts §1; on `pull_request` / PR `workflow_run` from the PR `base.sha`, and on `push` / push `workflow_run` from `event.before` when reachable, else the default-branch checkout `HEAD`).
 
 **`verify --record` steps.**
 1. **Find the change.**
@@ -142,13 +142,13 @@ Both install the locked version with `npm install --no-save` and check it agains
    - no symlinks, absolute paths or `..`
 
    Anything beyond a limit is refused with `TN-RECORD-BUNDLE`, naming the conclusion that becomes unavailable. Merge matrix bundles: a case's status is its worst across them.
-3. **Read the change as data.** Read policy and the lock from the target. Fetch the change with `git fetch --no-tags --filter=blob:none origin refs/pull/<n>/head refs/pull/<n>/merge`; if the merge ref has moved past the tested commit, note `merge-candidate-stale`. Check the tested commit out into a temporary worktree, never executing it.
+3. **Read the change as data.** Read policy and the lock from the target (`base`; if loading at `base` fails, fall back to `base^` and record the §10 degraded string). Fetch the change with `git fetch --no-tags --filter=blob:none origin refs/pull/<n>/head refs/pull/<n>/merge`; if the merge ref has moved past the tested commit, note `merge-candidate-stale`. Check the tested commit out into a temporary worktree, never executing it.
 4. **Evaluate.**
-   - parse the acceptance block (or the packet's `definition.md`, agents.md §5)
+   - parse the acceptance block from `pr.body` (or in 0.1.0, the named packet's `definition.md` when `pr.body` has none, agents.md §5)
    - run `tenet check --ci --base <base>`, ALG-08, ALG-09 and ALG-14
    - evaluate the rules (ALG-07)
    - compute the evaluation ID
-5. **Post the check run** `Tenet` on the **head** SHA, found by name and head. Its conclusion follows §10. The summary is cut at 60,000 characters in this order: same-area requirements first, then passing items' test lists, then passing requirements. Failing items, weakening, protected files and "would have blocked" are never cut.
+5. **Post the check run** `Tenet` on the **head** SHA, found by name and head. Its conclusion follows §10 (when $N > 1$ PRs share `head`, each card is headed `Pull request #<number>\n` with budget $\lfloor(60,000 - \text{overhead})/N\rfloor$ and the worst conclusion across the $N$ cards). The summary is cut at 60,000 characters in this order: same-area requirements first, then passing items' test lists, then passing requirements. Failing items, weakening, protected files and "would have blocked" are never cut (if those essential lines alone exceed the budget, `renderCheckSummary` throws `RangeError`, or the recorder keeps the full card in `refs/tenet/records` and posts a `neutral`/`failure` truncated pointer).
 6. **Append records** (§4).
 
 From alpha.1 the recorder also handles review, `/tenet` reply, ready-for-review, conversion to draft and closing events. **Merge queues** (L-0032): alpha.1 records merge-group candidates as observations; alpha.2 verifies the exact tested candidate before publishing its required status (kernel §5); full merge-queue evidence and quarantine come in 0.1.x. CP-0040's event table fixes the trigger and token for each.
@@ -166,7 +166,7 @@ From alpha.1 the recorder also handles review, `/tenet` reply, ready-for-review,
 - **Git plumbing** (`hash-object`, `mktree`, `commit-tree`, `update-ref`), so the working tree is never touched. The committer is `tenet-recorder`, and each message is `tenet: <kind> <id>`.
 - **Retry:** a rejected push fetches the new tip, rebuilds on it and retries, up to 8 times with 0.5–3 s jitter (five concurrent writers in Spike B needed up to 4 attempts and lost nothing). A final failure shows on the card as "results not kept"; at `verify` that conclusion is `failure` (§10).
 
-**Retention:** the recorder keeps `latest`, plus every run a decision references, and compacts older runs monthly. Clones never fetch the ref by default; locally, `tenet board --fetch` reads it.
+**Retention:** in alpha.0 the recorder keeps every immutable run and advances `latest` forward-only; from alpha.1, on the first write to a new `rules/<yyyy-mm>.jsonl` month file, it prunes `proof/<work>/<evaluation_id>/<run>-<attempt>.json` files older than 30 days except each `latest` target and any run referenced under `decisions/` or `works/`. Clones never fetch the ref by default; locally, `tenet board --fetch` reads it.
 
 ## 5. Verify: sealed tests and signed records (alpha.2 on)
 
@@ -212,25 +212,7 @@ Records live at `refs/tenet/evidence` under `<subject-digest>/<id>.json`, writte
 
 ## 7. Trust observations and guarantee levels
 
-The attest job observes:
-- **T1:** the verifier runs from a protected source
-- **T2:** evidence verifies against that source's identity
-- **T3:** decisions reserved to people carry proof an agent can't produce
-
-**T4** (agents never hold decision-makers' credentials) is declared and spot-checked: agent commits come from `bots[]`, and no owner acts on a pull request their agent session opened. It supports enforced\* only where a host binding attests it.
-
-Separately, the attest job observes **whether merging requires the Tenet status** (`unavailable` on forge plans without merge protection). `enforced*` counts as enforced while the latest observation is under 7 days old and holds; otherwise it counts as detected. `tenet doctor` reads it offline.
-
-| Rule | Mode A (deterministic engine) | Mode B (host-driven) with CI |
-|---|---|---|
-| Gate holds before advancing | enforced | detected locally; enforced* by replay and required status |
-| Evidence produced by a protected verifier (provenance) | enforced* | enforced* |
-| The check written apart from the claimant (independence, tech spec §3.1) | as recorded | as recorded; a signature never establishes it |
-| Code under test cannot fake its check | not guaranteed | not guaranteed |
-| Decisions made by a person | at the proof-table strength | at that strength; `forge-verified` enforced* only under T4; `key`, `channel` advisory. A forge session or key alone never shows that agents and decision-makers are separate |
-| Protected paths unchanged | enforced* | enforced* (detected below `verify`) |
-| Holdout hidden | enforced* if the binding shows builders can't read the external holdout | the same; advisory in-repo |
-| Agent tools, paths, network | as the adapter declares | as the host binding declares |
+In [evidence.md §4](evidence.md#4-trust-observations-and-guarantee-levels), moved under the rollover rule.
 
 ## 8. Safe failure
 

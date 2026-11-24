@@ -57,3 +57,25 @@ Every reader enforces `ci.md §3` limits (`50 * 1024 * 1024` bytes per file; `20
 - **Authorship:** per-declaration in `declaredTags`: `written-here` if tagless title was absent in that `file` (or `-M` source) at `base`, `unknown` if `via_describe`, else `tag-added-here`; `itemResults` aggregates (`unknown` if empty or any `unknown`; else `written-here` if all `written-here`; else `tag-added-here`).
 - **Check vs cases:** non-zero check exit or `teardown_failed` fails the check; items keep case results.
 - **Fixtures:** missing second declaration → `not-run`; old `[AB-1]` ignored; newly tagged test → `tag-added-here`; fail-then-pass retry; matrix shard; teardown failure; all runner declaration forms.
+
+## 4. Trust observations and guarantee levels
+
+The attest job observes:
+- **T1:** the verifier runs from a protected source
+- **T2:** evidence verifies against that source's identity
+- **T3:** decisions reserved to people carry proof an agent can't produce
+
+**T4** (agents never hold decision-makers' credentials) is declared and spot-checked: agent commits come from `bots[]`, and no owner acts on a pull request their agent session opened. It supports enforced\* only where a host binding attests it.
+
+Separately, the attest job observes **whether merging requires the Tenet status** (`unavailable` on forge plans without merge protection). `enforced*` counts as enforced while the latest observation is under 7 days old and holds; otherwise it counts as detected. `tenet doctor` reads it offline.
+
+| Rule | Mode A (deterministic engine) | Mode B (host-driven) with CI |
+|---|---|---|
+| Gate holds before advancing | enforced | detected locally; enforced* by replay and required status |
+| Evidence produced by a protected verifier (provenance) | enforced* | enforced* |
+| The check written apart from the claimant (independence, tech spec §3.1) | as recorded | as recorded; a signature never establishes it |
+| Code under test cannot fake its check | not guaranteed | not guaranteed |
+| Decisions made by a person | at the proof-table strength | at that strength; `forge-verified` enforced* only under T4; `key`, `channel` advisory. A forge session or key alone never shows that agents and decision-makers are separate |
+| Protected paths unchanged | enforced* | enforced* (detected below `verify`) |
+| Holdout hidden | enforced* if the binding shows builders can't read the external holdout | the same; advisory in-repo |
+| Agent tools, paths, network | as the adapter declares | as the host binding declares |
