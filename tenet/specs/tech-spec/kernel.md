@@ -1,3 +1,13 @@
+---
+tenet: {spec: 1, doc: tech-spec, level: L2, version: "0.1", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:437c50b1c325dc75159652cdf187218ba1bf5c0d25e0fb4121a538e23956301e, flags: []}
+  1-state-reduction-and-replay: {state: draft, digest: sha256:81b842b693c8789437ea0afb6652a7c990be14d44dca02fb191b5524355d2b86, flags: []}
+  2-evaluation-inputs-and-evidence: {state: draft, digest: sha256:29187704f25030d3e0e9f4ece2057437f524c85e10f9f5f996feb4c77819479f, flags: []}
+  3-decision-requests-and-proof: {state: draft, digest: sha256:011411b91bedcd7cc76b97adebc89b5088226b9a45dac834d7d0b0be331993ab, flags: []}
+  4-alpha1-backtest: {state: draft, digest: sha256:5e658dd7fae26d6cde479321f29743bffb6d26383ddd282b5d0f054ae3ca9a2d, flags: []}
+  5-merge-candidates-and-required-outcomes: {state: draft, digest: sha256:30fe23df8bde0d3b9a8385d70721fad1e366203c6229e1bad8aab3a42145e982, flags: []}
+---
 # Tenet technical specification: kernel contracts
 
 > Level L2 · Draft for Owner approval · Budget: 6,000 tokens · Implements Part I. The bindings in CI and agents supply transport and execution.
