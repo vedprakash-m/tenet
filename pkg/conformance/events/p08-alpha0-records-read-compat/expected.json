@@ -1,0 +1,20 @@
+{
+  "records": [
+    {
+      "kind": "proof",
+      "schema_version": 1,
+      "evaluation_id": "0123456789abcdef",
+      "unknown_fields": []
+    },
+    {
+      "kind": "latest",
+      "schema_version": null,
+      "unknown_fields": []
+    },
+    {
+      "kind": "rule-log",
+      "schema_version": null,
+      "unknown_fields": []
+    }
+  ]
+}

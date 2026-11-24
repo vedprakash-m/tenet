@@ -32,8 +32,12 @@
 | `TN-ENV-NODE` | Node.js {found} is below required version 22. | Install Node.js 22 LTS or newer and retry. |
 | `TN-ENV-NOT-GIT` | Directory {path} is not a Git repository. | Run `git init` or run from inside a Git repository. |
 | `TN-ENV-OFFLINE` | Command `tenet {command}` requires network access, which is disabled by `--offline`. | Re-run `tenet {command}` without `--offline`. |
+| `TN-EV-CROSS-WORK` | Event {id} references predecessor {prev} from another work item. | Fix predecessor link on {id} to reference an event in the same work item. |
+| `TN-EV-CYCLE` | Event {id} participates in a cycle or self-link. | Remove the cyclic predecessor edge on {id} before reducing. |
 | `TN-EV-DUP` | Duplicate event ID {id} has conflicting content. | Keep one canonical event for {id} and remove the conflicting entry. |
+| `TN-EV-NO-CREATE` | Work item {work} has no valid unique creation event. | Supply or resolve the canonical `work.created` event for {work}. |
 | `TN-EV-ORPHAN` | Event {id} references unknown predecessor {prev}. | Include or fetch event {prev} before reducing work item events. |
+| `TN-EV-RESOLVE` | Resolution {id} omits one or more active conflict heads. | Record a `resolve` event whose `prev` includes every active conflict head. |
 | `TN-GATE-*` | Gate blocked or held by rule {rule}: {reason}. | Resolve {reason} and re-run the gate check. |
 | `TN-GATE-APPROVE-NOT-EVIDENCE` | Approval cannot satisfy evidence claim {claim}. | Supply required verification evidence for {claim} or request a time-boxed waiver via `tenet decide`. |
 | `TN-GATE-CLAIM` | Claim {claim} is {state}. | Satisfy {claim}, wait for CI verification, or request a waiver via `tenet decide`. |
