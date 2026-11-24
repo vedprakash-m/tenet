@@ -118,3 +118,65 @@ test("fresh-session verification checks retry behavior, MCP evidence, and blesse
     return true;
   });
 });
+
+test("every evaluation subprocess resolves home and temp inside scratch and init failures bypass scoring", async (t) => {
+  const { main, execute: launch } = await import("../../../pkg/evals/onboarding/run.mjs");
+  const out = await mkdtemp(path.join(os.tmpdir(), "tenet-eval-isolation-test-"));
+  t.after(() => rm(out, { recursive: true, force: true }));
+  const observed = new Set<string>();
+  const probe = `
+    const { ok, notEqual } = require("node:assert/strict");
+    const { existsSync, writeFileSync } = require("node:fs");
+    const os = require("node:os");
+    const path = require("node:path");
+    const roots = ["HOME", "USERPROFILE", "APPDATA", "XDG_CONFIG_HOME", "TMPDIR"];
+    const scratch = path.dirname(process.env.HOME);
+    ok(path.basename(scratch).startsWith("tenet-onboarding-"));
+    for (const name of roots) {
+      const value = process.env[name];
+      const relative = path.relative(scratch, value);
+      ok(relative && relative !== ".." && !relative.startsWith(".." + path.sep) && !path.isAbsolute(relative), name);
+      ok(existsSync(value), name);
+      notEqual(value, process.argv[1], name);
+    }
+    notEqual(os.homedir(), process.argv[1]);
+    notEqual(os.tmpdir(), process.argv[2]);
+    ok(path.relative(process.env.HOME, os.homedir()) === "");
+    ok(path.relative(process.env.TMPDIR, os.tmpdir()) === "");
+    if (process.argv[3] === "init") writeFileSync(path.join(os.homedir(), ".claude.json"), "{}");
+  `;
+  const args = ["--agent", "replay", "--fixture", "node-service", "--out", out];
+  const exercise = (failInit: boolean) => main(args, async (command: string, argv: string[], cwd: string, options: {
+    env: NodeJS.ProcessEnv; input?: string; timeout?: number;
+  }) => {
+    const kind = path.basename(argv[0] ?? "") === "cli.js" ? (argv.includes("--card") ? "card" : argv[1]) :
+      path.basename(argv[0] ?? "") === "replay.mjs" ? "agent" : "other";
+    const result = await launch(process.execPath, ["-e", probe, os.homedir(), os.tmpdir(), kind], cwd, { env: options.env });
+    assert.equal(result.exit, 0, result.stderr);
+    observed.add(kind);
+    if (failInit && kind === "init") {
+      return launch(process.execPath, ["-e",
+        'console.log(JSON.stringify({errors:[{code:"TN-PATH-ESCAPE",severity:"error"}]})); process.exitCode=4;'],
+        cwd, { env: options.env });
+    }
+    return launch(command, argv, cwd, options);
+  });
+
+  const good = await exercise(false);
+  t.after(() => rm(good.scratch, { recursive: true, force: true }));
+  assert.equal(good.automatic, 1);
+  assert.deepEqual([...observed].sort(), ["agent", "card", "check", "init", "onboard", "other"]);
+  assert.equal(await readFile(path.join(good.scratch, "home", ".claude.json"), "utf8"), "{}");
+
+  observed.clear();
+  const failed = await exercise(true);
+  t.after(() => rm(failed.scratch, { recursive: true, force: true }));
+  assert.equal(failed.automatic, 0);
+  assert.deepEqual([...observed].sort(), ["init", "other"]);
+  const manifest = JSON.parse(await readFile(path.join(failed.scratch, "run.json"), "utf8"));
+  assert.deepEqual(manifest.cases[0].initFailure, { code: "TN-PATH-ESCAPE", exit: 4 });
+  assert.equal(manifest.cases[0].evidence, undefined);
+  const report = await readFile(failed.report, "utf8");
+  assert.match(report, /## Init failures[\s\S]*\| node-service \| [^|]+ \| init failed \| TN-PATH-ESCAPE \| 4 \|/);
+  assert.doesNotMatch(report, /Execution failure/);
+});
