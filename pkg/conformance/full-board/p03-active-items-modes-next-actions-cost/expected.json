@@ -1,0 +1,27 @@
+{
+  "items": [
+    {
+      "id": "pr-7",
+      "lane": "quick",
+      "station": "verify",
+      "status": "waiting",
+      "cost": {
+        "amount": 0.42,
+        "unit": "USD",
+        "status": "known",
+        "source": "claude-code"
+      },
+      "claims": {
+        "applicable": 3,
+        "satisfied": 2,
+        "waived": 0,
+        "unsatisfied": 1
+      }
+    }
+  ],
+  "modes": {
+    "tests-not-weakened": "enforce",
+    "protected-surfaces": "enforce",
+    "acceptance-passed": "advise"
+  }
+}

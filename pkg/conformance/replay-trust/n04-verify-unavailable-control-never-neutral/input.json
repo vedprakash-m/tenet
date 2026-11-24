@@ -1,0 +1,18 @@
+{
+  "op": "requiredOutcome",
+  "level": "verify",
+  "scenarios": [
+    {
+      "name": "report-missing",
+      "situation": "report-missing"
+    },
+    {
+      "name": "ci-unavailable",
+      "situation": "ci-unavailable"
+    },
+    {
+      "name": "records-not-kept",
+      "situation": "records-not-kept"
+    }
+  ]
+}

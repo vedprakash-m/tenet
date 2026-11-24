@@ -37,8 +37,8 @@
 **CP-0019 · Decisions on pull requests · R-090, R-101, R-102, R-108, R-123, R-177, R-203**
 1. *Needs:* CP-0050; CI §§3, 4, 6; K §3 and observed parts of L-0030.
 2. *Owns:* `src/verify/decisions.ts`, forge review and reply binding, attributed blessing and usefulness marks, `test/verify/decisions/`.
-3. *Exports:* `makeRequest(input)`, `recordAnswer(request, event, snapshot) → {decision?, observation, findings}`, `renderRequest(request)` and CI §6 replies.
-4. *Behavior:* Persist the presentation before matching. Require actor, current request, evaluation and proof. Keep stale, withdrawn or ambiguous observations visible. Record self-acceptance at its real strength. Attach usefulness marks to the precise finding. Verify new recorder triggers in the sandbox.
+3. *Exports:* `makeRequest(input)` (`"tenet.decision.request.v1"` RFC 8785 tuple), `recordAnswer(request, event, snapshot) → {decision?, observation, findings}` (`TN-DEC-*`), `renderRequest(request)` and CI §6 replies.
+4. *Behavior:* Persist the presentation before matching. Require actor, current request, evaluation and proof. Keep stale, withdrawn or ambiguous observations visible. Record below-`verify` self-acceptance with `proof.self_accepted: true` (`TN-DEC-SELF-VERIFY` at `verify+`). Store `/tenet bless` as `approve` (`name: "bless-section"`, `recorded: "forge"`) and `/tenet not-useful` as an observation (`kind: "not-useful"`, `finding_id`, `decision: null`). Verify new recorder triggers in the sandbox.
 5. *Edge cases:* Two pending requests, same-commit edit, unlisted actor, late or concurrent reply, revocation, repeated delivery and exact section blessing.
 6. *Out of scope:* Person-present activation and unobserved host guarantees.
 7. *Fixtures:* `test/verify/decisions/{approve,late,edited,concurrent,unlisted,bless,self-accepted,not-useful,duplicate}/`.
@@ -47,8 +47,8 @@
 **CP-0008 · Full board · R-032, R-073, R-082, R-216**
 1. *Needs:* CP-0050; TS §8; C §§5, 8; K §§1, 2, 4.
 2. *Owns:* Remaining `src/views/`, board publication, `--since`, `--fetch`, `--open`, `test/views/`, board fixture gallery.
-3. *Exports:* `projectBoard(snapshot, now, since?)`, `renderBoard(board) → {markdown, html}` and the board JSON result.
-4. *Behavior:* Use one snapshot across formats. Read CP-0049 decision records using fixtures before CP-0019 integration. Preserve apparent and justified state, conflicting heads, cost availability, modes, next actions, flow and friction. Read external refs only on an allowed explicit fetch. Generated views stay untracked.
+3. *Exports:* `projectBoard(snapshot, now, since?)`, `renderBoard(board) → {markdown, html}` (`<!doctype html>`, zero external scripts/styles; LF Markdown `Waiting for you|Blocked|Changed since you looked|Friction|Flow`) and the board JSON result.
+4. *Behavior:* Use one snapshot across formats. Read CP-0049 decision records using fixtures before CP-0019 integration. Preserve apparent and justified state, conflicting heads, cost availability, modes, next actions, flow (`verified_per_week_by_lane`, `lead_time_hours`, `lane_mix_quick_express_pct`, `decision_wait_hours`, `cost`, `escapes`, `autonomy_share`), `self_accepted`, and friction (`flagged_for_demotion` when `not_useful_pct > 10 || false_blocks_per_100 > 2`). `--since` filters `items`/`decision_queue`/`review_queue`/`specs` (`TN-USAGE-REF` on invalid ref); stale trust (`> 7d`) degrades to `detected`; tampered events or ref drift emit `TN-EV-DUP`/`TN-RECORD-TIP`. Read external refs only on an allowed explicit fetch. Generated views stay untracked.
 5. *Edge cases:* Empty change set, missing cost, old records, changed ref, conflict, stale trust and cold large workload.
 6. *Out of scope:* External store, campaigns and current policy re-evaluation.
 7. *Fixtures:* `test/views/{empty,legacy,tentative,conflict,friction,no-cost,changed}` plus the R-082 workload.

@@ -205,7 +205,7 @@ Records live at `refs/tenet/evidence` under `<subject-digest>/<id>.json`, writte
 **Recording and limits.**
 - The recorder records two-factor status as `enforced`, `not-enforced` or `unobservable`.
 - A pull-request author can't approve their own pull request on most forges, so from `verify` agents open pull requests as a `bots[]` identity, or the decision-maker uses the comment form.
-- Below `verify` the Owner may accept their own work, shown as `self-accepted` on the board after merge.
+- Below `verify` the Owner may accept their own work (`proof.self_accepted: true`), shown as `self-accepted` on the board after merge. `/tenet bless <doc>#<slug>` stores an attributed `approve` (`name: "bless-section"`, `recorded: "forge"`); `/tenet not-useful <finding>` writes an immutable `not-useful` observation (`decision: null`).
 - A decision by an account on a pull request its own agent session opened is flagged. Unless a host binding attests credential separation (assumption 4), `forge-verified` counts as detected.
 
 `person-present` is an `ssh-keygen -Y` signature by a security key whose presence can be read from the signature (CP-0017). `key` and `channel` answers are advisory. An option that changes scope carries the replacement digest or returns to Define. Revoking a key is a policy change; earlier signatures stay valid.

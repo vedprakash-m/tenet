@@ -1,0 +1,11 @@
+{
+  "op": "replayCandidate",
+  "repository": "org/repo",
+  "candidate_id": "mg-10",
+  "candidate_revision": "cccccccccccccccccccccccccccccccccccccccc",
+  "target_revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "member_work": [
+    "pr-5"
+  ],
+  "pr_head_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

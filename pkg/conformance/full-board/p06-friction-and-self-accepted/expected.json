@@ -1,0 +1,19 @@
+{
+  "friction": [
+    {
+      "rule": "citations-valid",
+      "would_block": 2,
+      "not_useful": 1,
+      "not_useful_pct": 50,
+      "flagged_for_demotion": true
+    },
+    {
+      "rule": "tests-not-weakened",
+      "refusals": 1,
+      "waivers": 1
+    }
+  ],
+  "merged_self_accepted": [
+    "pr-4"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "scenarios": [
+    {
+      "name": "revoked-key",
+      "valid": false,
+      "finding_codes": [
+        "TN-DEC-KEY-REVOKED"
+      ]
+    },
+    {
+      "name": "self-approve-at-verify",
+      "decision": null,
+      "finding_codes": [
+        "TN-DEC-SELF-VERIFY"
+      ]
+    }
+  ]
+}

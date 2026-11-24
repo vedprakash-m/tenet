@@ -1,0 +1,22 @@
+{
+  "scenarios": [
+    {
+      "name": "wrong-workflow-run",
+      "triggering_run_id": "9001",
+      "bundle_run_id": "9002",
+      "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "name": "dirty-subject",
+      "before_subject": {
+        "kind": "git-tree",
+        "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "after_subject": {
+        "kind": "git-tree",
+        "digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+      },
+      "exit_code": 0
+    }
+  ]
+}

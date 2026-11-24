@@ -1,0 +1,16 @@
+{
+  "scenarios": [
+    {
+      "name": "public-repo",
+      "backend": "sigstore"
+    },
+    {
+      "name": "private-repo",
+      "backend": "ed25519"
+    },
+    {
+      "name": "oidc-fallback",
+      "backend": "oidc"
+    }
+  ]
+}
