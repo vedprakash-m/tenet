@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { mkdir, readFile, rename } from "node:fs/promises";
+import { lstat, mkdir, readFile, rename } from "node:fs/promises";
 import path from "node:path";
 import { parse, stringify } from "yaml";
 import { writeAtomic } from "../core/fs.js";
@@ -35,6 +35,13 @@ type IdOccurrence = {
   signature: string;
   occurrenceIndex: number;
   authoredAt?: number;
+};
+
+type BlessedCopyMove = {
+  from: string;
+  to: string;
+  sidecarFrom: string;
+  sidecarTo: string;
 };
 
 function portable(value: string): string {
@@ -319,27 +326,88 @@ function moveRenames(
   return moved;
 }
 
-async function moveBlessedCopy(
+function planBlessedCopyMoves(
   front: Front,
   moved: Array<{ from: string; to: string }>,
-  cwd: string,
-  dryRun: boolean,
-): Promise<FixResult["changes"]> {
-  const changes: FixResult["changes"] = [];
+): BlessedCopyMove[] {
+  const changes: BlessedCopyMove[] = [];
   for (const item of moved) {
     const metadata = front.sections[item.to];
     if (!metadata || typeof metadata.blessed_copy !== "string") continue;
     const oldCopy = portable(metadata.blessed_copy);
     const newCopy = `${path.posix.dirname(oldCopy)}/${item.to}.md`;
     metadata.blessed_copy = newCopy;
-    if (!dryRun && oldCopy !== newCopy) {
-      await mkdir(path.join(cwd, ...path.posix.dirname(newCopy).split("/")), { recursive: true });
-      await rename(path.join(cwd, ...oldCopy.split("/")), path.join(cwd, ...newCopy.split("/"))).catch(() => undefined);
-      await rename(path.join(cwd, ...`${oldCopy}.anchors.json`.split("/")), path.join(cwd, ...`${newCopy}.anchors.json`.split("/"))).catch(() => undefined);
+    if (oldCopy !== newCopy) {
+      changes.push({
+        from: oldCopy,
+        to: newCopy,
+        sidecarFrom: `${oldCopy}.anchors.json`,
+        sidecarTo: `${newCopy}.anchors.json`,
+      });
     }
-    changes.push({ path: newCopy, action: "move-blessed-copy" });
   }
   return changes;
+}
+
+async function requireFile(filename: string, cwd: string): Promise<void> {
+  const absolute = path.join(cwd, ...portable(filename).split("/"));
+  try {
+    if (!(await lstat(absolute)).isFile()) throw new Error(`${filename} is not a file`);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error(`Blessed copy move source ${filename} is missing.`, { cause: error });
+    }
+    throw error;
+  }
+}
+
+async function requireAbsent(filename: string, cwd: string): Promise<void> {
+  const absolute = path.join(cwd, ...portable(filename).split("/"));
+  try {
+    await lstat(absolute);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+    throw error;
+  }
+  throw new Error(`Blessed copy move destination ${filename} already exists.`);
+}
+
+async function applyBlessedCopyMoves(
+  moves: BlessedCopyMove[],
+  cwd: string,
+  dryRun: boolean,
+): Promise<void> {
+  if (dryRun || moves.length === 0) return;
+  for (const move of moves) {
+    await requireFile(move.from, cwd);
+    await requireFile(move.sidecarFrom, cwd);
+    await requireAbsent(move.to, cwd);
+    await requireAbsent(move.sidecarTo, cwd);
+  }
+  const completed: BlessedCopyMove[] = [];
+  try {
+    for (const move of moves) {
+      await mkdir(path.join(cwd, ...path.posix.dirname(move.to).split("/")), { recursive: true });
+      const from = path.join(cwd, ...move.from.split("/"));
+      const to = path.join(cwd, ...move.to.split("/"));
+      const sidecarFrom = path.join(cwd, ...move.sidecarFrom.split("/"));
+      const sidecarTo = path.join(cwd, ...move.sidecarTo.split("/"));
+      await rename(from, to);
+      try {
+        await rename(sidecarFrom, sidecarTo);
+      } catch (error) {
+        await rename(to, from).catch(() => undefined);
+        throw error;
+      }
+      completed.push(move);
+    }
+  } catch (error) {
+    for (const move of completed.toReversed()) {
+      await rename(path.join(cwd, ...move.sidecarTo.split("/")), path.join(cwd, ...move.sidecarFrom.split("/")));
+      await rename(path.join(cwd, ...move.to.split("/")), path.join(cwd, ...move.from.split("/")));
+    }
+    throw error;
+  }
 }
 
 function setSections(front: Front, doc: ReturnType<typeof parseDoc>, cwd: string): void {
@@ -415,7 +483,7 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
   const head = (await git(["rev-parse", "HEAD"], { cwd }).catch(() => "")).trim();
   const headTime = Number.parseInt((await git(["show", "-s", "--format=%ct", head || "HEAD"], { cwd }).catch(() => "0")).trim(), 10) || 0;
   const perFile = new Map<string, string>();
-  const copyMoves: FixResult["changes"] = [];
+  const copyMoves: BlessedCopyMove[] = [];
   for (const entry of entries) {
     const original = await readFile(path.join(cwd, ...entry.path.split("/")), "utf8");
     const { front, body } = splitFront(original);
@@ -449,7 +517,7 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
     parsedAfterIds = parseDoc(entry.path, text, { prefix });
     const completeFront = frontFor(entry, front, policy, head || "working-tree");
     const renamed = moveRenames(completeFront, parsedAfterIds.sections);
-    copyMoves.push(...await moveBlessedCopy(completeFront, renamed, cwd, Boolean(options.dryRun)));
+    copyMoves.push(...planBlessedCopyMoves(completeFront, renamed));
     let bodyAfter = front ? splitFront(text).body : text;
     const read = readSyncReader(cwd);
     for (const section of parsedAfterIds.sections) {
@@ -527,7 +595,11 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
     );
   }
 
-  const changes: FixResult["changes"] = [...copyMoves];
+  await applyBlessedCopyMoves(copyMoves, cwd, Boolean(options.dryRun));
+  const changes: FixResult["changes"] = copyMoves.map((move) => ({
+    path: move.to,
+    action: "move-blessed-copy",
+  }));
   for (const entry of entries) {
     const filename = entry.path;
     const before = await readFile(path.join(cwd, ...filename.split("/")), "utf8");
