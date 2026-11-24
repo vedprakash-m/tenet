@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 import { parseDocument, stringify } from "yaml";
 import { confine, writeAtomic } from "../core/fs.js";
+import { sha256Text } from "../core/hash.js";
 import { message } from "../core/messages.js";
 import { fail } from "../core/output.js";
 import { compareUtf16 } from "./hosts.js";
@@ -114,7 +115,7 @@ async function kitFiles(kitPath: string): Promise<Array<{ path: string; content:
 
 async function kitDigest(files: Array<{ path: string; content: string }>): Promise<string> {
   const rows = files
-    .map((file) => ({ path: file.path.replaceAll("\\", "/"), hash: sha256Bytes(Buffer.from(file.content, "utf8")) }))
+    .map((file) => ({ path: file.path.replaceAll("\\", "/"), hash: sha256Text(Buffer.from(file.content, "utf8")) }))
     .sort((left, right) => Buffer.compare(Buffer.from(left.path, "utf8"), Buffer.from(right.path, "utf8")))
     .map((file) => `${file.path}\0${file.hash}`);
   return sha256Bytes(rows.join("\n"));

@@ -6,6 +6,8 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { cleanupTestRoot, tmpRepo } from "../helpers/tmpRepo.ts";
+import { init } from "../../dist/install/init.js";
+import { remove } from "../../dist/install/remove.js";
 
 const cli = fileURLToPath(new URL("../../dist/cli.js", import.meta.url));
 
@@ -274,32 +276,44 @@ test("real node-service fixture initializes, is idempotent and removes exactly",
   assert.deepEqual(await tree(home), homeBefore);
 });
 
-test("init --yes --local-hosts authorizes and remove restores a local MCP entry", async (t) => {
-  const repo = await tmpRepo("install-local-host-cli");
-  t.after(repo.cleanup);
-  const home = path.join(path.dirname(repo.path), `home-${path.basename(repo.path)}`);
-  await mkdir(home, { recursive: true });
-  t.after(() => rm(home, { recursive: true, force: true }));
-  await repo.write("CLAUDE.md", "# Fixture\n");
-  repo.git(["add", "CLAUDE.md"]);
-  repo.git(["commit", "-qm", "fixture"]);
-  const env = {
-    ...process.env,
-    HOME: home,
-    USERPROFILE: home,
-    APPDATA: path.join(home, "AppData", "Roaming"),
-    TENET_INSTALL_INTEGRITY: `sha512-${"A".repeat(86)}==`,
-  };
-  const invoke = (...args: string[]) => spawnSync(
-    process.execPath,
-    [cli, "--json", "--cwd", repo.path, ...args],
-    { cwd: process.cwd(), encoding: "utf8", env, shell: false, windowsHide: true },
-  );
-  const first = invoke("init", "--yes", "--local-hosts");
-  assert.equal(first.status, 0, first.stderr);
-  const envelope = JSON.parse(first.stdout) as { result: { wrote: { local_keys: unknown[] } } };
-  assert.equal(envelope.result.wrote.local_keys.length, 1);
-  await readFile(path.join(home, ".claude.json"), "utf8");
-  assert.equal(invoke("remove").status, 0);
-  assert.deepEqual(await tree(home), {});
+test("local-host consent writes only Windows cmd shims and removes them", async () => {
+  for (const platform of ["win32", "linux", "darwin"] as const) {
+    const repo = await tmpRepo(`install-local-host-${platform}`);
+    const home = path.join(path.dirname(repo.path), `home-${path.basename(repo.path)}`);
+    try {
+      await mkdir(home, { recursive: true });
+      await repo.write("CLAUDE.md", "# Fixture\n");
+      repo.git(["add", "CLAUDE.md"]);
+      repo.git(["commit", "-qm", "fixture"]);
+      const options = {
+        cwd: repo.path,
+        yes: true,
+        localHosts: true,
+        environment: {
+          platform,
+          localProfileRoot: home,
+          registry: {
+            package: "@vedprakash-m/tenet",
+            releases: {
+              "0.0.0": { integrity: `sha512-${"A".repeat(86)}==` },
+            },
+          },
+          ...(platform === "win32" ? { windowsCommandShimRequired: ["claude"] } : {}),
+        },
+      };
+      const first = await init(options);
+      if (platform === "win32") {
+        assert.equal(first.wrote.local_keys.length, 1);
+        await readFile(path.join(home, ".claude.json"), "utf8");
+      } else {
+        assert.deepEqual(first.wrote.local_keys, []);
+        await assert.rejects(readFile(path.join(home, ".claude.json")), { code: "ENOENT" });
+      }
+      await remove(options);
+      assert.deepEqual(await tree(home), {});
+    } finally {
+      await repo.cleanup();
+      await rm(home, { recursive: true, force: true });
+    }
+  }
 });

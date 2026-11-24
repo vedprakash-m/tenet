@@ -12,6 +12,12 @@ export function sha256(value: string | NodeJS.ArrayBufferView): string {
     .digest("hex");
 }
 
+export function sha256Text(value: NodeJS.ArrayBufferView): string {
+  return sha256(Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString("utf8")
+    .replaceAll("\r\n", "\n")
+    .replaceAll("\r", "\n"));
+}
+
 function encodeBase32(value: bigint, length: number): string {
   let output = "";
   let remaining = value;
