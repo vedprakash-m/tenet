@@ -60,7 +60,7 @@ async function workingPolicy(cwd: string): Promise<TenetYaml> {
 }
 
 async function writeJson(filename: string, value: unknown): Promise<void> {
-  const bytes = Buffer.from(JSON.stringify(value, null, 2) + "\n", "utf8");
+  const bytes = Buffer.from(`${JSON.stringify(value, null, 2)}\n`, "utf8");
   try {
     if ((await readFile(filename)).equals(bytes)) return;
   } catch (error) {

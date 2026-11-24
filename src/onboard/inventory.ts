@@ -54,16 +54,16 @@ function earlySkip(file: string): Skip | undefined {
 
 function generatedRules(blobs: Map<string, Buffer>): Array<{ match: (file: string) => boolean; generated: boolean }> {
   const rules = [];
-  for (const [file, bytes] of [...blobs].sort(([left], [right]) => ascii(left, right))) {
+  for (const [file, bytes] of [...blobs].sort(([left], [right]) => (left.split("/").length - right.split("/").length) || ascii(left, right))) {
     const directory = path.posix.dirname(file);
-    const prefix = directory === "." ? "" : directory + "/";
+    const prefix = directory === "." ? "" : `${directory}/`;
     for (const line of bytes.toString("utf8").split(/\r?\n/)) {
       const [raw, ...attributes] = line.trim().split(/\s+/);
       if (!raw || raw.startsWith("#") || raw.startsWith("!") || raw.endsWith("/")) continue;
       const attribute = attributes.findLast((value) => /^(?:[-!])?linguist-generated(?:=.+)?$/.test(value));
       if (!attribute) continue;
       const pattern = raw.replace(/^\//, "");
-      const matcher = picomatch(pattern.includes("/") || raw.startsWith("/") ? pattern : "**/" + pattern, { dot: true });
+      const matcher = picomatch(pattern.includes("/") || raw.startsWith("/") ? pattern : `**/${pattern}`, { dot: true });
       rules.push({
         match: (candidate: string) => candidate.startsWith(prefix) && matcher(candidate.slice(prefix.length)),
         generated: !/^(?:[-!])|=false$/.test(attribute),
@@ -97,7 +97,7 @@ async function collect(snapshot: RepositorySnapshot, policy: TenetYaml): Promise
     if (reason) early.set(file.path, reason);
     else if (file.regular) eligible.push(file);
   }
-  const blobs = await snapshot.read(eligible, byteLimit);
+  const { blobs, generatedHeaders } = await snapshot.read(eligible, byteLimit);
   const attrs = new Map([...blobs].filter(([name]) => path.posix.basename(name) === ".gitattributes"));
   const rules = generatedRules(attrs);
   const excluded = (policy.onboard?.exclude ?? []).map((pattern) => picomatch(pattern, { dot: true }));
@@ -106,7 +106,7 @@ async function collect(snapshot: RepositorySnapshot, policy: TenetYaml): Promise
   for (const file of tracked) {
     const head = blobs.get(file.path);
     const text = head?.toString("utf8") ?? "";
-    const generated = rules.findLast((rule) => rule.match(file.path))?.generated ||
+    const generated = generatedHeaders.has(file.path) || rules.findLast((rule) => rule.match(file.path))?.generated ||
       /Code generated|@generated/.test(text.split(/\r?\n/, 5).join("\n"));
     const reason = early.get(file.path) ??
       (generated ? "generated" : undefined) ??
@@ -134,13 +134,13 @@ function ownersFrom(file: InventorySource | undefined): Owner[] {
 
 export function ownerMatcher(pattern: string): (file: string) => boolean {
   const stripped = pattern.replace(/^\//, "");
-  const glob = stripped.endsWith("/") ? stripped + "**" : stripped;
-  const match = picomatch(pattern.startsWith("/") || stripped.slice(0, -1).includes("/") ? glob : "**/" + glob, { dot: true });
+  const glob = stripped.endsWith("/") ? `${stripped}**` : stripped;
+  const match = picomatch(pattern.startsWith("/") || stripped.slice(0, -1).includes("/") ? glob : `**/${glob}`, { dot: true });
   return (file) => match(file) || file.split("/").slice(0, -1).some((_, i, folders) => match(folders.slice(0, i + 1).join("/")));
 }
 
 function within(root: string, file: string): boolean {
-  return root === "." || root === file || file.startsWith(root + "/");
+  return root === "." || root === file || file.startsWith(`${root}/`);
 }
 
 export { within };
@@ -255,7 +255,7 @@ function ciRows(files: InventorySource[]): Inventory["ci"] {
 
 export async function inventoryFacts(snapshot: RepositorySnapshot, policy: TenetYaml, override?: Layout): Promise<Facts> {
   const { files, skipped } = await collect(snapshot, policy);
-  const source = files.filter((file) => file.kind === "source");
+  const source = files.filter((file) => file.kind !== "test" && language(file.path) !== undefined);
   const codeowners = [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"].map((name) => files.find((file) => file.path === name)).find(Boolean);
   const owners = ownersFrom(codeowners);
   const size = { source_lines: source.reduce((sum, file) => sum + file.lines, 0), areas: owners.length };

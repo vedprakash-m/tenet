@@ -76,7 +76,7 @@ function runnerFor(filename: string, text: string, facts: Facts): string {
 function literalGlob(filename: string): string {
   const delimiters = new Map([["[", "[[]"], ["]", "[]]"], ["*", "[*]"], ["?", "[?]"],
     ["(", "[(]"], [")", "[)]"], ["{", "[{]"], ["}", "[}]"], ["+", "[+]"], ["!", "[!]"], ["@", "[@]"]]);
-  return filename.replace(/[\[\]*?(){}+!@]/g, (char) => delimiters.get(char) ?? char);
+  return filename.replace(/[[\]*?(){}+!@]/g, (char) => delimiters.get(char) ?? char);
 }
 
 function recognizedRunner(facts: Facts): boolean {

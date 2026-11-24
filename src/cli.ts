@@ -128,9 +128,10 @@ async function environmentFindings(io: ReturnType<typeof defaultIo>): Promise<Fi
 
 async function loadCommands(): Promise<void> {
   if (loadedCommands) return;
-  const { verifyCommand } = await import("./commands/index.js");
+  const { onboardCommand, verifyCommand } = await import("./commands/index.js");
   if (loadedCommands) return;
   registerCommand(verifyCommand);
+  registerCommand(onboardCommand);
   loadedCommands = true;
 }
 

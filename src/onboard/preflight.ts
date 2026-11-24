@@ -5,12 +5,14 @@ import { fail, type Finding } from "../core/output.js";
 
 export type TrackedFile = { path: string; oid: string; size: number; regular: boolean };
 
+type BlobInspection = { blobs: Map<string, Buffer>; generatedHeaders: Set<string> };
+
 export type RepositorySnapshot = {
   cwd: string;
   revision: string;
   dirty: boolean;
   files: TrackedFile[];
-  read: (files: TrackedFile[], maxBytes: number) => Promise<Map<string, Buffer>>;
+  read: (files: TrackedFile[], maxBytes: number) => Promise<BlobInspection>;
   dates: (paths: string[]) => Promise<Map<string, string>>;
 };
 
@@ -39,7 +41,7 @@ export function missingRepository(cwd: string): Finding {
   return environmentError("TN-ENV-NOT-GIT", { path: cwd });
 }
 
-function blobPrefix(cwd: string, oid: string, limit: number): Promise<Buffer> {
+function readBlob(cwd: string, oid: string, limit: number, inspectHeader: boolean): Promise<{ bytes: Buffer; generated: boolean }> {
   return new Promise((resolve, reject) => {
     const child = spawn("git", ["cat-file", "blob", oid], {
       cwd,
@@ -48,34 +50,58 @@ function blobPrefix(cwd: string, oid: string, limit: number): Promise<Buffer> {
     });
     const chunks: Buffer[] = [];
     let length = 0;
+    let openingLines = inspectHeader ? 5 : 0;
+    let tail = "";
+    let generated = false;
     child.stdout.on("data", (chunk: Buffer) => {
-      const kept = chunk.subarray(0, limit - length);
-      chunks.push(kept);
-      length += kept.length;
-      if (length === limit) child.kill();
+      if (length < limit) {
+        const kept = chunk.subarray(0, limit - length);
+        chunks.push(kept);
+        length += kept.length;
+      }
+      if (openingLines > 0 && !generated) {
+        let end = 0;
+        while (openingLines > 0) {
+          const newline = chunk.indexOf(10, end);
+          if (newline === -1) { end = chunk.length; break; }
+          openingLines -= 1;
+          end = newline + 1;
+        }
+        const header = tail + chunk.toString("latin1", 0, end);
+        generated = /Code generated|@generated/.test(header);
+        tail = header.slice(-13);
+      }
+      if (length === limit && (generated || openingLines === 0)) child.kill();
     });
     child.on("error", reject);
     child.on("close", (code) => {
-      if (code === 0 || length === limit) resolve(Buffer.concat(chunks, length));
-      else reject(new Error("Git object could not be read"));
+      if (code === 0 || (length === limit && (generated || openingLines === 0))) {
+        resolve({ bytes: Buffer.concat(chunks, length), generated });
+      } else {
+        reject(new Error("Git object could not be read"));
+      }
     });
   });
 }
 
-async function readBlobs(cwd: string, revision: string, files: TrackedFile[], limit: number): Promise<Map<string, Buffer>> {
-  const result = new Map<string, Buffer>();
+async function readBlobs(cwd: string, revision: string, files: TrackedFile[], limit: number): Promise<BlobInspection> {
+  const blobs = new Map<string, Buffer>();
+  const generatedHeaders = new Set<string>();
   let batch: TrackedFile[] = [];
   let total = 0;
   const flush = async () => {
     for (const [file, contents] of await catFileBatch(revision, batch.map((item) => item.path), { cwd })) {
-      result.set(file, contents);
+      blobs.set(file, contents);
     }
     batch = [];
     total = 0;
   };
   for (const file of files) {
-    if (file.size > limit || /[\r\n\\]/.test(file.path)) {
-      result.set(file.path, await blobPrefix(cwd, file.oid, file.size > limit ? 8192 : file.size));
+    const oversize = file.size > limit;
+    if (oversize || /[\r\n\\]/.test(file.path)) {
+      const inspected = await readBlob(cwd, file.oid, oversize ? 8192 : file.size, oversize);
+      blobs.set(file.path, inspected.bytes);
+      if (inspected.generated) generatedHeaders.add(file.path);
     } else {
       if (batch.length >= 128 || total + file.size > 8 * 1024 * 1024) await flush();
       batch.push(file);
@@ -83,7 +109,7 @@ async function readBlobs(cwd: string, revision: string, files: TrackedFile[], li
     }
   }
   await flush();
-  return result;
+  return { blobs, generatedHeaders };
 }
 
 async function docDates(cwd: string, paths: string[]): Promise<Map<string, string>> {
