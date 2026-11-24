@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "package": "@vedprakash-m/tenet",
+  "version": "0.0.0",
+  "integrity": "sha512-Y83CGOxFdfePjQCJf19un3ecjFl7opBDeK74BQ60b8RGJ10l4MJ4tDMHQTBHF9CTvefaN7m15mH5gQ/dKwytxw==",
+  "x-integrity-source": "local",
+  "kit_sha256": "907621df5be18260762e9d11507c4f6fc24a4c5ac25649428a704ecd24e181a0"
+}

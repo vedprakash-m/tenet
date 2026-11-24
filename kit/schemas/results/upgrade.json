@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/results/upgrade.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "from": { "type": "string", "minLength": 1 },
+    "to": { "type": "string", "minLength": 1 },
+    "changed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "action": { "enum": ["created", "replaced", "kept"] }
+        },
+        "required": ["path", "action"]
+      }
+    }
+  },
+  "required": ["from", "to", "changed"]
+}
