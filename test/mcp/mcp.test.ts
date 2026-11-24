@@ -18,8 +18,15 @@ class Output {
   }
 }
 
+// Temporary repositories live under the shared test root, never in the project root.
+async function testRoot(): Promise<string> {
+  const root = path.resolve(".test-tmp", String(process.pid));
+  await mkdir(root, { recursive: true });
+  return root;
+}
+
 async function repo(): Promise<{ cwd: string; write(filename: string, text: string): Promise<void> }> {
-  const cwd = await mkdtemp(path.join(process.cwd(), ".cp45-mcp-"));
+  const cwd = await mkdtemp(path.join(await testRoot(), "cp45-mcp-"));
   const value = {
     cwd,
     async write(filename: string, text: string) {
@@ -145,7 +152,7 @@ function matchesProjection(actual: unknown, expected: unknown, location: string)
 }
 
 async function conformanceRepo(files: Record<string, string>): Promise<string> {
-  const cwd = await mkdtemp(path.join(process.cwd(), ".cp45-conformance-"));
+  const cwd = await mkdtemp(path.join(await testRoot(), "cp45-conformance-"));
   for (const [filename, contents] of Object.entries(files)) {
     const target = path.join(cwd, ...filename.split("/"));
     await mkdir(path.dirname(target), { recursive: true });
@@ -343,6 +350,8 @@ test("writes proposals only inside the named packet folder", async () => {
   const target = await repo();
   try {
     await git(["init"], { cwd: target.cwd });
+    await git(["config", "core.autocrlf", "false"], { cwd: target.cwd });
+    await git(["config", "core.safecrlf", "false"], { cwd: target.cwd });
     await git(["config", "user.name", "Fixture"], { cwd: target.cwd });
     await git(["config", "user.email", "fixture@example.com"], { cwd: target.cwd });
     await git(["add", "--all"], { cwd: target.cwd });
