@@ -8,6 +8,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
+import { canonicalCoverage } from "./coverage-lcov.mjs";
 
 const root = process.cwd();
 const healthDirectory = path.join(root, ".tenet", "health");
@@ -69,34 +70,3 @@ if (coverage) {
 }
 
 process.exit(child.status ?? 1);
-
-function canonicalCoverage(contents) {
-  const records = [];
-  for (const chunk of contents.replaceAll("\r\n", "\n").split("end_of_record")) {
-    const lines = chunk
-      .trim()
-      .split("\n")
-      .filter((line) => line && line !== "TN:");
-    const sourceIndex = lines.findIndex((line) => line.startsWith("SF:"));
-    if (sourceIndex < 0) continue;
-    const source = portableSource(lines[sourceIndex].slice(3));
-    if (!source.startsWith("src/")) continue;
-    lines[sourceIndex] = `SF:${source}`;
-    records.push({ source, lines });
-  }
-  records.sort((left, right) => Buffer.compare(
-    Buffer.from(left.source),
-    Buffer.from(right.source),
-  ));
-  if (records.length === 0) throw new Error("coverage report contains no src/ records");
-  return `TN:\n${records
-    .map(({ lines: record }) => `${record.join("\n")}\nend_of_record`)
-    .join("\n")}\n`;
-}
-
-function portableSource(filename) {
-  const absolute = path.isAbsolute(filename) ? filename : path.resolve(root, filename);
-  const relative = path.relative(root, absolute);
-  const shown = relative.startsWith("..") ? filename : relative;
-  return shown.replaceAll("\\", "/");
-}

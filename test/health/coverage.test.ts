@@ -4,6 +4,37 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { canonicalCoverage } from "../../scripts/coverage-lcov.mjs";
+
+test("coverage canonicalization ignores execution counts and V8 IDs", () => {
+  const first = [
+    "TN:",
+    "SF:src/sample.ts",
+    "FN:12,anonymous_8",
+    "FNDA:7,anonymous_8",
+    "FN:4,named",
+    "FNDA:0,named",
+    "BRDA:4,8,0,5",
+    "BRDA:12,2,0,0",
+    "DA:12,9",
+    "DA:4,0",
+    "end_of_record",
+  ].join("\n");
+  const second = [
+    "TN:",
+    "SF:src/sample.ts",
+    "FN:4,named",
+    "FNDA:0,named",
+    "BRDA:12,1,0,0",
+    "DA:4,0",
+    "FN:12,anonymous_2",
+    "FNDA:2,anonymous_2",
+    "DA:12,1",
+    "BRDA:4,4,0,1",
+    "end_of_record",
+  ].join("\n");
+  assert.equal(canonicalCoverage(first), canonicalCoverage(second));
+});
 
 test("source maps expose a known TypeScript line in the LCOV report", async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "tenet-source-map-"));
