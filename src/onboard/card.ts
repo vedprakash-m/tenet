@@ -11,6 +11,7 @@ import type { Assignment, Inventory } from "../types/generated.js";
 import { isGovernedSection, measureStatements, parseBlessDocument, readCitationSource, readingMinutes, readSpecMatter, statements, writeSpecMatter } from "./bless.js";
 
 type CardOptions = { cwd?: string; pr?: number };
+type StructuredCardOptions = CardOptions & { format: "result" };
 export type OnboardingCardResult = { card: string; drafted_at_rev: string };
 
 const inventoryPath = ".tenet/onboard/inventory.json";
@@ -101,7 +102,12 @@ function composeCard(inventory: Inventory, docs: ParsedDoc[], read: (file: strin
   return `${lines.join("\n")}\n`;
 }
 
-export async function onboardingCard(options: CardOptions = {}, write = writeAtomic): Promise<OnboardingCardResult> {
+export function onboardingCard(options: StructuredCardOptions, write?: typeof writeAtomic): Promise<OnboardingCardResult>;
+export function onboardingCard(options?: CardOptions): Promise<string>;
+export async function onboardingCard(
+  options: CardOptions & { format?: "result" } = {},
+  write = writeAtomic,
+): Promise<OnboardingCardResult | string> {
   if (options.pr !== undefined && (!Number.isSafeInteger(options.pr) || options.pr < 1)) {
     throw diagnostic("TN-USAGE-ONBOARD", { command: "onboard", detail: "the pull request number must be a positive integer" });
   }
@@ -168,5 +174,5 @@ export async function onboardingCard(options: CardOptions = {}, write = writeAto
     if (failures.length > 1) throw new AggregateError(failures, "Could not restore draft stamps");
     throw error;
   }
-  return { card, drafted_at_rev: patches.length ? head : existingStamp ?? head };
+  return options.format === "result" ? { card, drafted_at_rev: patches.length ? head : existingStamp ?? head } : card;
 }
