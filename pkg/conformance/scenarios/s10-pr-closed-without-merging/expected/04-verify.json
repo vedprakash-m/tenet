@@ -1,6 +1,6 @@
 {
   "conclusion": "neutral",
-  "wrote": false,
+  "wrote": true,
   "card": {
     "schema_version": 1,
     "evaluation_id": "f9bc41b696555b9f",
@@ -68,15 +68,10 @@
       {
         "text": "not checked: bundle refused (TN-RECORD-BUNDLE)",
         "class": "host"
-      },
-      {
-        "text": "results not kept",
-        "class": "host"
       }
     ],
     "degraded": [
-      "not checked: bundle refused (TN-RECORD-BUNDLE)",
-      "results not kept"
+      "not checked: bundle refused (TN-RECORD-BUNDLE)"
     ]
   }
 }

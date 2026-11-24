@@ -38,6 +38,14 @@
       }
     },
     {
+      "id": "03b-stage-tests",
+      "kind": "git",
+      "args": [
+        "add",
+        "test/shared.test.ts"
+      ]
+    },
+    {
       "id": "04-commit-shared-helper",
       "kind": "git",
       "args": [
