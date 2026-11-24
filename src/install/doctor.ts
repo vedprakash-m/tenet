@@ -163,6 +163,20 @@ function canonicalLock(code: "TN-LOCK-MISSING"): Finding {
   return fail(code, text.message, text.fix);
 }
 
+async function unverifiableLock(cwd: string): Promise<Finding | null> {
+  try {
+    const filename = path.join(cwd, "tenet.lock");
+    const lock = JSON.parse(await readFile(filename, "utf8")) as Record<string, unknown>;
+    if (lock["x-integrity-source"] !== "local") return null;
+    const text = message("TN-LOCK-UNVERIFIABLE", {});
+    return { ...fail("TN-LOCK-UNVERIFIABLE", text.message, text.fix), file: "tenet.lock" };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    if (error instanceof SyntaxError) return null;
+    throw error;
+  }
+}
+
 type WorkflowConfiguration = {
   ci: boolean;
   testWorkflow: string | null;
@@ -279,6 +293,12 @@ export async function doctorEvaluation(
     lockDetail = relativeKit === ".tenet/kit"
       ? "vendored kit matches tenet.lock"
       : "tenet.lock and kit match";
+    const unverifiable = await unverifiableLock(cwd);
+    if (unverifiable) {
+      findings.push(unverifiable);
+      lockOk = false;
+      lockDetail = unverifiable.message;
+    }
   } catch (error) {
     const finding = lockFinding(error);
     findings.push(finding);

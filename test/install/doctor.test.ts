@@ -201,6 +201,38 @@ test("doctor treats a missing gh executable as an optional success", async (t) =
   });
 });
 
+test("doctor reports local integrity as unverifiable", async (t) => {
+  const repo = await tmpRepo("doctor-local-integrity");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
+  await repo.write("tenet.lock", JSON.stringify({
+    schema_version: 1,
+    package: "@vedprakash-m/tenet",
+    version: "0.1.0-alpha.0",
+    integrity: `sha512-${"A".repeat(86)}==`,
+    "x-integrity-source": "local",
+    kit_sha256: "a".repeat(64),
+  }, null, 2));
+  const result = await install.doctorEvaluation({
+    cwd: repo.path,
+    environment: environment(),
+    verifyLock: async () => ({
+      ok: true,
+      path: kitPath,
+      sha256: "a".repeat(64),
+      skipped: false,
+      lock_sha256: "a".repeat(64),
+    }),
+  });
+  assert.deepEqual(result.checks[4], {
+    name: "lock",
+    ok: false,
+    detail: "Lock file tenet.lock uses local package integrity and cannot be verified in CI.",
+  });
+  assert.ok(result.findings.some((finding: { code: string }) =>
+    finding.code === "TN-LOCK-UNVERIFIABLE"));
+});
+
 test("doctor parses OpenSSH for Windows versions", async (t) => {
   const repo = await tmpRepo("doctor-windows-ssh");
   t.after(repo.cleanup);

@@ -666,6 +666,46 @@ test("p17 loader upgrades owned pins without changing policy", async (t) => {
   }
 });
 
+test("upgrade refreshes a changed integrity pin", async (t) => {
+  const setup = await makeCase("p01-empty");
+  t.after(() => dispose(setup));
+  const firstIntegrity = `sha512-${"A".repeat(86)}==`;
+  const editedIntegrity = `sha512-${"B".repeat(86)}==`;
+  const refreshedIntegrity = `sha512-${"C".repeat(86)}==`;
+  const initial = {
+    ...setup.options,
+    environment: {
+      ...(setup.options.environment as Record<string, unknown>),
+      registry: {
+        package: "@vedprakash-m/tenet",
+        releases: { "0.1.0-alpha.0": { integrity: firstIntegrity } },
+      },
+    },
+  };
+  await init(initial);
+  const lockPath = path.join(setup.repo.path, "tenet.lock");
+  const lock = JSON.parse(await readFile(lockPath, "utf8")) as Record<string, unknown>;
+  lock.integrity = editedIntegrity;
+  await writeFile(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
+
+  const upgraded = await upgrade({
+    ...setup.options,
+    environment: {
+      ...(setup.options.environment as Record<string, unknown>),
+      registry: {
+        package: "@vedprakash-m/tenet",
+        releases: { "0.1.0-alpha.0": { integrity: refreshedIntegrity } },
+      },
+    },
+  });
+  assert.ok(upgraded.changed.some((item) =>
+    item.path === "tenet.lock" && item.action === "replaced"));
+  assert.equal(
+    (JSON.parse(await readFile(lockPath, "utf8")) as { integrity: string }).integrity,
+    refreshedIntegrity,
+  );
+});
+
 test("p17 lexical JSON formatting survives owned pin replacement", async (t) => {
   const setup = await makeCase("p17-upgrade-pins-and-policy");
   t.after(() => dispose(setup));
