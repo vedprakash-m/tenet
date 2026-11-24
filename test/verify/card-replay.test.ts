@@ -130,8 +130,12 @@ for (const name of cases) {
     // Verify identity in both namespaces. An output ID can be relabeled
     // only if it is the canonical ID of the materialized input tuple.
     const { card, conclusion, wrote } = result;
+    if (input.bundles.some(({ bundle_error }) => bundle_error)) {
+      assert.equal(card.tested.kind, "head", "a refused bundle falls back to the PR head");
+      assert.equal(card.tested.commit, head);
+    }
     const realTupleId = evaluationId({
-      ...tuple, tested_commit: tested, base,
+      ...tuple, tested_commit: card.tested.commit, base,
       policy_blob: repo.git(["rev-parse", `${previous ?? base}:tenet.yaml`]).trim(),
     });
     const tupleId = evaluationId(tuple);
