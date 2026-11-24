@@ -15,9 +15,19 @@
   "files": [
     "dist",
     "kit",
-    "pkg/migrations",
-    "pkg/conformance",
-    "pkg/hosts"
+    "pkg/conformance/alg-02",
+    "pkg/conformance/alg-03",
+    "pkg/conformance/alg-04",
+    "pkg/conformance/alg-08",
+    "pkg/conformance/alg-09",
+    "pkg/conformance/alg-10",
+    "pkg/conformance/alg-11",
+    "pkg/conformance/alg-14",
+    "pkg/conformance/board",
+    "pkg/conformance/card",
+    "pkg/conformance/check",
+    "pkg/conformance/install",
+    "pkg/conformance/scenarios"
   ],
   "workspaces": [
     ".",
