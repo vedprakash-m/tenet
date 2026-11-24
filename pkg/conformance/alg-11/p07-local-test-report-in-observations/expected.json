@@ -1,43 +1,131 @@
 {
   "ok": true,
   "exitCode": 0,
+  "preflight": {
+    "revision": "0123456789abcdef0123456789abcdef01234567",
+    "read_count": 3,
+    "skipped_count": 0,
+    "dirty_warning": false
+  },
   "inventory": {
     "schema_version": 1,
     "revision": "0123456789abcdef0123456789abcdef01234567",
     "sources": {
-      "files": {
-        "$assert": "contains",
-        "value": [
-          {
-            "path": "src/math.ts",
-            "kind": "source",
-            "sha256": "095da6eb2e7b026bee6d69001c6cfed715db8a4c8b8735369716ce454ea0bee0",
-            "lines": 1
-          },
-          {
-            "path": "test/math.test.ts",
-            "kind": "test",
-            "sha256": "c4e4f10317348c26c2a9930c28b48a74056513f250e6fdfed6e09598014553b8",
-            "lines": 2
-          }
+      "files": [
+        {
+          "path": "src/math.ts",
+          "kind": "source",
+          "sha256": "095da6eb2e7b026bee6d69001c6cfed715db8a4c8b8735369716ce454ea0bee0",
+          "lines": 1
+        },
+        {
+          "path": "tenet.yaml",
+          "kind": "config",
+          "sha256": "bf2e6da3dcd662003bad47b1988163b36f58b16b76795cfba63256fc4359d747",
+          "lines": 26
+        },
+        {
+          "path": "test/math.test.ts",
+          "kind": "test",
+          "sha256": "c4e4f10317348c26c2a9930c28b48a74056513f250e6fdfed6e09598014553b8",
+          "lines": 2
+        }
+      ],
+      "skipped": []
+    },
+    "modules": [
+      {
+        "id": "src",
+        "roots": [
+          "src"
+        ],
+        "languages": [
+          "typescript"
         ]
       }
-    },
+    ],
+    "tests": [
+      {
+        "path": "test/math.test.ts",
+        "runner": "node:test",
+        "cases": 1
+      }
+    ],
+    "docs": [],
+    "owners": [],
+    "ci": [],
     "size": {
       "source_lines": 1,
       "areas": 0
     },
+    "layout": "one-file",
+    "units": [
+      {
+        "id": "root",
+        "paths": [
+          "."
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      }
+    ],
+    "findings": [],
     "observations": {
       "reports": [
         {
           "path": ".tenet/reports/junit.xml",
           "sha256": "18ba2cb6b95bb943727fe14b39641576302283026a2a2832d07c4907859dac9b",
-          "runner": {
-            "$assert": "present"
-          },
+          "runner": "junit",
           "cases": 1
         }
       ]
     }
+  },
+  "findings": [],
+  "assignment": {
+    "schema_version": 1,
+    "inventory": ".tenet/onboard/inventory.json",
+    "skill": "draft-specs",
+    "project_kind": "application",
+    "views": [
+      "vision",
+      "requirements",
+      "design",
+      "experience",
+      "plan"
+    ],
+    "layout": "one-file",
+    "units": [
+      {
+        "id": "root",
+        "paths": [
+          "."
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      }
+    ],
+    "question_limit": 10,
+    "output": {
+      "paths": [
+        "tenet/intent.md"
+      ]
+    },
+    "rules": [
+      "no intent from code alone",
+      "every observed or documented statement cites",
+      "never resolve a conflict",
+      "never bless"
+    ]
   }
 }

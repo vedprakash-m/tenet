@@ -35,14 +35,7 @@ function usedCodes(directory: URL): Set<string> {
 test("all source diagnostics resolve except the exact pre-existing unregistered codes", () => {
   // These codes predate the catalog and have no published template on this branch.
   // Exact comparison rejects any new missing code and any stale exception.
-  const pendingRegistration = [
-    "TN-ENV-OFFLINE",
-    "TN-INTERNAL",
-    "TN-KIT-INVALID",
-    "TN-KIT-MISSING",
-    "TN-LOCK-INVALID",
-    "TN-LOCK-MISSING",
-  ];
+  const pendingRegistration: string[] = [];
   const codes = usedCodes(src);
   assert.deepEqual([...codes].filter((code) => messageTemplate(code) === undefined).sort(), pendingRegistration);
 });

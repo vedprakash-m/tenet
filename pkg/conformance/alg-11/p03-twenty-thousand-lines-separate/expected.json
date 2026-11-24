@@ -1,26 +1,155 @@
 {
   "ok": true,
   "exitCode": 0,
+  "preflight": {
+    "revision": "c3d4e5f601234567890123456789012345678901",
+    "read_count": 3,
+    "skipped_count": 0,
+    "dirty_warning": false
+  },
   "inventory": {
     "schema_version": 1,
     "revision": "c3d4e5f601234567890123456789012345678901",
+    "sources": {
+      "files": [
+        {
+          "path": "packages/core/engine.ts",
+          "kind": "source",
+          "sha256": "0f0915b2c61256c8130f4c8c259c1c803a15c4b00983d057a0d7bedef6b066b3",
+          "lines": 10000
+        },
+        {
+          "path": "services/api/handler.py",
+          "kind": "source",
+          "sha256": "7756a615bf9d0f507f9c1d7b6a03f8fe6872816b896ec2812c63b8de4cefc92b",
+          "lines": 10000
+        },
+        {
+          "path": "tenet.yaml",
+          "kind": "config",
+          "sha256": "bf2e6da3dcd662003bad47b1988163b36f58b16b76795cfba63256fc4359d747",
+          "lines": 26
+        }
+      ],
+      "skipped": []
+    },
+    "modules": [
+      {
+        "id": "packages",
+        "roots": [
+          "packages"
+        ],
+        "languages": [
+          "typescript"
+        ]
+      },
+      {
+        "id": "services",
+        "roots": [
+          "services"
+        ],
+        "languages": [
+          "python"
+        ]
+      }
+    ],
+    "tests": [],
+    "docs": [],
+    "owners": [],
+    "ci": [],
     "size": {
       "source_lines": 20000,
       "areas": 0
     },
     "layout": "separate",
-    "units": {
-      "$assert": "size",
-      "value": 2
+    "units": [
+      {
+        "id": "packages",
+        "paths": [
+          "packages"
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      },
+      {
+        "id": "services",
+        "paths": [
+          "services"
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "kind": "no-test-report",
+        "path": "tenet.yaml",
+        "message": "No machine-readable test report configured"
+      }
+    ],
+    "observations": {
+      "reports": []
     }
   },
+  "findings": [
+    {
+      "kind": "no-test-report",
+      "path": "tenet.yaml",
+      "message": "No machine-readable test report configured"
+    }
+  ],
   "assignment": {
     "schema_version": 1,
+    "inventory": ".tenet/onboard/inventory.json",
+    "skill": "draft-specs",
+    "project_kind": "application",
+    "views": [
+      "vision",
+      "requirements",
+      "design",
+      "experience",
+      "plan"
+    ],
     "layout": "separate",
-    "units": {
-      "$assert": "size",
-      "value": 2
-    },
+    "units": [
+      {
+        "id": "packages",
+        "paths": [
+          "packages"
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      },
+      {
+        "id": "services",
+        "paths": [
+          "services"
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      }
+    ],
+    "question_limit": 10,
     "output": {
       "paths": [
         "tenet/vision.md",
@@ -29,6 +158,12 @@
         "tenet/specs/ux-spec.md",
         "tenet/specs/plan.md"
       ]
-    }
+    },
+    "rules": [
+      "no intent from code alone",
+      "every observed or documented statement cites",
+      "never resolve a conflict",
+      "never bless"
+    ]
   }
 }

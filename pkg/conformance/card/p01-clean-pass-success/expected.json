@@ -12,30 +12,38 @@
       "base": "b222222222222222222222222222222222222222"
     },
     "acceptance_digest": "ecb0ca9c8c0d4ce5219b885c6e43faac874c66c2ae2ab8f2280e5da645358afa",
-    "requirements": {
-      "$assert": "contains",
-      "value": [
-        {
-          "id": "C-1",
-          "state": "blessed",
-          "recorded": "self",
-          "why": "implements",
-          "tests": {
-            "expected": 1,
-            "passed": 1,
-            "failed": 0,
-            "skipped": 0,
-            "not_run": 0
-          }
-        },
-        {
-          "id": "C-4",
-          "state": "blessed",
-          "recorded": "self",
-          "why": "same-area"
+    "requirements": [
+      {
+        "id": "C-1",
+        "excerpt": "A payment that times out is retried once, never twice.",
+        "state": "blessed",
+        "recorded": "self",
+        "flags": [],
+        "why": "implements",
+        "tests": {
+          "expected": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "not_run": 0
         }
-      ]
-    },
+      },
+      {
+        "id": "C-4",
+        "excerpt": "Every retry writes an audit entry in the same checkout folder.",
+        "state": "blessed",
+        "recorded": "self",
+        "flags": [],
+        "why": "same-area",
+        "tests": {
+          "expected": 0,
+          "passed": 0,
+          "failed": 0,
+          "skipped": 0,
+          "not_run": 0
+        }
+      }
+    ],
     "items": [
       {
         "id": "AB-1",
@@ -72,7 +80,14 @@
     "protected": [],
     "blessings_changed": [],
     "deltas": [],
+    "rules": [],
     "badge": "advisory",
+    "why": [
+      {
+        "text": "tests written in this change require reviewer judgment",
+        "class": "judge"
+      }
+    ],
     "degraded": []
   }
 }

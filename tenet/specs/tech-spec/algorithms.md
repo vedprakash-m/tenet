@@ -173,25 +173,11 @@ Fixtures: a global rule survives a budget filled by one long local requirement; 
 
 ## ALG-11
 
-**Size rule.** Count lines in tracked files with extensions `ts tsx js jsx mjs cjs py go rs java kt cs rb php swift c cc cpp h hpp scala`, excluding `vendor/`, `node_modules/`, `dist/`, `build/`, test files and generated paths (marked `linguist-generated` in `.gitattributes`, or whose first 5 lines contain `Code generated` or `@generated`). The layout is `separate` when there are ≥ 20,000 lines or ≥ 4 CODEOWNERS areas, otherwise `one-file`. `onboard --layout` overrides. **Drafting units:** one per CODEOWNERS area, else one per top-level source folder, merging any unit under 2,000 lines into its neighbor; `one-file` is a single unit.
+**Size rule.** Count lines in tracked files with extensions `ts tsx js jsx mjs cjs py go rs java kt cs rb php swift c cc cpp h hpp scala`, excluding `vendor/`, `node_modules/`, `dist/`, `build/`, test files and generated paths (marked `linguist-generated` in `.gitattributes`, or whose first 5 lines contain `Code generated` or `@generated`). The layout is `separate` when there are ≥ 20,000 lines or ≥ 4 CODEOWNERS areas, otherwise `one-file`. `onboard --layout` overrides. **Drafting units:** `one-file` is a single unit `[{id: "root", paths: ["."], views: ["vision", "requirements", "design", "experience", "plan"]}]`. In `separate`, start with one unit per CODEOWNERS area (in CODEOWNERS order; `id` = pattern stripped of leading/trailing `/` and `*` with `/` → `-`, `paths: [<normalized prefix>]`), else one per top-level folder containing counted source files in ASCII order (`id` = folder name, `paths: ["<folder>"]`; root source files use `{id: "root", paths: ["."]}`); while `units.length > 1` and any unit has `< 2,000` counted source lines, merge the first such unit into its preceding neighbor (or following neighbor when at index `0`), keeping the target unit's `id` and appending `paths`; every unit has `views: ["vision", "requirements", "design", "experience", "plan"]`.
 
 ## ALG-12
 
-**Install and removal.**
-- **Paths:** every planned or recorded path is resolved and must stay inside the repository root: no absolute paths, `..`, or symlink or junction leading outside (`TN-PATH-ESCAPE`).
-- **`init` plans every write**, then applies it:
-  1. Write `.tenet/manifest.pending.json` with every planned file, block and key, and each key's current value.
-  2. Apply in order, re-checking each file's hash just before writing it; a file that changed since planning stops the run with the plan shown. A created file that exists with identical content is skipped; with different content it is `TN-INIT-EXISTS` (pass `--force`). Blocks go at the end of the file, or replace an existing block. JSON keys are set.
-  3. Rename the pending file to `manifest.json`, recording each key's `previous` and `installed` value.
-
-  A rerun after an interruption finds the pending file and completes it.
-- **`remove`:**
-  - deletes a created file only if its SHA-256 matches the manifest; otherwise it is kept and reported as "edited by you"
-  - deletes text between markers
-  - restores a key's `previous` value only if it still holds the `installed` value; otherwise keeps it and says so
-  - deletes a created file left empty
-  - never touches specifications or records
-- Fixtures: interruption after each write; a pre-existing `AGENTS.md` and `.mcp.json` are restored exactly; an edited `tenet.yaml` is kept; a key the user changed after install is kept.
+**Install and removal:** in [onboarding.md §2](onboarding.md#2-install-and-upgrade), moved under the rollover rule.
 
 ## ALG-13
 

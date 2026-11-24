@@ -5,9 +5,49 @@
   "card": {
     "schema_version": 1,
     "evaluation_id": "cc53e8a9a6be24d4",
+    "tested": {
+      "commit": "9b41d00000000000000000000000000000000000",
+      "kind": "merge-candidate",
+      "head": "a111111111111111111111111111111111111111",
+      "base": "b222222222222222222222222222222222222222"
+    },
+    "acceptance_digest": "ecb0ca9c8c0d4ce5219b885c6e43faac874c66c2ae2ab8f2280e5da645358afa",
+    "requirements": [
+      {
+        "id": "C-1",
+        "excerpt": "A payment that times out is retried once, never twice.",
+        "state": "blessed",
+        "recorded": "self",
+        "flags": [],
+        "why": "implements",
+        "tests": {
+          "expected": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "not_run": 0
+        }
+      },
+      {
+        "id": "C-4",
+        "excerpt": "Every retry writes an audit entry in the same checkout folder.",
+        "state": "blessed",
+        "recorded": "self",
+        "flags": [],
+        "why": "same-area",
+        "tests": {
+          "expected": 0,
+          "passed": 0,
+          "failed": 0,
+          "skipped": 0,
+          "not_run": 0
+        }
+      }
+    ],
     "items": [
       {
         "id": "AB-1",
+        "text": "one retry after a timeout, never two",
         "result": "passed",
         "coverage": "confirmed",
         "tests": {
@@ -16,7 +56,11 @@
           "failed": 0,
           "skipped": 0,
           "not_run": 0
-        }
+        },
+        "names": [
+          "test/checkout.retry.test.ts › checkout › [AB-1] one retry after timeout"
+        ],
+        "authorship": "written-here"
       }
     ],
     "tests": {
@@ -26,6 +70,24 @@
       "failed": 0,
       "skipped": 0,
       "failing": []
-    }
+    },
+    "weakening": {
+      "found": false,
+      "by": [],
+      "not_checked": []
+    },
+    "workflow_changed": false,
+    "protected": [],
+    "blessings_changed": [],
+    "deltas": [],
+    "rules": [],
+    "badge": "advisory",
+    "why": [
+      {
+        "text": "tests written in this change require reviewer judgment",
+        "class": "judge"
+      }
+    ],
+    "degraded": []
   }
 }

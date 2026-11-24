@@ -5,19 +5,58 @@
   "card": {
     "schema_version": 1,
     "evaluation_id": "b5de0be460756a26",
-    "items": [],
-    "rules": {
-      "$assert": "contains",
-      "value": [
-        {
-          "rule": "acceptance-passed",
-          "mode": "advise",
-          "would_block": true,
-          "reason": {
-            "$assert": "present"
-          }
+    "tested": {
+      "commit": "9b41d00000000000000000000000000000000000",
+      "kind": "merge-candidate",
+      "head": "a111111111111111111111111111111111111111",
+      "base": "b222222222222222222222222222222222222222"
+    },
+    "acceptance_digest": "7450b7f5180b38f072616b01e41778f94dfb8803ae28df7e4830bf99f0ed5141",
+    "requirements": [
+      {
+        "id": "C-1",
+        "excerpt": "A payment that times out is retried once, never twice.",
+        "state": "blessed",
+        "recorded": "self",
+        "flags": [],
+        "why": "cited-code-changed",
+        "tests": {
+          "expected": 0,
+          "passed": 0,
+          "failed": 0,
+          "skipped": 0,
+          "not_run": 0
         }
-      ]
-    }
+      }
+    ],
+    "items": [],
+    "tests": {
+      "report": "ok",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "failing": []
+    },
+    "weakening": {
+      "found": false,
+      "by": [],
+      "not_checked": []
+    },
+    "workflow_changed": false,
+    "protected": [],
+    "blessings_changed": [],
+    "deltas": [],
+    "rules": [
+      {
+        "rule": "acceptance-passed",
+        "mode": "advise",
+        "would_block": true,
+        "reason": "no acceptance items"
+      }
+    ],
+    "badge": "advisory",
+    "why": [],
+    "degraded": []
   }
 }

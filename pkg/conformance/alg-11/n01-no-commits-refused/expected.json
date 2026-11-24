@@ -4,8 +4,8 @@
   "errors": [
     {
       "code": "TN-ENV-NO-COMMIT",
-      "message": "The repository has no commits yet.",
-      "fix": "Create an initial commit with git commit, then re-run the command."
+      "message": "Repository has no commits yet.",
+      "fix": "Make a first commit, then run `tenet onboard`."
     }
   ]
 }
