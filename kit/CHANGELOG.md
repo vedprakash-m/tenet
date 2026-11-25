@@ -2,20 +2,21 @@
 
 All changes to the standard and kit. Each release lists added, changed, deprecated and removed rules, and the migrations it ships (PRD R-004).
 
-## 0.1.0-alpha.0
+## 0.1.0
 
 ### Added
 
-- `kind: field-added` · The npm package includes the CLI, SDK, kit, and alpha.0 conformance fixtures.
-- `kind: field-added` · `tenet onboard` inventories committed files and writes a drafting assignment. The onboarding card pins the draft revision. `tenet bless` records section-level decisions and keeps the last blessed copy in force while people review edits or changed sources.
-- `kind: field-added` · `tenet check` reports specification structure, citations, and budget findings. `tenet fix` repairs mechanical metadata and `tenet split` moves a section to its own document. `tenet board` shows specification state and work that needs review.
-- `kind: field-added` · The local MCP server and `tenet context` give agents the blessed text that applies to their task, with draft hints and omissions labeled.
-- `kind: field-added` · The CI test job collects evidence and the recorder posts an advisory proof card. The card shows the tested revision, touched requirements, tagged test results, and weakening findings.
+- Install Tenet in a Git repository with `tenet init`. Review the files it plans to write and choose whether to connect an existing test workflow.
+- Use `tenet onboard` to give your coding agent an inventory and a drafting assignment. Review the result with the onboarding card and put approved sections in force with `tenet bless`.
+- Check specification structure, citations and integrity with `tenet check`. Use `tenet board` to find drafts, edited sections and changed sources.
+- Give agents relevant approved text through `tenet context` or a local MCP server.
+- On GitHub, the installed workflows collect test evidence and post an advisory proof card tied to the tested commit.
+- Use `tenet doctor` to diagnose setup, `tenet upgrade` to refresh it, and `tenet remove` to remove managed setup while keeping project specifications and records.
 
 ### Changed
 
-- `kind: rule-clarified` · Alpha.0 runs its five proof rules at advisory strength. The proof card separates what passed from what did not run or could not be checked.
-- `kind: rule-clarified` · Specification checks follow the configured document ladder, including the one-file layout and its split parts.
+- The first public package includes the CLI, SDK, kit and conformance examples for this release.
+- Specification discovery follows the configured documents, or the one-file layout and its split parts when using that layout.
 
 ### Migrations
 
