@@ -53,7 +53,7 @@
           {
             "path": ".tenet/manifest.json",
             "kind": "config",
-            "sha256": "9bcbeea371664e98bdc3258cd44775dd94cb897c774ddfbbdf0294a13bdae48c",
+            "sha256": "{{any:string}}",
             "lines": 75
           },
           {
@@ -65,19 +65,19 @@
           {
             "path": "tenet.lock",
             "kind": "config",
-            "sha256": "118976281808dc71cbafb39a43e77f389740550a87e627ba31a3186c3297fafd",
+            "sha256": "{{any:string}}",
             "lines": 8
           },
           {
             "path": "tenet.yaml",
             "kind": "config",
-            "sha256": "2589e0192c0e6e70a80d87a41507d62fc44de9e3e40bc236853469432b716bfa",
+            "sha256": "6d708a35a6eaf362472484a55d9bc7b3d78bdc5e1eea52bad268bfd26beeb863",
             "lines": 27
           },
           {
             "path": "tenet/intent.md",
             "kind": "doc",
-            "sha256": "8f21763ff56f7dea39f3e51d4a60f7a99caefb1e8220e2410650c3d4881aa953",
+            "sha256": "173ea1a5e7bd18125673fb5dc8474ee872b04624c8c108f379f66a9f64a9a78a",
             "lines": 56
           }
         ],
