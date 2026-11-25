@@ -240,6 +240,36 @@ test("doctor reports matching local integrity as an advisory success", async (t)
   assert.equal(result.findings.length, 0);
 });
 
+test("doctor skips local integrity verification when the locked version differs", async (t) => {
+  const repo = await tmpRepo("doctor-local-integrity-version-mismatch");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
+  await repo.write("tenet.lock", JSON.stringify({
+    schema_version: 1,
+    package: "@vedprakash-m/tenet",
+    version: "9.9.9",
+    integrity: `sha512-${"A".repeat(86)}==`,
+    "x-integrity-source": "local",
+    kit_sha256: "a".repeat(64),
+  }, null, 2));
+  const result = await install.doctorEvaluation({
+    cwd: repo.path,
+    environment: environment(),
+    verifyLock: async () => ({
+      ok: true,
+      path: kitPath,
+      sha256: "a".repeat(64),
+      skipped: true,
+      lock_sha256: null,
+    }),
+  });
+
+  assert.equal(result.checks[4].ok, true);
+  assert.doesNotMatch(result.checks[4].detail, /local integrity/);
+  assert.equal(result.findings.some((finding: { code: string }) =>
+    finding.code === "TN-LOCK-INVALID"), false);
+});
+
 test("doctor rejects mismatched local integrity", async (t) => {
   const repo = await tmpRepo("doctor-local-integrity-mismatch");
   t.after(repo.cleanup);

@@ -39,10 +39,96 @@ const standardReportPaths = [
   "jest.json",
   "jest-json.json",
 ].map((name) => `.tenet/reports/${name}`);
+const managedDirectoryPaths = [
+  ".tenet/onboard",
+  ".tenet/reports",
+  ".tenet/cache",
+  ".tenet/runs",
+  ".tenet",
+];
+
+function generatedWorkingPaths(reportPaths: string[]): string[] {
+  return [
+    ".tenet/onboard/inventory.json",
+    ".tenet/onboard/assignment.json",
+    ...standardReportPaths,
+    ...reportPaths,
+  ];
+}
 function pathError(itemPath: string): Error & { code: string; finding: unknown } {
   const words = message("TN-PATH-ESCAPE", { path: itemPath });
   const finding = { ...fail("TN-PATH-ESCAPE", words.message, words.fix), file: itemPath };
   return Object.assign(new Error(words.message), { code: "TN-PATH-ESCAPE", finding });
+}
+
+type SymlinkPath = {
+  filename: string;
+  relative: string;
+};
+
+function samePath(left: string, right: string, caseInsensitive: boolean): boolean {
+  const normalizedLeft = left.replaceAll("\\", "/");
+  const normalizedRight = right.replaceAll("\\", "/");
+  return caseInsensitive
+    ? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase()
+    : normalizedLeft === normalizedRight;
+}
+
+async function symlinkPath(cwd: string, relative: string): Promise<SymlinkPath | null> {
+  const portable = relative.replaceAll("\\", "/");
+  if (
+    portable.length === 0 ||
+    portable.includes("\0") ||
+    path.posix.isAbsolute(portable) ||
+    path.win32.isAbsolute(relative) ||
+    portable.startsWith("//") ||
+    portable.split("/").includes("..")
+  ) {
+    throw pathError(relative);
+  }
+  let filename = path.resolve(cwd);
+  const visited: string[] = [];
+  for (const part of portable.split("/").filter((item) => item !== "" && item !== ".")) {
+    filename = path.join(filename, part);
+    visited.push(part);
+    try {
+      const stat = await lstat(filename);
+      if (stat.isSymbolicLink()) {
+        return { filename, relative: visited.join("/") };
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+      throw error;
+    }
+  }
+  return null;
+}
+
+async function validateRemovalPath(cwd: string, relative: string): Promise<void> {
+  if (await symlinkPath(cwd, relative)) return;
+  await confine(relative, cwd).catch(() => {
+    throw pathError(relative);
+  });
+}
+
+async function validateRecordedPath(cwd: string, relative: string): Promise<void> {
+  const portable = relative.replaceAll("\\", "/").replace(/^\.\/+/, "");
+  const link = await symlinkPath(cwd, portable);
+  if (link && link.relative !== portable) throw pathError(relative);
+  if (link) return;
+  await confine(relative, cwd).catch(() => {
+    throw pathError(relative);
+  });
+}
+
+async function unlinkRecordedPath(cwd: string, relative: string): Promise<boolean> {
+  const link = await symlinkPath(cwd, relative);
+  if (!link) return false;
+  if (link.relative !== relative.replaceAll("\\", "/").replace(/^\.\/+/, "")) {
+    throw pathError(relative);
+  }
+  await rm(link.filename);
+  return true;
 }
 
 async function optionalText(filename: string): Promise<string | null> {
@@ -54,11 +140,39 @@ async function optionalText(filename: string): Promise<string | null> {
   }
 }
 
+type WindowsPathMatch = {
+  filename: string;
+  link: boolean;
+} | null;
+
+async function windowsPathMatch(cwd: string, relative: string): Promise<WindowsPathMatch> {
+  let current = path.resolve(cwd);
+  const parts = relative.replaceAll("\\", "/").split("/").filter((item) =>
+    item !== "" && item !== ".");
+  for (const [index, part] of parts.entries()) {
+    const entries = await readdir(current);
+    const actual = entries.find((entry) => entry.toLowerCase() === part.toLowerCase());
+    if (!actual) return null;
+    if (index === parts.length - 1 && actual !== part) return null;
+    current = path.join(current, actual);
+    const stat = await lstat(current);
+    if (stat.isSymbolicLink()) return { filename: current, link: true };
+    if (index !== parts.length - 1 && !stat.isDirectory()) return null;
+  }
+  return { filename: current, link: false };
+}
+
 async function manifestFile(cwd: string): Promise<{
   manifest: InstallManifest | null;
   pending: PendingManifest | null;
   localManifest: LocalManifest | null;
 }> {
+  const activeLink = await symlinkPath(cwd, ".tenet/manifest.json");
+  const pendingLink = await symlinkPath(cwd, ".tenet/manifest.pending.json");
+  const localLink = await symlinkPath(cwd, ".tenet/manifest.local.json");
+  if (activeLink || pendingLink || localLink) {
+    return { manifest: null, pending: null, localManifest: null };
+  }
   const activePath = await confine(".tenet/manifest.json", cwd).catch(() => {
     throw pathError(".tenet/manifest.json");
   });
@@ -96,12 +210,11 @@ async function validateRecordedPaths(
     ...manifest.created.map((item) => item.path),
     ...manifest.blocks.map((item) => item.path),
     ...manifest.keys.map((item) => item.path),
+    ...(manifest["x-created-directories"] ?? []),
     ...(pending?.writes.filter((item) => item.kind !== "local_key").map((item) => item.path) ?? []),
   ];
   for (const itemPath of [...new Set(repoPaths)]) {
-    await confine(itemPath, cwd).catch(() => {
-      throw pathError(itemPath);
-    });
+    await validateRecordedPath(cwd, itemPath);
   }
   const recordedRoots = Object.values(localManifest?.profile_roots ?? {});
   if (!localProfileRoot && recordedRoots.length === 0) {
@@ -211,6 +324,11 @@ function removeAppendedBlock(
 
 async function removeEmptyManagedDirectories(cwd: string, directories: string[]): Promise<void> {
   for (const candidate of [...new Set(directories)].sort((left, right) => right.length - left.length)) {
+    const link = await symlinkPath(cwd, candidate);
+    if (link) {
+      await rm(link.filename, { force: true });
+      continue;
+    }
     const filename = await confine(candidate, cwd);
     try {
       const stat = await lstat(filename);
@@ -223,7 +341,7 @@ async function removeEmptyManagedDirectories(cwd: string, directories: string[])
   }
 }
 
-function configuredReportPaths(source: string | null): string[] {
+function configuredReportPaths(source: string | null, caseInsensitive: boolean): string[] {
   if (source === null) return [];
   try {
     const document = parseDocument(source, { merge: false, uniqueKeys: true });
@@ -235,7 +353,10 @@ function configuredReportPaths(source: string | null): string[] {
       const reportPath = (check as Record<string, unknown>).report_path;
       if (typeof reportPath !== "string") return [];
       const normalized = reportPath.replaceAll("\\", "/").replace(/^\.\/+/, "");
-      return normalized.startsWith(".tenet/reports/") ? [normalized] : [];
+      const prefix = ".tenet/reports/";
+      return (caseInsensitive
+        ? normalized.toLowerCase().startsWith(prefix)
+        : normalized.startsWith(prefix)) ? [normalized] : [];
     });
   } catch {
     return [];
@@ -246,8 +367,17 @@ async function removePathTree(
   cwd: string,
   relative: string,
   removed: RemoveRemoved[],
+  removeDirectory: boolean,
 ): Promise<void> {
   const portable = relative.replaceAll("\\", "/");
+  const link = await symlinkPath(cwd, portable);
+  if (link) {
+    await rm(link.filename, { force: true });
+    if (!removed.some((item) => item.path === link.relative && item.kind === "file")) {
+      removed.push({ path: link.relative, kind: "file" });
+    }
+    return;
+  }
   const parent = path.posix.dirname(portable);
   let parentPath: string;
   try {
@@ -268,12 +398,22 @@ async function removePathTree(
     removed.push({ path: relative, kind: "file" });
     return;
   }
-  for (const entry of await readdir(filename, { withFileTypes: true })) {
+  const entries = await readdir(filename, { withFileTypes: true });
+  for (const entry of entries) {
     await removePathTree(
       cwd,
       path.posix.join(relative.replaceAll("\\", "/"), entry.name),
       removed,
+      true,
     );
+  }
+  if (removeDirectory) {
+    try {
+      await rmdir(filename);
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT" && code !== "ENOTEMPTY") throw error;
+    }
   }
 }
 
@@ -281,7 +421,25 @@ async function removeRegularFile(
   cwd: string,
   relative: string,
   removed: RemoveRemoved[],
-): Promise<void> {
+  caseInsensitive: boolean,
+): Promise<boolean> {
+  if (caseInsensitive) {
+    const matched = await windowsPathMatch(cwd, relative);
+    if (!matched) return false;
+    const stat = await lstat(matched.filename);
+    if (!matched.link && !stat.isFile()) return false;
+    await rm(matched.filename);
+    removed.push({ path: relative, kind: "file" });
+    return true;
+  }
+  const link = await symlinkPath(cwd, relative);
+  if (link) {
+    await rm(link.filename, { force: true });
+    if (!removed.some((item) => item.path === link.relative && item.kind === "file")) {
+      removed.push({ path: link.relative, kind: "file" });
+    }
+    return true;
+  }
   let filename: string;
   try {
     filename = await confine(relative, cwd);
@@ -290,11 +448,13 @@ async function removeRegularFile(
   }
   try {
     const stat = await lstat(filename);
-    if (!stat.isFile()) return;
+    if (!stat.isFile()) return false;
     await rm(filename);
     removed.push({ path: relative, kind: "file" });
+    return true;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+    throw error;
   }
 }
 
@@ -302,39 +462,72 @@ async function removeGeneratedWorkingState(
   cwd: string,
   reportPaths: string[],
   removed: RemoveRemoved[],
+  createdDirectories: Set<string> | null,
+  caseInsensitive: boolean,
 ): Promise<void> {
-  const exact = [
-    ".tenet/onboard/inventory.json",
-    ".tenet/onboard/assignment.json",
-    ...standardReportPaths,
-    ...reportPaths,
-  ];
-  for (const relative of new Set(exact)) {
-    await removeRegularFile(cwd, relative, removed);
+  const removedParents = new Set<string>();
+  for (const relative of new Set(generatedWorkingPaths(reportPaths))) {
+    if (await removeRegularFile(cwd, relative, removed, caseInsensitive)) {
+      removedParents.add(path.posix.dirname(relative));
+    }
   }
   for (const directory of [".tenet/cache", ".tenet/runs"]) {
-    await removePathTree(cwd, directory, removed);
+    await removePathTree(
+      cwd,
+      directory,
+      removed,
+      createdDirectories === null || createdDirectories.has(directory),
+    );
   }
+  const removableParents = createdDirectories === null
+    ? [...removedParents, ".tenet"]
+    : [...removedParents].filter((directory) =>
+      [...createdDirectories].some((created) =>
+        samePath(created, directory, caseInsensitive)));
   await removeEmptyManagedDirectories(
     cwd,
-    [".tenet/onboard", ".tenet/reports", ".tenet/cache", ".tenet/runs", ".tenet"],
+    removableParents.filter((directory) => directory.startsWith(".tenet")),
   );
 }
 
 export async function remove(options: RemoveOptions = {}): Promise<RemoveResult> {
   const cwd = path.resolve(options.cwd ?? process.cwd());
+  const caseInsensitive = (options.environment?.platform ?? process.platform) === "win32";
   const retained = await retainedRoots(cwd);
   const configuredReports = configuredReportPaths(
     await optionalText(await confine("tenet.yaml", cwd)),
+    caseInsensitive,
   );
+  for (const relative of [
+    "tenet.yaml",
+    ".tenet/manifest.json",
+    ".tenet/manifest.pending.json",
+    ".tenet/manifest.local.json",
+    ...generatedWorkingPaths(configuredReports),
+    ...managedDirectoryPaths,
+  ]) {
+    await validateRemovalPath(cwd, relative);
+  }
   const { manifest, pending, localManifest } = await manifestFile(cwd);
   const removed: RemoveRemoved[] = [];
   const kept = new Map<string, RemoveKept["reason"]>();
   if (!manifest) {
-    await Promise.all([
-      rm(await confine(".tenet/manifest.json", cwd), { force: true }),
-      rm(await confine(".tenet/manifest.pending.json", cwd), { force: true }),
-    ]);
+    for (const relative of [
+      ".tenet/manifest.json",
+      ".tenet/manifest.pending.json",
+      ".tenet/manifest.local.json",
+    ]) {
+      const link = await symlinkPath(cwd, relative);
+      if (link) await rm(link.filename, { force: true });
+      else await rm(await confine(relative, cwd), { force: true });
+    }
+    await removeGeneratedWorkingState(
+      cwd,
+      configuredReports,
+      removed,
+      null,
+      caseInsensitive,
+    );
     return { removed, kept: [], reminder };
   }
   await validateRecordedPaths(
@@ -348,6 +541,11 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
   const affected: string[] = [];
   const keptCreated = new Set<string>();
   for (const item of manifest.created) {
+    if (await unlinkRecordedPath(cwd, item.path)) {
+      affected.push(item.path);
+      removed.push({ path: item.path, kind: "file" });
+      continue;
+    }
     const filename = await confine(item.path, cwd);
     affected.push(item.path);
     try {
@@ -366,6 +564,11 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
 
   for (const block of manifest.blocks) {
     if (keptCreated.has(block.path)) continue;
+    if (await unlinkRecordedPath(cwd, block.path)) {
+      affected.push(block.path);
+      removed.push({ path: block.path, kind: "block" });
+      continue;
+    }
     const filename = await confine(block.path, cwd);
     const source = await optionalText(filename);
     affected.push(block.path);
@@ -389,6 +592,11 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
 
   for (const key of manifest.keys) {
     if (keptCreated.has(key.path)) continue;
+    if (await unlinkRecordedPath(cwd, key.path)) {
+      affected.push(key.path);
+      removed.push({ path: key.path, kind: "key" });
+      continue;
+    }
     const filename = await confine(key.path, cwd);
     const source = await optionalText(filename);
     affected.push(key.path);
@@ -451,8 +659,14 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
   await rm(activePath, { force: true });
   await rm(pendingPath, { force: true });
   if (!keptCreated.has(".tenet/manifest.local.json")) await rm(localPath, { force: true });
-  await removeGeneratedWorkingState(cwd, configuredReports, removed);
   const createdDirectories = manifest["x-created-directories"] ?? [];
+  await removeGeneratedWorkingState(
+    cwd,
+    configuredReports,
+    removed,
+    new Set(createdDirectories),
+    caseInsensitive,
+  );
   await removeEmptyManagedDirectories(cwd, createdDirectories);
   for (const root of retained) {
     if (!createdDirectories.includes(root) || await retainedRoot(cwd, root)) {

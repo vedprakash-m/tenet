@@ -5,7 +5,7 @@ import { parseDocument } from "yaml";
 import { message } from "../core/messages.js";
 import { errorFinding, exitCodeFor, fail, type Finding } from "../core/output.js";
 import { verifyLock as verifyPackageLock } from "../policy/index.js";
-import { installedLocalIntegrity } from "./integrity.js";
+import { installedLocalIntegrity, installedPackageVersion, localIntegrityWarning } from "./integrity.js";
 import type {
   DoctorCheck,
   DoctorDependencies,
@@ -167,6 +167,7 @@ function canonicalLock(code: "TN-LOCK-MISSING"): Finding {
 type LocalLockIntegrity = {
   matches: boolean;
   mismatchFinding: Finding | null;
+  warning: string | null;
 };
 
 async function localLockIntegrity(
@@ -184,8 +185,18 @@ async function localLockIntegrity(
     const lock = document.toJS({ maxAliasCount: 100 }) as Record<string, unknown> | null;
     if (!lock || typeof lock !== "object") return null;
     if (lock["x-integrity-source"] !== "local") return null;
+    const installedVersion = await installedPackageVersion();
+    if (lock.version !== installedVersion) return null;
     const actual = await compute();
-    if (actual === lock.integrity) return { matches: true, mismatchFinding: null };
+    if (actual === lock.integrity) {
+      return {
+        matches: true,
+        mismatchFinding: null,
+        warning: typeof lock.package === "string"
+          ? localIntegrityWarning(lock.package, installedVersion)
+          : null,
+      };
+    }
     const text = message("TN-LOCK-INVALID", {
       detail: "installed package integrity does not match the local integrity recorded in tenet.lock",
     });
@@ -195,6 +206,7 @@ async function localLockIntegrity(
         ...fail("TN-LOCK-INVALID", text.message, text.fix),
         file: "tenet.lock",
       },
+      warning: null,
     };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
@@ -231,12 +243,17 @@ async function workflowConfiguration(cwd: string): Promise<WorkflowConfiguration
   };
 }
 
-async function workflowCheck(cwd: string): Promise<{ check: DoctorCheck; finding: Finding | null }> {
+async function workflowCheck(cwd: string): Promise<{
+  check: DoctorCheck;
+  finding: Finding | null;
+  ci: boolean;
+}> {
   const configuration = await workflowConfiguration(cwd);
   if (!configuration.ci) {
     return {
       check: { name: "workflows", ok: true, detail: "No workflows configured (ci_mode none)" },
       finding: null,
+      ci: false,
     };
   }
   const required = [".github/workflows/tenet.yml", configuration.testWorkflow]
@@ -251,12 +268,14 @@ async function workflowCheck(cwd: string): Promise<{ check: DoctorCheck; finding
       return {
         check: { name: "workflows", ok: false, detail: `missing workflow ${relative}` },
         finding: { ...fail("TN-KIT-MISSING", text.message, text.fix), file: relative },
+        ci: true,
       };
     }
   }
   return {
     check: { name: "workflows", ok: true, detail: "configured workflows found" },
     finding: null,
+    ci: true,
   };
 }
 
@@ -311,6 +330,7 @@ export async function doctorEvaluation(
 
   let lockOk = false;
   let lockDetail = "";
+  let localWarning: string | null = null;
   const packageVerify: DoctorLockVerifier = dependencies.verifyLock ?? verifyPackageLock;
   try {
     const verified = await packageVerify({ cwd });
@@ -325,6 +345,7 @@ export async function doctorEvaluation(
       lockOk = false;
       lockDetail = localIntegrity.mismatchFinding.message;
     } else if (localIntegrity?.matches) {
+      localWarning = localIntegrity.warning;
       lockDetail +=
         " (local integrity; CI treats it as advisory until the package is published and re-pinned with `tenet upgrade`)";
     }
@@ -374,6 +395,7 @@ export async function doctorEvaluation(
   return {
     checks,
     findings,
+    notices: localWarning !== null && workflow.ci ? [localWarning] : [],
     exitCode: diagnosticExit === 3 ? 3 : checks.some((check) =>
       !check.ok && (check.name === "lock" || check.name === "workflows")) ? 1 :
       diagnosticExit === 1 ? 1 : 0,

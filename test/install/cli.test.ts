@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { cp, mkdir, readFile, readdir, rm } from "node:fs/promises";
+import { cp, lstat, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -80,6 +80,28 @@ function runWithIntegrity(repo: string, integrity: string, ...args: string[]) {
     ok: boolean;
     errors: Array<{ code: string; message: string }>;
   } };
+}
+
+function runWithRegistryError(repo: string, error: string, ...args: string[]) {
+  const env = {
+    ...process.env,
+    TENET_TEST_REGISTRY_ERROR: error,
+  };
+  delete env.TENET_INSTALL_INTEGRITY;
+  const child = spawnSync(process.execPath, [cli, "--json", "--cwd", repo, ...args], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+    shell: false,
+    windowsHide: true,
+    env,
+  });
+  return {
+    child,
+    envelope: JSON.parse(child.stdout) as {
+      ok: boolean;
+      errors: Array<{ code: string; message: string }>;
+    },
+  };
 }
 
 async function packageIntegrity(): Promise<string> {
@@ -180,6 +202,7 @@ test("unpublished local versions use exact local integrity and warn", async (t) 
   t.after(repo.cleanup);
   repo.git(["config", "user.name", "Fixture Owner"]);
   repo.git(["config", "user.email", "fixture@example.invalid"]);
+  repo.git(["remote", "add", "origin", "https://github.com/fixture/local-integrity.git"]);
   await repo.write("README.md", "# Local build\n");
   repo.git(["add", "README.md"]);
   repo.git(["commit", "-qm", "fixture"]);
@@ -195,23 +218,56 @@ test("unpublished local versions use exact local integrity and warn", async (t) 
   assert.equal(lock.integrity, await packageIntegrity());
   assert.ok((output.envelope.result as { findings: Array<{ kind: string }> }).findings
     .some(({ kind }) => kind === "local-integrity"));
+  const doctor = runWithoutIntegrity(repo.path, "doctor");
+  assert.equal(doctor.child.status, 0, doctor.child.stderr);
+  assert.match(doctor.child.stderr, /local package integrity.*CI workflows cannot verify/i);
   const upgraded = runWithoutIntegrity(repo.path, "upgrade");
   assert.equal(upgraded.child.status, 0, upgraded.child.stderr);
   assert.match(upgraded.child.stderr, /not on the registry.*local package integrity/i);
 });
 
-test("empty-repo init seeds intent without dead file references", async (t) => {
+test("offline empty-repo init seeds intent without template examples", async (t) => {
   const repo = await tmpRepo("install-empty-intent");
   t.after(repo.cleanup);
   repo.git(["config", "user.name", "Fixture Owner"]);
   repo.git(["config", "user.email", "fixture@example.invalid"]);
 
-  const installed = run(repo.path, "init", "--yes");
+  const installed = runWithoutIntegrity(repo.path, "init", "--yes", "--offline");
   assert.equal(installed.child.status, 0, installed.child.stderr);
+  assert.match(installed.child.stderr, /local package integrity/i);
   const intent = await readFile(path.join(repo.path, "tenet", "intent.md"), "utf8");
-  assert.doesNotMatch(intent, /src\/checkout\/(?:gateway|retry)\.ts/);
+  assert.match(intent, /^## Vision$/m);
+  assert.match(intent, /^\| ID \| Purpose or boundary \| Serves \/ Target \| Origin \|$/m);
+  assert.doesNotMatch(intent, /^\| V-\d+ /m);
+  assert.match(intent, /<!-- Add your vision here, or run tenet onboard\. -->/);
+  const starter = await readFile(path.resolve("examples/starter/tenet/intent.md"), "utf8");
+  const templateExamples = [
+    "Checkout recovers cleanly from transient gateway timeouts for returning shoppers.",
+    "≤1% checkout timeout failure",
+    "A payment request that times out is retried at most once, never twice.",
+    "Card numbers and verification codes are never written to logs or error messages.",
+    "src/checkout/gateway.ts",
+    "src/checkout/retry.ts",
+    "Checkout shows a single waiting indicator during a retry",
+    "First slice: implement single-retry timeout handling",
+  ];
+  for (const [name, seed] of [["generated seed", intent], ["starter", starter]] as const) {
+    for (const example of templateExamples) {
+      assert.equal(seed.includes(example), false, `${name} retained template example: ${example}`);
+    }
+    assert.match(seed, /^## Vision$/m);
+    assert.match(seed, /^\| ID \| Purpose or boundary \| Serves \/ Target \| Origin \|$/m);
+    assert.match(seed, /<!-- Add your vision here, or run tenet onboard\. -->/);
+    assert.doesNotMatch(seed, /^\| V-\d+ /m);
+    assert.doesNotMatch(seed, /^\| V-\d+ .*\| asked \|$/m);
+    assert.doesNotMatch(seed, /\{origin:\s*asked(?:;|\})/);
+  }
   assert.doesNotMatch(intent, /^- R-\d+\b/m);
-  assert.doesNotMatch(intent, /payment request|verification codes|waiting indicator/i);
+
+  const checked = runWithoutIntegrity(repo.path, "check");
+  assert.equal(checked.child.status, 0, checked.child.stderr);
+  assert.equal(checked.envelope.ok, true);
+  assert.deepEqual(checked.envelope.errors, []);
 
   repo.git(["add", "-A"]);
   repo.git(["commit", "-qm", "install"]);
@@ -232,6 +288,99 @@ test("malformed integrity overrides return TN-LOCK-INVALID", async (t) => {
   assert.equal(output.envelope.ok, false);
   assert.equal(output.envelope.errors[0]?.code, "TN-LOCK-INVALID");
   assert.doesNotMatch(output.envelope.errors[0]?.message ?? "", /TN-INTERNAL/);
+});
+
+test("registry transport failure writes nothing during init", async (t) => {
+  const repo = await tmpRepo("install-registry-transport-failure");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
+  const before = await tree(repo.path);
+
+  const output = runWithRegistryError(
+    repo.path,
+    "ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE",
+    "init",
+    "--yes",
+  );
+
+  assert.equal(output.child.status, 3, output.child.stdout);
+  assert.equal(output.envelope.ok, false);
+  assert.equal(output.envelope.errors[0]?.code, "TN-ENV-REGISTRY");
+  assert.equal(
+    output.envelope.errors[0]?.message,
+    "Could not reach the npm registry to verify @vedprakash-m/tenet@0.1.0-alpha.0 " +
+      "(ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE).",
+  );
+  assert.deepEqual(await tree(repo.path), before);
+});
+
+test("offline init records local integrity despite registry failure", async (t) => {
+  const repo = await tmpRepo("install-offline-registry-transport-failure");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
+
+  const output = runWithRegistryError(
+    repo.path,
+    "ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE",
+    "init",
+    "--yes",
+    "--offline",
+  );
+
+  assert.equal(output.child.status, 0, output.child.stderr);
+  assert.equal(output.envelope.ok, true);
+  assert.match(output.child.stderr, /local package integrity/i);
+  const lock = JSON.parse(await readFile(path.join(repo.path, "tenet.lock"), "utf8")) as {
+    integrity: string;
+    "x-integrity-source": string;
+  };
+  assert.equal(lock["x-integrity-source"], "local");
+  assert.equal(lock.integrity, await packageIntegrity());
+});
+
+test("registry transport failure writes nothing during upgrade", async (t) => {
+  const repo = await tmpRepo("upgrade-registry-transport-failure");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
+  const installed = runWithoutIntegrity(repo.path, "init", "--yes");
+  assert.equal(installed.child.status, 0, installed.child.stderr);
+  const before = await tree(repo.path);
+
+  const output = runWithRegistryError(
+    repo.path,
+    "ETIMEDOUT",
+    "upgrade",
+  );
+
+  assert.equal(output.child.status, 3, output.child.stdout);
+  assert.equal(output.envelope.errors[0]?.code, "TN-ENV-REGISTRY");
+  assert.match(
+    output.envelope.errors[0]?.message ?? "",
+    /Could not reach the npm registry.*ETIMEDOUT/,
+  );
+  assert.deepEqual(await tree(repo.path), before);
+});
+
+test("init onboard remove restores the repository including generated directories", async (t) => {
+  const repo = await tmpRepo("install-onboard-remove-tree");
+  t.after(repo.cleanup);
+  repo.git(["config", "user.name", "Fixture Owner"]);
+  repo.git(["config", "user.email", "fixture@example.invalid"]);
+  repo.git(["remote", "add", "origin", "https://github.com/fixture/checkout.git"]);
+  await repo.write("README.md", "# Lifecycle fixture\n");
+  repo.git(["add", "README.md"]);
+  repo.git(["commit", "-qm", "fixture"]);
+  const before = await tree(repo.path);
+
+  const installed = run(repo.path, "init", "--yes");
+  assert.equal(installed.child.status, 0, installed.child.stderr);
+  const onboarded = run(repo.path, "onboard", "--inventory-only");
+  assert.equal(onboarded.child.status, 0, onboarded.child.stderr);
+  const removed = run(repo.path, "remove");
+  assert.equal(removed.child.status, 0, removed.child.stderr);
+
+  assert.deepEqual(await tree(repo.path), before);
+  await assert.rejects(lstat(path.join(repo.path, ".tenet")), { code: "ENOENT" });
 });
 
 test("real node-service fixture initializes, is idempotent and removes exactly", async (t) => {
