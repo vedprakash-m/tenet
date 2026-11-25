@@ -83,6 +83,11 @@ async function localIntegrity(root: string): Promise<string> {
   return `sha512-${hash.digest("base64")}`;
 }
 
+export async function installedLocalIntegrity(): Promise<string> {
+  const installed = await installedPackage();
+  return localIntegrity(installed.root);
+}
+
 async function registryIntegrity(packageName: string, version: string): Promise<string | null> {
   const executable = process.platform === "win32" ? "npm.cmd" : "npm";
   const child = spawn(executable, [
