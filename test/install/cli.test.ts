@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { cp, mkdir, readFile, readdir, rm } from "node:fs/promises";
+import { cp, lstat, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -327,6 +327,28 @@ test("registry transport failure writes nothing during upgrade", async (t) => {
     /Could not reach the npm registry.*ETIMEDOUT/,
   );
   assert.deepEqual(await tree(repo.path), before);
+});
+
+test("init onboard remove restores the repository including generated directories", async (t) => {
+  const repo = await tmpRepo("install-onboard-remove-tree");
+  t.after(repo.cleanup);
+  repo.git(["config", "user.name", "Fixture Owner"]);
+  repo.git(["config", "user.email", "fixture@example.invalid"]);
+  repo.git(["remote", "add", "origin", "https://github.com/fixture/checkout.git"]);
+  await repo.write("README.md", "# Lifecycle fixture\n");
+  repo.git(["add", "README.md"]);
+  repo.git(["commit", "-qm", "fixture"]);
+  const before = await tree(repo.path);
+
+  const installed = run(repo.path, "init", "--yes");
+  assert.equal(installed.child.status, 0, installed.child.stderr);
+  const onboarded = run(repo.path, "onboard", "--inventory-only");
+  assert.equal(onboarded.child.status, 0, onboarded.child.stderr);
+  const removed = run(repo.path, "remove");
+  assert.equal(removed.child.status, 0, removed.child.stderr);
+
+  assert.deepEqual(await tree(repo.path), before);
+  await assert.rejects(lstat(path.join(repo.path, ".tenet")), { code: "ENOENT" });
 });
 
 test("real node-service fixture initializes, is idempotent and removes exactly", async (t) => {

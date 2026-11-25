@@ -794,9 +794,13 @@ export async function planWriteSet(
     "x-created-directories": [...new Set([
       ...(priorManifest?.["x-created-directories"] ?? []),
       ...await createdDirectories(cwd, [
-      ...plan.created,
-      ...plan.blocks.map((block) => block.path),
-      ...plan.keys.map((key) => key.path),
+        ...plan.created,
+        ...plan.blocks.map((block) => block.path),
+        ...plan.keys.map((key) => key.path),
+        ".tenet/onboard/inventory.json",
+        ".tenet/reports/test.xml",
+        ".tenet/cache/generated",
+        ".tenet/runs/generated",
       ]),
     ])].sort(compareUtf16),
   };

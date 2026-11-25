@@ -374,7 +374,7 @@ async function removePathTree(
       true,
     );
   }
-  if (removeDirectory || entries.length > 0) {
+  if (removeDirectory) {
     try {
       await rmdir(filename);
     } catch (error) {
@@ -432,14 +432,16 @@ async function removeGeneratedWorkingState(
       cwd,
       directory,
       removed,
-      createdDirectories?.has(directory) ?? false,
+      createdDirectories === null || createdDirectories.has(directory),
     );
   }
-  if (createdDirectories === null) {
-    const inferred = [...removedParents, ".tenet"].filter((directory) =>
-      directory.startsWith(".tenet"));
-    await removeEmptyManagedDirectories(cwd, inferred);
-  }
+  const removableParents = createdDirectories === null
+    ? [...removedParents, ".tenet"]
+    : [...removedParents].filter((directory) => createdDirectories.has(directory));
+  await removeEmptyManagedDirectories(
+    cwd,
+    removableParents.filter((directory) => directory.startsWith(".tenet")),
+  );
 }
 
 export async function remove(options: RemoveOptions = {}): Promise<RemoveResult> {
