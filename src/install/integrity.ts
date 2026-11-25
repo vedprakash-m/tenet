@@ -90,7 +90,7 @@ async function registryIntegrity(packageName: string, version: string): Promise<
     `${packageName}@${version}`,
     "dist.integrity",
     "--json",
-  ], { stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+  ], { stdio: ["ignore", "pipe", "pipe"], windowsHide: true, shell: process.platform === "win32" });
   let stdout = "";
   let stderr = "";
   child.stdout.setEncoding("utf8").on("data", (chunk: string) => { stdout += chunk; });
@@ -153,9 +153,14 @@ export async function releaseIntegrity(
   const local = options.offline === true || version === "0.0.0";
   let registry: string | null = null;
   if (!local) {
-    const supplied = dependencies.registry
-      ? await dependencies.registry(packageName, version)
-      : await registryIntegrity(packageName, version);
+    const injected = process.env.TENET_TEST_REGISTRY_INTEGRITY;
+    const supplied = injected === "not-found"
+      ? null
+      : injected !== undefined
+        ? injected
+        : dependencies.registry
+          ? await dependencies.registry(packageName, version)
+          : await registryIntegrity(packageName, version);
     registry = supplied === null
       ? null
       : validateIntegrity(supplied, "Injected registry metadata");
