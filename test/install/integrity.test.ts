@@ -3,12 +3,16 @@ import path from "node:path";
 import test from "node:test";
 import { releaseIntegrity } from "../../dist/install/integrity.js";
 
+import { packageVersion } from "../helpers/packageVersion.ts";
+
+const prereleaseVersion = `${packageVersion}-rc.1`;
+
 test("published prereleases query the registry", async () => {
   const integrity = `sha512-${"A".repeat(86)}==`;
   const calls: Array<[string, string]> = [];
   const result = await releaseIntegrity({
     environment: {
-      installedVersion: "0.1.0-alpha.0",
+      installedVersion: prereleaseVersion,
       registry: { package: "@vedprakash-m/tenet" },
     },
   }, {
@@ -17,7 +21,7 @@ test("published prereleases query the registry", async () => {
       return integrity;
     },
   });
-  assert.deepEqual(calls, [["@vedprakash-m/tenet", "0.1.0-alpha.0"]]);
+  assert.deepEqual(calls, [["@vedprakash-m/tenet", prereleaseVersion]]);
   assert.equal(result.integrity, integrity);
   assert.equal(result.warning, undefined);
 });

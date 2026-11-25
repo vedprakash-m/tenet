@@ -6,6 +6,8 @@ import test from "node:test";
 import { pathToFileURL } from "node:url";
 import { cleanupTestRoot, tmpRepo } from "../helpers/tmpRepo.ts";
 
+import { packageVersion } from "../helpers/packageVersion.ts";
+
 const output = path.resolve(`.install-doctor-dist-${process.pid}`);
 const compile = spawnSync(process.execPath, [
   path.resolve("node_modules/typescript/bin/tsc"),
@@ -33,7 +35,7 @@ const { verifyLock } = await import(pathToFileURL(path.join(output, "policy", "i
 const casesRoot = path.resolve("pkg/conformance/install");
 const kitPath = path.resolve("kit");
 const baseEnvironment = JSON.parse(
-  await readFile(path.join(casesRoot, "environment.json"), "utf8"),
+  (await readFile(path.join(casesRoot, "environment.json"), "utf8")).replaceAll("{{version}}", packageVersion),
 ) as Record<string, unknown>;
 
 function environment(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -212,7 +214,7 @@ test("doctor reports matching local integrity as an advisory success", async (t)
   await repo.write("tenet.lock", JSON.stringify({
     schema_version: 1,
     package: "@vedprakash-m/tenet",
-    version: "0.1.0-alpha.0",
+    version: packageVersion,
     integrity,
     "x-integrity-source": "local",
     kit_sha256: "a".repeat(64),
@@ -276,7 +278,7 @@ test("doctor rejects mismatched local integrity", async (t) => {
   await repo.write("tenet.lock", JSON.stringify({
     schema_version: 1,
     package: "@vedprakash-m/tenet",
-    version: "0.1.0-alpha.0",
+    version: packageVersion,
     integrity: `${integrity.slice(0, 7)}${integrity[7] === "A" ? "B" : "A"}${integrity.slice(8)}`,
     "x-integrity-source": "local",
     kit_sha256: "a".repeat(64),
@@ -367,8 +369,8 @@ test("doctor maps a kit digest mismatch without changing a package mismatch", as
           rule: null,
           file: "tenet.lock",
           line: null,
-          message: "Installed package 0.0.0 differs from tenet.lock (0.1.0-alpha.0).",
-          fix: "Run `tenet upgrade` or reinstall @vedprakash-m/tenet@0.1.0-alpha.0.",
+          message: `Installed package 0.0.0 differs from tenet.lock (${packageVersion}).`,
+          fix: `Run \`tenet upgrade\` or reinstall @vedprakash-m/tenet@${packageVersion}.`,
         },
       };
     },

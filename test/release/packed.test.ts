@@ -27,7 +27,10 @@ async function consumerEnv(scratch: string): Promise<NodeJS.ProcessEnv> {
   const temp = path.join(scratch, "tmp");
   const appData = path.join(home, "appdata");
   const config = path.join(home, "config");
-  const [cache, registry] = ["cache", "registry"].map((key) => runNpm(["config", "get", key], project).trim());
+  const cache = process.env.npm_config_cache ?? process.env.NPM_CONFIG_CACHE ??
+    runNpm(["config", "get", "cache"], project).trim();
+  const registry = process.env.npm_config_registry ?? process.env.NPM_CONFIG_REGISTRY ??
+    runNpm(["config", "get", "registry"], project).trim();
   await Promise.all([appData, config, temp].map((folder) => mkdir(folder, { recursive: true })));
   const userconfig = path.join(home, "npmrc");
   const globalconfig = path.join(home, "global-npmrc");
@@ -54,7 +57,7 @@ function git(cwd: string, env: NodeJS.ProcessEnv, ...args: string[]) {
   }).trim();
 }
 
-test("the alpha.0 npm tarball has the release layout and runs the installed CLI", { timeout: 180_000 }, async (t) => {
+test("the npm tarball has the release layout and runs the installed CLI", { timeout: 180_000 }, async (t) => {
   const scratch = await mkdtemp(path.join(os.tmpdir(), "tenet-packed-"));
   t.after(() => rm(scratch, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
   const reused = process.env.TENET_RELEASE_PACKED_DIR;

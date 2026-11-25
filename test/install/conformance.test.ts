@@ -6,6 +6,8 @@ import test from "node:test";
 import { pathToFileURL } from "node:url";
 import { cleanupTestRoot, tmpRepo, type TemporaryRepository } from "../helpers/tmpRepo.ts";
 
+import { packageVersion } from "../helpers/packageVersion.ts";
+
 const output = path.resolve(`.install-conformance-dist-${process.pid}`);
 const compile = spawnSync(process.execPath, [
   path.resolve("node_modules/typescript/bin/tsc"),
@@ -33,7 +35,7 @@ const { exitCodeFor } = await import(pathToFileURL(path.join(output, "core", "ou
 const casesRoot = path.resolve("pkg/conformance/install");
 const kitPath = path.resolve("kit");
 const baseEnvironment = JSON.parse(
-  await readFile(path.join(casesRoot, "environment.json"), "utf8"),
+  (await readFile(path.join(casesRoot, "environment.json"), "utf8")).replaceAll("{{version}}", packageVersion),
 ) as Record<string, unknown>;
 
 type CaseArguments = {
@@ -253,7 +255,7 @@ for (const caseName of positiveCases) {
     await readFile(path.join(setup.repo.path, "tenet.lock"));
     const manifestPath = path.join(setup.repo.path, ".tenet", "manifest.json");
     const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as { version: string };
-    assert.equal(manifest.version, "0.1.0-alpha.0");
+    assert.equal(manifest.version, packageVersion);
     await assert.rejects(readFile(path.join(setup.repo.path, ".tenet", "manifest.pending.json")));
     assert.ok(result.plan.created
       .filter((itemPath) => /^\.(?:agents|claude)\/skills\//.test(itemPath))
@@ -317,7 +319,7 @@ for (const caseName of positiveCases) {
         "utf8",
       );
       assert.ok(workflow.startsWith(original));
-      assert.match(workflow, /# tenet:begin v0\.1\.0-alpha\.0/);
+      assert.ok(workflow.includes(`# tenet:begin v${packageVersion}\n`));
       assert.match(workflow, /outputFile\.junit=artifacts\/unit\.xml/);
     }
     if (caseName === "p04-node-matrix") {
@@ -819,7 +821,7 @@ test("upgrade refreshes a changed integrity pin", async (t) => {
       ...(setup.options.environment as Record<string, unknown>),
       registry: {
         package: "@vedprakash-m/tenet",
-        releases: { "0.1.0-alpha.0": { integrity: firstIntegrity } },
+        releases: { [packageVersion]: { integrity: firstIntegrity } },
       },
     },
   };
@@ -835,7 +837,7 @@ test("upgrade refreshes a changed integrity pin", async (t) => {
       ...(setup.options.environment as Record<string, unknown>),
       registry: {
         package: "@vedprakash-m/tenet",
-        releases: { "0.1.0-alpha.0": { integrity: refreshedIntegrity } },
+        releases: { [packageVersion]: { integrity: refreshedIntegrity } },
       },
     },
   });
@@ -855,7 +857,7 @@ test("p17 lexical JSON formatting survives owned pin replacement", async (t) => 
     "{\r\n",
     "\t\"mcpServers\": {\r\n",
     "\t\t\"search\"  :  { \"command\" : \"node\", \"args\" : [\"search.js\"] },\r\n",
-    "\t\t\"tenet\": {\"command\":\"npx\",\"args\":[\"-y\",\"@vedprakash-m/tenet@0.1.0-alpha.0\",\"mcp\"]}\r\n",
+    `\t\t\"tenet\": {\"command\":\"npx\",\"args\":[\"-y\",\"@vedprakash-m/tenet@${packageVersion}\",\"mcp\"]}\r\n`,
     "\t}\r\n",
     "}\r\n",
   ].join("");
@@ -863,7 +865,7 @@ test("p17 lexical JSON formatting survives owned pin replacement", async (t) => 
   await upgrade(await optionsForStep(setup, 1));
   assert.equal(
     await readFile(path.join(setup.repo.path, ".mcp.json"), "utf8"),
-    lexical.replace("@vedprakash-m/tenet@0.1.0-alpha.0", "@vedprakash-m/tenet@0.1.0-alpha.1"),
+    lexical.replace(`@vedprakash-m/tenet@${packageVersion}`, "@vedprakash-m/tenet@0.1.0-alpha.1"),
   );
 });
 
@@ -874,7 +876,7 @@ test("remove deletes a newly owned MCP key without rewriting sibling JSON", asyn
   const lexical = [
     "{\r\n",
     "  \"mcpServers\": { \"tenet\":",
-    " {\"command\":\"npx\",\"args\":[\"-y\",\"@vedprakash-m/tenet@0.1.0-alpha.0\",\"mcp\"]},",
+    ` {\"command\":\"npx\",\"args\":[\"-y\",\"@vedprakash-m/tenet@${packageVersion}\",\"mcp\"]},`,
     " \"owner\" : { \"command\" : \"node\" } }\r\n",
     "}\r\n",
   ].join("");
@@ -910,7 +912,7 @@ test("upgrade resumes from the original manifest and excludes pending bookkeepin
   );
   assert.match(pending, /0\.1\.0-alpha\.1/);
   const resumed = await upgrade(options);
-  assert.equal(resumed.from, "0.1.0-alpha.0");
+  assert.equal(resumed.from, packageVersion);
   assert.equal(resumed.to, "0.1.0-alpha.1");
   assert.ok(resumed.changed.every((item) => item.path !== ".tenet/manifest.pending.json"));
 });
@@ -994,7 +996,7 @@ test("upgrade resumes a valid pending plan after the active manifest is missing"
   );
   await rm(path.join(setup.repo.path, ".tenet", "manifest.json"));
   const result = await upgrade(options);
-  assert.equal(result.from, "0.1.0-alpha.0");
+  assert.equal(result.from, packageVersion);
   assert.equal(result.to, "0.1.0-alpha.1");
   await readFile(path.join(setup.repo.path, ".tenet", "manifest.json"));
 });

@@ -11,6 +11,8 @@ import { run as runCli } from "../../dist/cli.js";
 import { init } from "../../dist/install/init.js";
 import { remove } from "../../dist/install/remove.js";
 
+import { packageVersion } from "../helpers/packageVersion.ts";
+
 const cli = fileURLToPath(new URL("../../dist/cli.js", import.meta.url));
 
 test.after(async () => {
@@ -361,7 +363,7 @@ test("registry transport failure writes nothing during init", async (t) => {
   assert.equal(output.envelope.errors[0]?.code, "TN-ENV-REGISTRY");
   assert.equal(
     output.envelope.errors[0]?.message,
-    "Could not reach the npm registry to verify @vedprakash-m/tenet@0.1.0-alpha.0 " +
+    `Could not reach the npm registry to verify @vedprakash-m/tenet@${packageVersion} ` +
       "(ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE).",
   );
   assert.deepEqual(await tree(repo.path), before);
@@ -524,7 +526,7 @@ test("local-host consent writes only Windows cmd shims and removes them", async 
           registry: {
             package: "@vedprakash-m/tenet",
             releases: {
-              "0.1.0-alpha.0": { integrity: `sha512-${"A".repeat(86)}==` },
+              [packageVersion]: { integrity: `sha512-${"A".repeat(86)}==` },
               "0.0.0": { integrity: `sha512-${"A".repeat(86)}==` },
             },
           },

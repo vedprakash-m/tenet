@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { packageVersion } from "../helpers/packageVersion.ts";
 
 test("starter locks the full package sha512 accepted by its workflow installer", async () => {
   const lock = JSON.parse(await readFile("examples/starter/tenet.lock", "utf8")) as {
@@ -10,7 +11,7 @@ test("starter locks the full package sha512 accepted by its workflow installer",
     integrity?: unknown;
   };
   assert.equal(lock.package, "@vedprakash-m/tenet");
-  assert.equal(typeof lock.version, "string");
+  assert.equal(lock.version, packageVersion);
   assert.equal(typeof lock.integrity, "string");
   const integrity = lock.integrity as string;
   assert.match(integrity, /^sha512-[A-Za-z0-9+/]{86}==$/);

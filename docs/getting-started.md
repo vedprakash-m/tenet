@@ -1,52 +1,58 @@
 # Getting started with Tenet
 
-Source: [UX Parts 0–1](../tenet/specs/ux-spec.md#part-0-get-tenet), [command contract §8](../tenet/specs/tech-spec/contracts.md#8-commands).
-
-**Draft for 0.1.0-alpha.0**
+Use Node.js 22 or later and Git 2.40 or later. Set your Git name and email before making commits. Pull-request proof cards need a GitHub repository with Actions enabled.
 
 ## Install
 
-Source: [UX Part 0](../tenet/specs/ux-spec.md#part-0-get-tenet), [technical specification §1](../tenet/specs/tech-spec.md#1-architecture).
-
-Use Node 22 or later and Git 2.40 or later. Pull-request cards use a GitHub repository with Actions enabled. Tenet uses your existing coding agent for drafting.
-
-For a global install, run:
-
 ~~~sh
-npm install --global @vedprakash-m/tenet@0.1.0-alpha.0
+npm install --global @vedprakash-m/tenet
+tenet --version
 ~~~
 
-In a Node project you can install Tenet as a development dependency:
+For a project-local install use `npm install --save-dev @vedprakash-m/tenet` and use `npx tenet` in the examples. If you want to run without either install, use `npx -y @vedprakash-m/tenet` in place of `tenet`.
 
-~~~sh
-npm install --save-dev @vedprakash-m/tenet@0.1.0-alpha.0
-npx tenet init
-~~~
-
-If a global install fails on permissions, use `npx -y @vedprakash-m/tenet@0.1.0-alpha.0` wherever the steps below use `tenet`. Run `tenet doctor` to see the installed version and whether its files match.
+npm and npx need registry access to fetch uncached packages. With Tenet already installed, `init` and `upgrade` normally get package integrity from npm. If Tenet reports `TN-ENV-REGISTRY` or you know the registry is blocked, use `tenet init --offline` or `tenet upgrade --offline`. These commands record local package integrity. The flag belongs to Tenet and works after the tool and its dependencies are installed. You can run `tenet doctor` to check the lock and available tools.
 
 ## Use Tenet in an existing repository
 
-Source: [UX Part 1A](../tenet/specs/ux-spec.md#1a-an-existing-repository), [onboarding §1](../tenet/specs/tech-spec/onboarding.md#1-onboarding-and-blessing-r-223).
+Open a terminal at the root of a Git repository with at least one commit. If you finished the README quick start, continue at [Use Tenet on the next change](#use-tenet-on-the-next-change).
 
-1. Open a terminal in the repository and run `tenet init`. Read the preflight list of files and review the first findings. Setup starts in `observe`.
-2. Ask your agent to run `tenet onboard` and follow the `draft-specs` skill. Answer its questions about the project's intent. The agent drafts the specifications and opens one pull request named **Set up Tenet**. Use `tenet onboard --inventory-only` for an inventory before drafting through your agent and its model provider.
-3. Review the onboarding card. If needed, check out the setup pull request. The UX example uses `gh pr checkout 12` for pull request 12. Run `tenet bless` in your terminal. Resolve conflicts and review each section. Commit and push the blessing changes, then merge the setup pull request. The example terminal command is `git add tenet/ && git commit -m "Bless specifications" && git push`.
-4. Ask your agent for a change you already needed. Its pull request lists its acceptance items and the requirements it implements. Read the proof card and review and merge through the forge. CI proof cards begin after you merge setup.
+~~~sh
+tenet init
+tenet onboard --inventory-only
+~~~
 
-For agent-led setup, the [UX install prompt](../tenet/specs/ux-spec.md#part-0-get-tenet) uses `tenet init --yes` and `tenet onboard`. To try proof cards before drafting, merge setup alone. The card reports `intent not yet blessed`. Return to `tenet onboard` when ready.
+Read the setup plan and answer the prompts before confirming. Tenet may ask about adding a report to existing CI or changing local agent settings. Use the local settings option only if you want to authorize those writes. The inventory and assignment are written to `.tenet/onboard/`. Read the inventory before giving source material to your agent.
 
 ## Start a new project
 
-Source: [UX Part 1B](../tenet/specs/ux-spec.md#1b-a-new-project), [onboarding §1](../tenet/specs/tech-spec/onboarding.md#1-onboarding-and-blessing-r-223).
+Run these commands inside an empty project folder. If you already created the Git repository, continue with `tenet init`.
 
-1. Create the repository and run `tenet init`. Answer what you are building and choose a project kind. Tenet writes the starter `tenet/intent.md`.
-2. Commit the starting files to the main branch. If you created the repository from the [starter template](https://github.com/vedprakash-m/tenet-starter), clone it and start at step 3.
-3. Ask your agent to run `tenet onboard` and draft the specifications. Answer the questions, review the pull request and run `tenet bless`. Review and merge the setup.
-4. Ask your agent to build the first slice. In the UX example, the change includes a proposed test command in `tenet.yaml`. Review the card's `proposed check · approve tenet.yaml to pin` line and the policy change before approving and merging.
+~~~sh
+git init -b main
+tenet init
+git add -A
+git commit -m "Set up Tenet"
+~~~
 
-## Check the project's specification state
+During init, answer what the project is for and choose a project kind. Tenet creates a draft in `tenet/intent.md` using the purpose you provide, and leaves undecided sections for you and your agent to fill in. Make the first commit before running onboarding. Before blessing a vision item, link it to a requirement you will also bless, list the item under a section called `Not yet in scope` and bless that section, or leave the vision item in draft. If you want GitHub Actions for this project, create the GitHub repository and set its remote before running init.
 
-Source: [UX Part 2](../tenet/specs/ux-spec.md#part-2-the-daily-loop), [command contract §8](../tenet/specs/tech-spec/contracts.md#8-commands).
+## Draft and review
 
-Run `tenet board` to see sections waiting for a blessing, edits, changed sources and specification debt. Add `--all` to include clean blessed sections. The full pull-request board arrives in alpha.1.
+On GitHub, do this work on a branch so you can open a setup pull request. You can also do it locally and review the files in your working tree.
+
+1. Ask your coding agent to run `tenet onboard`, open `.tenet/onboard/assignment.json` and follow the installed `tenet-draft-specs` skill. Tell it to ask you about unclear intent and cite the sources it uses. Your agent or its provider may receive project content.
+2. Read the drafts and commit the setup and draft files. Run `tenet onboard --card` to check citations and print the onboarding summary. The command records the draft revision in the specifications. Paste its output into the setup pull request if you use one.
+3. Run `tenet bless` in your terminal. Review flagged statements and conflicts and approve only the sections you want in force. Run `tenet check` and `tenet board` to see structural issues and what still needs review. Commit the generated card metadata and blessing changes. On GitHub, push your changes and merge the setup pull request after review.
+
+For a small repository the assignment can select `tenet/intent.md`. For a larger repository it can select separate documents. Follow the paths in the assignment.
+
+## Use Tenet on the next change
+
+Ask your agent to run `tenet context` with the paths or requirement IDs involved. A compatible agent can get the same context through the local MCP server. The default MCP entries generated by init may use npx to launch Tenet. Configure your host to launch an installed `tenet mcp` if registry access is unavailable.
+
+On GitHub, merge setup before opening the next pull request. Ask your agent to include acceptance items and tag the tests that show them. Review the advisory proof card when the configured workflows complete. Check which commit was tested, which requirements it touches, and what evidence was missing. Repository branch protection remains under your control.
+
+## Maintain the setup
+
+Use `tenet doctor` to diagnose tools, the lock and workflows. After installing a new package version, run `tenet upgrade` from your repository and review the changes. Use `tenet remove` to remove managed setup and generated working state while keeping your specifications and records.

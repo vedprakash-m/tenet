@@ -2,8 +2,6 @@
 
 Source: [PRD §§1 and 4](../tenet/specs/prd.md), [UX Parts 1–3](../tenet/specs/ux-spec.md#part-1-start-here).
 
-**Draft for 0.1.0-alpha.0**
-
 ## The document ladder
 
 Source: [PRD R-207–R-211](../tenet/specs/prd.md#40-the-spec-process), [technical specification §6.3](../tenet/specs/tech-spec.md#63-the-spec-ladder).
@@ -22,7 +20,7 @@ A small project can keep several levels in a single `intent.md`. Ownership follo
 
 Source: [PRD R-223](../tenet/specs/prd.md#40-the-spec-process), [UX Part 1A](../tenet/specs/ux-spec.md#1a-an-existing-repository).
 
-A blessing is an authorized person's decision to put a section in force. Whether the text is right remains their judgment. The recorded blessing in alpha.0 shows who gave it and is advisory. Drafts and unblessed edits can be reviewed as hints. The last blessed text stays in force until a replacement is blessed. A changed citation asks for review. A person can confirm the existing text against changed sources in the blessing workflow. A section can be left for later while other sections are blessed.
+A blessing is an authorized person's decision to put a section in force. Whether the text is right remains their judgment. The recorded blessing shows who gave it and is advisory. Drafts and unblessed edits can be reviewed as hints. The last blessed text stays in force until a replacement is blessed. A changed citation asks for review. A person can confirm the existing text against changed sources in the blessing workflow. A section can be left for later while other sections are blessed.
 
 ## Reading the proof card
 
@@ -39,13 +37,13 @@ The card names the commit it evaluated, shows the relevant blessed requirements 
 | `not run` | Some tagged tests did not run. |
 | `no test` | No test carries the item tag. |
 | `no weakening detected` | Tenet's deletion and skip checks found no weakening. |
-| `advisory` or `would have blocked` | The alpha.0 check reports the finding and leaves the decision to you. |
+| `advisory` or `would have blocked` | The check reports the finding and leaves the decision to you. |
 
 ## Adoption levels and rule modes
 
 Source: [UX Parts 1 and 3](../tenet/specs/ux-spec.md#part-3-when-you-want-more), [tooling R-214–R-215](../tenet/specs/prd/tooling.md), [CI §7](../tenet/specs/tech-spec/ci.md#7-trust-observations-and-guarantee-levels).
 
-An adoption level describes the setup. A rule mode describes what happens on a finding. `observe` records findings, `advise` reports what would have blocked, and `enforce` blocks as the rule specifies. Alpha.0 starts in the `observe` level with advisory reporting. `protect` comes in alpha.1, signed verification at `verify` in alpha.2, and person-present controls at `assure` in 0.1.x. The strength shown for any protected action depends on the controls in place.
+An adoption level describes the setup. A rule mode describes what happens on a finding. `observe` records findings, `advise` reports what would have blocked, and `enforce` blocks as the rule specifies. Tenet 0.1.0 starts in `observe` and its proof rules are advisory. Rule enforcement, signed verification and person-present controls are planned for later releases.
 
 ## What each result can tell you
 
