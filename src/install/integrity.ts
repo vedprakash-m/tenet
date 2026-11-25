@@ -25,6 +25,25 @@ function invalid(detail: string): never {
   });
 }
 
+function registryUnavailable(
+  packageName: string,
+  version: string,
+  detail: string,
+  command: "init" | "upgrade",
+): never {
+  const words = message("TN-ENV-REGISTRY", {
+    package: packageName,
+    version,
+    detail,
+    command,
+  });
+  const finding = fail("TN-ENV-REGISTRY", words.message, words.fix);
+  throw Object.assign(new Error(words.message), {
+    code: "TN-ENV-REGISTRY",
+    finding,
+  });
+}
+
 function validateIntegrity(value: unknown, source: string): string {
   if (typeof value !== "string" || !integrityPattern.test(value)) {
     invalid(`${source} did not supply a valid sha512 integrity value.`);
@@ -127,6 +146,7 @@ async function registryIntegrity(
   version: string,
   cwd: string,
   run: NpmViewRunner = runNpmView,
+  command: "init" | "upgrade" = "init",
 ): Promise<string | null> {
   const args = [
     "view",
@@ -138,7 +158,12 @@ async function registryIntegrity(
   const { status, stdout, stderr } = await run(args, { cwd });
   if (status !== 0) {
     if (/E404|404 Not Found|is not in this registry|No match found/i.test(`${stdout}\n${stderr}`)) return null;
-    invalid(`Registry lookup failed for ${packageName}@${version}: ${stderr.trim() || `npm exited ${String(status)}`}.`);
+    registryUnavailable(
+      packageName,
+      version,
+      stderr.trim() || `npm exited ${String(status)}`,
+      command,
+    );
   }
   let value: unknown;
   try {
@@ -162,6 +187,7 @@ type IntegrityDependencies = {
 export async function releaseIntegrity(
   options: PreflightOptions,
   dependencies: IntegrityDependencies = {},
+  command: "init" | "upgrade" = "init",
 ): Promise<ReleaseIntegrity> {
   const installed = await installedPackage();
   const environment = options.environment ?? {};
@@ -197,10 +223,20 @@ export async function releaseIntegrity(
           ? injected
           : dependencies.registry
             ? await dependencies.registry(packageName, version)
-            : await registryIntegrity(packageName, version, installed.root, dependencies.npmView);
+            : await registryIntegrity(
+              packageName,
+              version,
+              installed.root,
+              dependencies.npmView,
+              command,
+            );
     } catch (error) {
-      if ((error as { code?: unknown }).code === "TN-LOCK-INVALID") throw error;
-      invalid(`Registry lookup failed for ${packageName}@${version}: ${(error as Error).message}`);
+      if (["TN-LOCK-INVALID", "TN-ENV-REGISTRY"].includes(
+        (error as { code?: string }).code ?? "",
+      )) {
+        throw error;
+      }
+      registryUnavailable(packageName, version, (error as Error).message, command);
     }
     registry = supplied === null
       ? null

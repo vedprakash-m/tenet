@@ -271,9 +271,61 @@ test("registry transport failure writes nothing during init", async (t) => {
     "--yes",
   );
 
-  assert.equal(output.child.status, 1, output.child.stdout);
+  assert.equal(output.child.status, 3, output.child.stdout);
   assert.equal(output.envelope.ok, false);
-  assert.equal(output.envelope.errors[0]?.code, "TN-LOCK-INVALID");
+  assert.equal(output.envelope.errors[0]?.code, "TN-ENV-REGISTRY");
+  assert.equal(
+    output.envelope.errors[0]?.message,
+    "Could not reach the npm registry to verify @vedprakash-m/tenet@0.1.0-alpha.0 " +
+      "(ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE).",
+  );
+  assert.deepEqual(await tree(repo.path), before);
+});
+
+test("offline init records local integrity despite registry failure", async (t) => {
+  const repo = await tmpRepo("install-offline-registry-transport-failure");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
+
+  const output = runWithRegistryError(
+    repo.path,
+    "ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE",
+    "init",
+    "--yes",
+    "--offline",
+  );
+
+  assert.equal(output.child.status, 0, output.child.stderr);
+  assert.equal(output.envelope.ok, true);
+  assert.match(output.child.stderr, /local package integrity/i);
+  const lock = JSON.parse(await readFile(path.join(repo.path, "tenet.lock"), "utf8")) as {
+    integrity: string;
+    "x-integrity-source": string;
+  };
+  assert.equal(lock["x-integrity-source"], "local");
+  assert.equal(lock.integrity, await packageIntegrity());
+});
+
+test("registry transport failure writes nothing during upgrade", async (t) => {
+  const repo = await tmpRepo("upgrade-registry-transport-failure");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
+  const installed = runWithoutIntegrity(repo.path, "init", "--yes");
+  assert.equal(installed.child.status, 0, installed.child.stderr);
+  const before = await tree(repo.path);
+
+  const output = runWithRegistryError(
+    repo.path,
+    "ETIMEDOUT",
+    "upgrade",
+  );
+
+  assert.equal(output.child.status, 3, output.child.stdout);
+  assert.equal(output.envelope.errors[0]?.code, "TN-ENV-REGISTRY");
+  assert.match(
+    output.envelope.errors[0]?.message ?? "",
+    /Could not reach the npm registry.*ETIMEDOUT/,
+  );
   assert.deepEqual(await tree(repo.path), before);
 });
 

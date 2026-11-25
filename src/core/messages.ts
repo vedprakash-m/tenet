@@ -68,6 +68,10 @@ export const messageTemplates = {
     "message": "Directory {path} is not a Git repository.",
     "fix": "Run `git init` or run from inside a Git repository."
   },
+  "TN-ENV-REGISTRY": {
+    "message": "Could not reach the npm registry to verify {package}@{version} ({detail}).",
+    "fix": "Check your network or proxy, or run `tenet {command} --offline` to record local package integrity."
+  },
   "TN-ENV-OFFLINE": {
     "message": "Command `tenet {command}` requires network access, which is disabled by `--offline`.",
     "fix": "Re-run `tenet {command}` without `--offline`."

@@ -22,7 +22,7 @@ test("published prereleases query the registry", async () => {
   assert.equal(result.warning, undefined);
 });
 
-test("registry transport failures remain registered errors", async () => {
+test("registry transport failures are environment errors", async () => {
   await assert.rejects(
     releaseIntegrity({
       environment: {
@@ -35,10 +35,31 @@ test("registry transport failures remain registered errors", async () => {
       },
     }),
     (error: unknown) =>
-      (error as { code?: string }).code === "TN-LOCK-INVALID" &&
-      /Registry lookup failed.*TLS_ALERT_HANDSHAKE_FAILURE/.test(
-        (error as { message?: string }).message ?? "",
-      ),
+      (error as { code?: string }).code === "TN-ENV-REGISTRY" &&
+      (error as { message?: string }).message ===
+        "Could not reach the npm registry to verify @vedprakash-m/tenet@0.1.0-alpha.0 " +
+          "(ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE)." &&
+      (error as { finding?: { fix?: string } }).finding?.fix ===
+        "Check your network or proxy, or run `tenet init --offline` to record local package integrity.",
+  );
+});
+
+test("upgrade registry failures recommend its offline command", async () => {
+  await assert.rejects(
+    releaseIntegrity({
+      environment: {
+        installedVersion: "0.1.0-alpha.0",
+        registry: { package: "@vedprakash-m/tenet" },
+      },
+    }, {
+      registry: async () => {
+        throw new Error("ETIMEDOUT");
+      },
+    }, "upgrade"),
+    (error: unknown) =>
+      (error as { code?: string }).code === "TN-ENV-REGISTRY" &&
+      (error as { finding?: { fix?: string } }).finding?.fix ===
+        "Check your network or proxy, or run `tenet upgrade --offline` to record local package integrity.",
   );
 });
 

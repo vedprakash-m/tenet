@@ -242,7 +242,7 @@ export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResu
       ? { localProfileRoot: options.environment.localProfileRoot }
       : {}),
   });
-  const planned = await planWriteSet(result, { ...options, force: true });
+  const planned = await planWriteSet(result, { ...options, force: true, command: "upgrade" });
   const targetVersion = planned.version;
   const packageName = options.environment?.registry?.package ?? "@vedprakash-m/tenet";
   const previousVersion = prior?.version ?? targetVersion;
