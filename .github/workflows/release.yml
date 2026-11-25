@@ -54,3 +54,39 @@ jobs:
       - run: node --experimental-strip-types --test test/release/packed.test.ts
         env:
           TENET_RELEASE_PACKED_DIR: ${{ runner.temp }}/tenet-package
+
+  publish:
+    # Runs only for a pushed v* tag, after one tarball passed the journey on all three platforms.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: packed-journey
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write   # create the GitHub release
+      id-token: write   # npm provenance
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@v4
+        with:
+          name: tenet-release-package
+          path: ${{ runner.temp }}/tenet-package
+      - name: Check the tag matches the package version
+        working-directory: ${{ runner.temp }}/tenet-package
+        run: |
+          tgz=$(ls ./*.tgz)
+          version=$(tar -xOzf "$tgz" package/package.json | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")
+          test "v$version" = "${GITHUB_REF_NAME}" || { echo "tag ${GITHUB_REF_NAME} does not match package version $version"; exit 1; }
+          sha256sum -c SHA256SUMS
+      - name: Publish the tested tarball to npm
+        working-directory: ${{ runner.temp }}/tenet-package
+        run: npm publish ./*.tgz --provenance --access public --tag latest
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Create the GitHub release with the same tarball
+        working-directory: ${{ runner.temp }}/tenet-package
+        run: gh release create "${GITHUB_REF_NAME}" ./*.tgz SHA256SUMS --repo "${GITHUB_REPOSITORY}" --title "Tenet ${GITHUB_REF_NAME}" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
