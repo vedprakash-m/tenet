@@ -716,6 +716,21 @@ test("remove preserves pre-existing empty generated-state directories", async (t
   }
 });
 
+test("remove clears known generated state without a manifest", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  await setup.repo.write(".tenet/onboard/inventory.json", "{}\n");
+  await setup.repo.write(".tenet/onboard/assignment.json", "{}\n");
+  await setup.repo.write(".tenet/cache/session/output.txt", "generated\n");
+  await setup.repo.write(".tenet/runs/session/output.txt", "generated\n");
+
+  const result = await remove(setup.options);
+
+  assert.ok(result.removed.some((item) => item.path === ".tenet/onboard/inventory.json"));
+  assert.ok(result.removed.some((item) => item.path === ".tenet/onboard/assignment.json"));
+  await assert.rejects(lstat(path.join(setup.repo.path, ".tenet")), { code: "ENOENT" });
+});
+
 test("p17 loader upgrades owned pins without changing policy", async (t) => {
   const setup = await makeCase("p17-upgrade-pins-and-policy");
   t.after(() => dispose(setup));

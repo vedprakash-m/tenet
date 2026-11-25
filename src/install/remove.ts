@@ -368,14 +368,14 @@ async function removeRegularFile(
   cwd: string,
   relative: string,
   removed: RemoveRemoved[],
-): Promise<void> {
+): Promise<boolean> {
   const link = await symlinkPath(cwd, relative);
   if (link) {
     await rm(link.filename, { force: true });
     if (!removed.some((item) => item.path === link.relative && item.kind === "file")) {
       removed.push({ path: link.relative, kind: "file" });
     }
-    return;
+    return true;
   }
   let filename: string;
   try {
@@ -385,11 +385,13 @@ async function removeRegularFile(
   }
   try {
     const stat = await lstat(filename);
-    if (!stat.isFile()) return;
+    if (!stat.isFile()) return false;
     await rm(filename);
     removed.push({ path: relative, kind: "file" });
+    return true;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+    throw error;
   }
 }
 
@@ -397,13 +399,26 @@ async function removeGeneratedWorkingState(
   cwd: string,
   reportPaths: string[],
   removed: RemoveRemoved[],
-  createdDirectories: Set<string>,
+  createdDirectories: Set<string> | null,
 ): Promise<void> {
+  const removedParents = new Set<string>();
   for (const relative of new Set(generatedWorkingPaths(reportPaths))) {
-    await removeRegularFile(cwd, relative, removed);
+    if (await removeRegularFile(cwd, relative, removed)) {
+      removedParents.add(path.posix.dirname(relative));
+    }
   }
   for (const directory of [".tenet/cache", ".tenet/runs"]) {
-    await removePathTree(cwd, directory, removed, createdDirectories.has(directory));
+    await removePathTree(
+      cwd,
+      directory,
+      removed,
+      createdDirectories?.has(directory) ?? false,
+    );
+  }
+  if (createdDirectories === null) {
+    const inferred = [...removedParents, ".tenet"].filter((directory) =>
+      directory.startsWith(".tenet"));
+    await removeEmptyManagedDirectories(cwd, inferred);
   }
 }
 
@@ -436,7 +451,7 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
       if (link) await rm(link.filename, { force: true });
       else await rm(await confine(relative, cwd), { force: true });
     }
-    await removeGeneratedWorkingState(cwd, configuredReports, removed, new Set());
+    await removeGeneratedWorkingState(cwd, configuredReports, removed, null);
     return { removed, kept: [], reminder };
   }
   await validateRecordedPaths(

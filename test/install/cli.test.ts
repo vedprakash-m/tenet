@@ -80,6 +80,28 @@ function runWithIntegrity(repo: string, integrity: string, ...args: string[]) {
   } };
 }
 
+function runWithRegistryError(repo: string, error: string, ...args: string[]) {
+  const env = {
+    ...process.env,
+    TENET_TEST_REGISTRY_ERROR: error,
+  };
+  delete env.TENET_INSTALL_INTEGRITY;
+  const child = spawnSync(process.execPath, [cli, "--json", "--cwd", repo, ...args], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+    shell: false,
+    windowsHide: true,
+    env,
+  });
+  return {
+    child,
+    envelope: JSON.parse(child.stdout) as {
+      ok: boolean;
+      errors: Array<{ code: string; message: string }>;
+    },
+  };
+}
+
 async function packageIntegrity(): Promise<string> {
   const files = new Set(["package.json", "LICENSE", "README.md"]);
   async function visit(relative: string): Promise<void> {
@@ -234,6 +256,25 @@ test("malformed integrity overrides return TN-LOCK-INVALID", async (t) => {
   assert.equal(output.envelope.ok, false);
   assert.equal(output.envelope.errors[0]?.code, "TN-LOCK-INVALID");
   assert.doesNotMatch(output.envelope.errors[0]?.message ?? "", /TN-INTERNAL/);
+});
+
+test("registry transport failure writes nothing during init", async (t) => {
+  const repo = await tmpRepo("install-registry-transport-failure");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
+  const before = await tree(repo.path);
+
+  const output = runWithRegistryError(
+    repo.path,
+    "ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE",
+    "init",
+    "--yes",
+  );
+
+  assert.equal(output.child.status, 1, output.child.stdout);
+  assert.equal(output.envelope.ok, false);
+  assert.equal(output.envelope.errors[0]?.code, "TN-LOCK-INVALID");
+  assert.deepEqual(await tree(repo.path), before);
 });
 
 test("real node-service fixture initializes, is idempotent and removes exactly", async (t) => {
