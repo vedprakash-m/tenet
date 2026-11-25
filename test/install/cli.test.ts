@@ -49,7 +49,7 @@ function run(repo: string, ...args: string[]) {
 }
 
 function runWithoutIntegrity(repo: string, ...args: string[]) {
-  const env = { ...process.env };
+  const env = { ...process.env, TENET_TEST_REGISTRY_INTEGRITY: "not-found" };
   delete env.TENET_INSTALL_INTEGRITY;
   const child = spawnSync(process.execPath, [cli, "--json", "--cwd", repo, ...args], {
     cwd: process.cwd(),
@@ -253,6 +253,7 @@ test("real node-service fixture initializes, is idempotent and removes exactly",
   const original = await tree(repo.path);
   const env = {
     ...process.env,
+    TENET_TEST_REGISTRY_INTEGRITY: "not-found",
     HOME: home,
     USERPROFILE: home,
     APPDATA: path.join(home, "AppData", "Roaming"),
@@ -319,6 +320,7 @@ test("local-host consent writes only Windows cmd shims and removes them", async 
           registry: {
             package: "@vedprakash-m/tenet",
             releases: {
+              "0.1.0-alpha.0": { integrity: `sha512-${"A".repeat(86)}==` },
               "0.0.0": { integrity: `sha512-${"A".repeat(86)}==` },
             },
           },
