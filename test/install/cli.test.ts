@@ -224,18 +224,39 @@ test("unpublished local versions use exact local integrity and warn", async (t) 
   assert.match(upgraded.child.stderr, /not on the registry.*local package integrity/i);
 });
 
-test("empty-repo init seeds intent without dead file references", async (t) => {
+test("offline empty-repo init seeds intent without template examples", async (t) => {
   const repo = await tmpRepo("install-empty-intent");
   t.after(repo.cleanup);
   repo.git(["config", "user.name", "Fixture Owner"]);
   repo.git(["config", "user.email", "fixture@example.invalid"]);
 
-  const installed = run(repo.path, "init", "--yes");
+  const installed = runWithoutIntegrity(repo.path, "init", "--yes", "--offline");
   assert.equal(installed.child.status, 0, installed.child.stderr);
+  assert.match(installed.child.stderr, /local package integrity/i);
   const intent = await readFile(path.join(repo.path, "tenet", "intent.md"), "utf8");
-  assert.doesNotMatch(intent, /src\/checkout\/(?:gateway|retry)\.ts/);
+  assert.match(
+    intent,
+    /^\| V-1 \| Undecided · edit or run tenet onboard \| Undecided \| {2}\|$/m,
+  );
+  const starter = await readFile(path.resolve("examples/starter/tenet/intent.md"), "utf8");
+  const templateExamples = [
+    "Checkout recovers cleanly from transient gateway timeouts for returning shoppers.",
+    "≤1% checkout timeout failure",
+    "A payment request that times out is retried at most once, never twice.",
+    "Card numbers and verification codes are never written to logs or error messages.",
+    "src/checkout/gateway.ts",
+    "src/checkout/retry.ts",
+    "Checkout shows a single waiting indicator during a retry",
+    "First slice: implement single-retry timeout handling",
+  ];
+  for (const [name, seed] of [["generated seed", intent], ["starter", starter]] as const) {
+    for (const example of templateExamples) {
+      assert.equal(seed.includes(example), false, `${name} retained template example: ${example}`);
+    }
+    assert.doesNotMatch(seed, /^\| V-\d+ .*\| asked \|$/m);
+    assert.doesNotMatch(seed, /\{origin:\s*asked(?:;|\})/);
+  }
   assert.doesNotMatch(intent, /^- R-\d+\b/m);
-  assert.doesNotMatch(intent, /payment request|verification codes|waiting indicator/i);
 
   repo.git(["add", "-A"]);
   repo.git(["commit", "-qm", "install"]);
