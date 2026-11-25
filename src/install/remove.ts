@@ -1,4 +1,5 @@
 import { isDeepStrictEqual } from "node:util";
+import type { Stats } from "node:fs";
 import { lstat, readFile, readdir, rm, rmdir } from "node:fs/promises";
 import path from "node:path";
 import { parseDocument } from "yaml";
@@ -28,6 +29,16 @@ import type {
 import { localProfileRoot } from "./environment.js";
 
 const reminder = "If you made the Tenet check required in branch protection or rulesets, remove that rule in your forge settings.";
+const standardReportPaths = [
+  "test.xml",
+  "test.json",
+  "junit.xml",
+  "ctrf.json",
+  "go-test.json",
+  "go-test-json.json",
+  "jest.json",
+  "jest-json.json",
+].map((name) => `.tenet/reports/${name}`);
 function pathError(itemPath: string): Error & { code: string; finding: unknown } {
   const words = message("TN-PATH-ESCAPE", { path: itemPath });
   const finding = { ...fail("TN-PATH-ESCAPE", words.message, words.fix), file: itemPath };
@@ -212,9 +223,110 @@ async function removeEmptyManagedDirectories(cwd: string, directories: string[])
   }
 }
 
+function configuredReportPaths(source: string | null): string[] {
+  if (source === null) return [];
+  try {
+    const document = parseDocument(source, { merge: false, uniqueKeys: true });
+    if (document.errors.length > 0) return [];
+    const data = document.toJS({ maxAliasCount: 100 }) as { checks?: unknown } | null;
+    if (!data?.checks || typeof data.checks !== "object" || Array.isArray(data.checks)) return [];
+    return Object.values(data.checks).flatMap((check) => {
+      if (!check || typeof check !== "object" || Array.isArray(check)) return [];
+      const reportPath = (check as Record<string, unknown>).report_path;
+      if (typeof reportPath !== "string") return [];
+      const normalized = reportPath.replaceAll("\\", "/").replace(/^\.\/+/, "");
+      return normalized.startsWith(".tenet/reports/") ? [normalized] : [];
+    });
+  } catch {
+    return [];
+  }
+}
+
+async function removePathTree(
+  cwd: string,
+  relative: string,
+  removed: RemoveRemoved[],
+): Promise<void> {
+  const portable = relative.replaceAll("\\", "/");
+  const parent = path.posix.dirname(portable);
+  let parentPath: string;
+  try {
+    parentPath = await confine(parent === "." ? "." : parent, cwd);
+  } catch {
+    throw pathError(relative);
+  }
+  const filename = path.resolve(parentPath, path.posix.basename(portable));
+  let stat: Stats;
+  try {
+    stat = await lstat(filename);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+    throw error;
+  }
+  if (stat.isSymbolicLink() || !stat.isDirectory()) {
+    await rm(filename, { force: true });
+    removed.push({ path: relative, kind: "file" });
+    return;
+  }
+  for (const entry of await readdir(filename, { withFileTypes: true })) {
+    await removePathTree(
+      cwd,
+      path.posix.join(relative.replaceAll("\\", "/"), entry.name),
+      removed,
+    );
+  }
+}
+
+async function removeRegularFile(
+  cwd: string,
+  relative: string,
+  removed: RemoveRemoved[],
+): Promise<void> {
+  let filename: string;
+  try {
+    filename = await confine(relative, cwd);
+  } catch {
+    throw pathError(relative);
+  }
+  try {
+    const stat = await lstat(filename);
+    if (!stat.isFile()) return;
+    await rm(filename);
+    removed.push({ path: relative, kind: "file" });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
+}
+
+async function removeGeneratedWorkingState(
+  cwd: string,
+  reportPaths: string[],
+  removed: RemoveRemoved[],
+): Promise<void> {
+  const exact = [
+    ".tenet/onboard/inventory.json",
+    ".tenet/onboard/assignment.json",
+    ...standardReportPaths,
+    ...reportPaths,
+  ];
+  for (const relative of new Set(exact)) {
+    await removeRegularFile(cwd, relative, removed);
+  }
+  for (const directory of [".tenet/cache", ".tenet/runs"]) {
+    await removePathTree(cwd, directory, removed);
+  }
+  await removeEmptyManagedDirectories(
+    cwd,
+    [".tenet/onboard", ".tenet/reports", ".tenet/cache", ".tenet/runs", ".tenet"],
+  );
+}
+
 export async function remove(options: RemoveOptions = {}): Promise<RemoveResult> {
   const cwd = path.resolve(options.cwd ?? process.cwd());
   const retained = await retainedRoots(cwd);
+  const configuredReports = configuredReportPaths(
+    await optionalText(await confine("tenet.yaml", cwd)),
+  );
   const { manifest, pending, localManifest } = await manifestFile(cwd);
   const removed: RemoveRemoved[] = [];
   const kept = new Map<string, RemoveKept["reason"]>();
@@ -339,6 +451,7 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
   await rm(activePath, { force: true });
   await rm(pendingPath, { force: true });
   if (!keptCreated.has(".tenet/manifest.local.json")) await rm(localPath, { force: true });
+  await removeGeneratedWorkingState(cwd, configuredReports, removed);
   const createdDirectories = manifest["x-created-directories"] ?? [];
   await removeEmptyManagedDirectories(cwd, createdDirectories);
   for (const root of retained) {
@@ -347,9 +460,11 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
     }
   }
   return {
-    removed: removed.sort((left, right) =>
-      left.path < right.path ? -1 : left.path > right.path ? 1 :
-        left.kind < right.kind ? -1 : left.kind > right.kind ? 1 : 0),
+    removed: [...new Map(removed.map((item) =>
+      [`${item.path}\0${item.kind}`, item])).values()]
+      .sort((left, right) =>
+        left.path < right.path ? -1 : left.path > right.path ? 1 :
+          left.kind < right.kind ? -1 : left.kind > right.kind ? 1 : 0),
     kept: [...kept.entries()]
       .sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
       .map(([itemPath, reason]) => ({ path: itemPath, reason })),

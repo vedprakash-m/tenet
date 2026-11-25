@@ -94,6 +94,7 @@ async function shouldApplyCreated(
   const after = write.after_sha256;
   const current = sha256Bytes(bytes);
   if (current === after) return { apply: false, action: "kept" };
+  if (write.path === "tenet.lock") return { apply: true, action: "replaced" };
   const old = prior?.created.find((item) => item.path === write.path);
   return old?.sha256 === current
     ? { apply: true, action: "replaced" }

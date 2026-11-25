@@ -613,6 +613,45 @@ test("remove deletes created directories but keeps pre-existing empty directorie
   assert.equal((await lstat(path.join(existing.repo.path, "tenet"))).isDirectory(), true);
 });
 
+test("remove deletes known generated .tenet state but preserves user state", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  await init(setup.options);
+  await setup.repo.write(".tenet/onboard/inventory.json", "{}\n");
+  await setup.repo.write(".tenet/onboard/assignment.json", "{}\n");
+  await setup.repo.write(".tenet/onboard/interview.json", "{\"answers\":[\"keep\"]}\n");
+  await setup.repo.write(".tenet/cache/item.json", "{}\n");
+  await setup.repo.write(".tenet/runs/session/output.txt", "generated\n");
+  await setup.repo.write(".tenet/reports/test.xml", "<testsuite/>\n");
+  await setup.repo.write(".tenet/reports/custom.json", "{\"keep\":true}\n");
+  const outside = path.join(setup.sandbox, "outside-cache");
+  await mkdir(outside, { recursive: true });
+  await writeFile(path.join(outside, "sentinel.txt"), "keep\n");
+  await symlink(outside, path.join(setup.repo.path, ".tenet", "cache", "external"), "junction");
+
+  const result = await remove(setup.options);
+  for (const filename of [
+    ".tenet/onboard/inventory.json",
+    ".tenet/onboard/assignment.json",
+    ".tenet/cache/item.json",
+    ".tenet/cache/external",
+    ".tenet/runs/session/output.txt",
+    ".tenet/reports/test.xml",
+  ]) {
+    await assert.rejects(readFile(path.join(setup.repo.path, ...filename.split("/"))), { code: "ENOENT" });
+    assert.ok(result.removed.some((item) => item.path === filename && item.kind === "file"));
+  }
+  assert.equal(
+    await readFile(path.join(setup.repo.path, ".tenet/onboard/interview.json"), "utf8"),
+    "{\"answers\":[\"keep\"]}\n",
+  );
+  assert.equal(
+    await readFile(path.join(setup.repo.path, ".tenet/reports/custom.json"), "utf8"),
+    "{\"keep\":true}\n",
+  );
+  assert.equal(await readFile(path.join(outside, "sentinel.txt"), "utf8"), "keep\n");
+});
+
 test("p17 loader upgrades owned pins without changing policy", async (t) => {
   const setup = await makeCase("p17-upgrade-pins-and-policy");
   t.after(() => dispose(setup));
@@ -625,6 +664,46 @@ test("p17 loader upgrades owned pins without changing policy", async (t) => {
     const source = await readFile(path.join(setup.repo.path, relative), "utf8");
     assert.match(source, /@vedprakash-m\/tenet@0\.1\.0-alpha\.1/);
   }
+});
+
+test("upgrade refreshes a changed integrity pin", async (t) => {
+  const setup = await makeCase("p01-empty");
+  t.after(() => dispose(setup));
+  const firstIntegrity = `sha512-${"A".repeat(86)}==`;
+  const editedIntegrity = `sha512-${"B".repeat(86)}==`;
+  const refreshedIntegrity = `sha512-${"C".repeat(86)}==`;
+  const initial = {
+    ...setup.options,
+    environment: {
+      ...(setup.options.environment as Record<string, unknown>),
+      registry: {
+        package: "@vedprakash-m/tenet",
+        releases: { "0.1.0-alpha.0": { integrity: firstIntegrity } },
+      },
+    },
+  };
+  await init(initial);
+  const lockPath = path.join(setup.repo.path, "tenet.lock");
+  const lock = JSON.parse(await readFile(lockPath, "utf8")) as Record<string, unknown>;
+  lock.integrity = editedIntegrity;
+  await writeFile(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
+
+  const upgraded = await upgrade({
+    ...setup.options,
+    environment: {
+      ...(setup.options.environment as Record<string, unknown>),
+      registry: {
+        package: "@vedprakash-m/tenet",
+        releases: { "0.1.0-alpha.0": { integrity: refreshedIntegrity } },
+      },
+    },
+  });
+  assert.ok(upgraded.changed.some((item) =>
+    item.path === "tenet.lock" && item.action === "replaced"));
+  assert.equal(
+    (JSON.parse(await readFile(lockPath, "utf8")) as { integrity: string }).integrity,
+    refreshedIntegrity,
+  );
 });
 
 test("p17 lexical JSON formatting survives owned pin replacement", async (t) => {
