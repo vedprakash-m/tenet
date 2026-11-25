@@ -47,6 +47,10 @@ async function installedPackage(): Promise<{ package: string; version: string; r
   return { package: value.name, version: value.version, root };
 }
 
+export async function installedPackageVersion(): Promise<string> {
+  return (await installedPackage()).version;
+}
+
 async function listFiles(root: string, relative = ""): Promise<string[]> {
   const directory = path.join(root, ...relative.split("/").filter(Boolean));
   const entries = await readdir(directory, { withFileTypes: true }).catch((error: unknown) => {

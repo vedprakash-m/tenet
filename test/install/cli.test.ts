@@ -178,6 +178,7 @@ test("unpublished local versions use exact local integrity and warn", async (t) 
   t.after(repo.cleanup);
   repo.git(["config", "user.name", "Fixture Owner"]);
   repo.git(["config", "user.email", "fixture@example.invalid"]);
+  repo.git(["remote", "add", "origin", "https://github.com/fixture/local-integrity.git"]);
   await repo.write("README.md", "# Local build\n");
   repo.git(["add", "README.md"]);
   repo.git(["commit", "-qm", "fixture"]);
@@ -193,6 +194,9 @@ test("unpublished local versions use exact local integrity and warn", async (t) 
   assert.equal(lock.integrity, await packageIntegrity());
   assert.ok((output.envelope.result as { findings: Array<{ kind: string }> }).findings
     .some(({ kind }) => kind === "local-integrity"));
+  const doctor = runWithoutIntegrity(repo.path, "doctor");
+  assert.equal(doctor.child.status, 0, doctor.child.stderr);
+  assert.match(doctor.child.stderr, /local package integrity.*CI workflows cannot verify/i);
   const upgraded = runWithoutIntegrity(repo.path, "upgrade");
   assert.equal(upgraded.child.status, 0, upgraded.child.stderr);
   assert.match(upgraded.child.stderr, /not on the registry.*local package integrity/i);
