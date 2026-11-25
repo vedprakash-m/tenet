@@ -103,6 +103,26 @@ async function validateRemovalPath(cwd: string, relative: string): Promise<void>
   });
 }
 
+async function validateRecordedPath(cwd: string, relative: string): Promise<void> {
+  const portable = relative.replaceAll("\\", "/").replace(/^\.\/+/, "");
+  const link = await symlinkPath(cwd, portable);
+  if (link && link.relative !== portable) throw pathError(relative);
+  if (link) return;
+  await confine(relative, cwd).catch(() => {
+    throw pathError(relative);
+  });
+}
+
+async function unlinkRecordedPath(cwd: string, relative: string): Promise<boolean> {
+  const link = await symlinkPath(cwd, relative);
+  if (!link) return false;
+  if (link.relative !== relative.replaceAll("\\", "/").replace(/^\.\/+/, "")) {
+    throw pathError(relative);
+  }
+  await rm(link.filename);
+  return true;
+}
+
 async function optionalText(filename: string): Promise<string | null> {
   try {
     return await readFile(filename, "utf8");
@@ -164,7 +184,7 @@ async function validateRecordedPaths(
     ...(pending?.writes.filter((item) => item.kind !== "local_key").map((item) => item.path) ?? []),
   ];
   for (const itemPath of [...new Set(repoPaths)]) {
-    await validateRemovalPath(cwd, itemPath);
+    await validateRecordedPath(cwd, itemPath);
   }
   const recordedRoots = Object.values(localManifest?.profile_roots ?? {});
   if (!localProfileRoot && recordedRoots.length === 0) {
@@ -465,6 +485,11 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
   const affected: string[] = [];
   const keptCreated = new Set<string>();
   for (const item of manifest.created) {
+    if (await unlinkRecordedPath(cwd, item.path)) {
+      affected.push(item.path);
+      removed.push({ path: item.path, kind: "file" });
+      continue;
+    }
     const filename = await confine(item.path, cwd);
     affected.push(item.path);
     try {
@@ -483,6 +508,11 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
 
   for (const block of manifest.blocks) {
     if (keptCreated.has(block.path)) continue;
+    if (await unlinkRecordedPath(cwd, block.path)) {
+      affected.push(block.path);
+      removed.push({ path: block.path, kind: "block" });
+      continue;
+    }
     const filename = await confine(block.path, cwd);
     const source = await optionalText(filename);
     affected.push(block.path);
@@ -506,6 +536,11 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
 
   for (const key of manifest.keys) {
     if (keptCreated.has(key.path)) continue;
+    if (await unlinkRecordedPath(cwd, key.path)) {
+      affected.push(key.path);
+      removed.push({ path: key.path, kind: "key" });
+      continue;
+    }
     const filename = await confine(key.path, cwd);
     const source = await optionalText(filename);
     affected.push(key.path);

@@ -692,9 +692,35 @@ test("remove validates generated report paths before changing the tree", async (
   const before = await tree(setup.repo.path);
 
   await assert.rejects(remove(setup.options), (error: unknown) =>
-    findingCode(error) === "TN-PATH-ESCAPE");
+    (error as { code?: string }).code === "TN-PATH-ESCAPE");
 
   assert.deepEqual(await tree(setup.repo.path), before);
+});
+
+test("remove rejects a recorded file under a symlinked parent before any deletion", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  await init(setup.options);
+  const target = path.join(setup.sandbox, "recorded-parent");
+  await mkdir(target, { recursive: true });
+  await writeFile(path.join(target, "secret.txt"), "keep\n");
+  await symlink(target, path.join(setup.repo.path, "recorded-link"), "junction");
+  const manifestPath = path.join(setup.repo.path, ".tenet", "manifest.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
+    created: Array<{ path: string; sha256: string }>;
+  };
+  manifest.created.push({
+    path: "recorded-link/secret.txt",
+    sha256: "0".repeat(64),
+  });
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  const before = await tree(setup.repo.path);
+
+  await assert.rejects(remove(setup.options), (error: unknown) =>
+    (error as { code?: string }).code === "TN-PATH-ESCAPE");
+
+  assert.deepEqual(await tree(setup.repo.path), before);
+  assert.equal(await readFile(path.join(target, "secret.txt"), "utf8"), "keep\n");
 });
 
 test("remove preserves pre-existing empty generated-state directories", async (t) => {
