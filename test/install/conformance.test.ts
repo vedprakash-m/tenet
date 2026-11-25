@@ -650,6 +650,9 @@ test("remove deletes known generated .tenet state but preserves user state", asy
     "{\"keep\":true}\n",
   );
   assert.equal(await readFile(path.join(outside, "sentinel.txt"), "utf8"), "keep\n");
+  await assert.rejects(lstat(path.join(setup.repo.path, ".tenet", "cache")), { code: "ENOENT" });
+  await assert.rejects(lstat(path.join(setup.repo.path, ".tenet", "runs", "session")), { code: "ENOENT" });
+  await assert.rejects(lstat(path.join(setup.repo.path, ".tenet", "runs")), { code: "ENOENT" });
 });
 
 test("remove unlinks symlinked .tenet parents without touching their targets", async (t) => {
@@ -692,6 +695,25 @@ test("remove validates generated report paths before changing the tree", async (
     findingCode(error) === "TN-PATH-ESCAPE");
 
   assert.deepEqual(await tree(setup.repo.path), before);
+});
+
+test("remove preserves pre-existing empty generated-state directories", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  for (const relative of [".tenet/onboard", ".tenet/reports", ".tenet/cache", ".tenet/runs"]) {
+    await mkdir(path.join(setup.repo.path, ...relative.split("/")), { recursive: true });
+  }
+  await init(setup.options);
+
+  await remove(setup.options);
+
+  for (const relative of [".tenet/onboard", ".tenet/reports", ".tenet/cache", ".tenet/runs", ".tenet"]) {
+    const stat = await lstat(path.join(setup.repo.path, ...relative.split("/")));
+    assert.equal(stat.isDirectory(), true);
+    if (relative !== ".tenet") {
+      assert.deepEqual(await readdir(path.join(setup.repo.path, ...relative.split("/"))), []);
+    }
+  }
 });
 
 test("p17 loader upgrades owned pins without changing policy", async (t) => {

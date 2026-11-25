@@ -314,6 +314,7 @@ async function removePathTree(
   cwd: string,
   relative: string,
   removed: RemoveRemoved[],
+  removeDirectory: boolean,
 ): Promise<void> {
   const portable = relative.replaceAll("\\", "/");
   const link = await symlinkPath(cwd, portable);
@@ -344,12 +345,22 @@ async function removePathTree(
     removed.push({ path: relative, kind: "file" });
     return;
   }
-  for (const entry of await readdir(filename, { withFileTypes: true })) {
+  const entries = await readdir(filename, { withFileTypes: true });
+  for (const entry of entries) {
     await removePathTree(
       cwd,
       path.posix.join(relative.replaceAll("\\", "/"), entry.name),
       removed,
+      true,
     );
+  }
+  if (removeDirectory || entries.length > 0) {
+    try {
+      await rmdir(filename);
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT" && code !== "ENOTEMPTY") throw error;
+    }
   }
 }
 
@@ -386,17 +397,14 @@ async function removeGeneratedWorkingState(
   cwd: string,
   reportPaths: string[],
   removed: RemoveRemoved[],
+  createdDirectories: Set<string>,
 ): Promise<void> {
   for (const relative of new Set(generatedWorkingPaths(reportPaths))) {
     await removeRegularFile(cwd, relative, removed);
   }
   for (const directory of [".tenet/cache", ".tenet/runs"]) {
-    await removePathTree(cwd, directory, removed);
+    await removePathTree(cwd, directory, removed, createdDirectories.has(directory));
   }
-  await removeEmptyManagedDirectories(
-    cwd,
-    managedDirectoryPaths,
-  );
 }
 
 export async function remove(options: RemoveOptions = {}): Promise<RemoveResult> {
@@ -428,7 +436,7 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
       if (link) await rm(link.filename, { force: true });
       else await rm(await confine(relative, cwd), { force: true });
     }
-    await removeGeneratedWorkingState(cwd, configuredReports, removed);
+    await removeGeneratedWorkingState(cwd, configuredReports, removed, new Set());
     return { removed, kept: [], reminder };
   }
   await validateRecordedPaths(
@@ -545,8 +553,8 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
   await rm(activePath, { force: true });
   await rm(pendingPath, { force: true });
   if (!keptCreated.has(".tenet/manifest.local.json")) await rm(localPath, { force: true });
-  await removeGeneratedWorkingState(cwd, configuredReports, removed);
   const createdDirectories = manifest["x-created-directories"] ?? [];
+  await removeGeneratedWorkingState(cwd, configuredReports, removed, new Set(createdDirectories));
   await removeEmptyManagedDirectories(cwd, createdDirectories);
   for (const root of retained) {
     if (!createdDirectories.includes(root) || await retainedRoot(cwd, root)) {
