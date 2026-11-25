@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { tmpRepo } from "../helpers/tmpRepo.ts";
 import { fakeGitHub } from "../helpers/fakeGitHub.ts";
 import { buildVerify, emptyDeps } from "./build.ts";
+import { packageVersion } from "../helpers/packageVersion.ts";
 
 buildVerify();
 const { record, recordAll, evaluationId } = await import("../../dist/verify/record.js");
@@ -180,7 +181,7 @@ test("recorder handles CI outcome rows, forks with a shared head, push, edits an
       const summaries: string[] = [];
       const pull = (number: number) => ({ number, head, base, body });
       const options = {
-        cwd: repo.path, now: () => new Date(at), version: "0.1.0-alpha.0", render: () => "card",
+        cwd: repo.path, now: () => new Date(at), version: packageVersion, render: () => "card",
         checkout: async () => ({ cwd: repo.path, stale: false, close: async () => {} }),
         policyBlob: async () => base, previousBase: async () => head, waitForRetry: async () => {},
         forge: {
@@ -286,7 +287,7 @@ async function recordFixture(t: import("node:test").TestContext, options: {
   };
   const result = await record({ kind: "workflow_run", repository, run, pulls: [1], base }, deps, {
     cwd: repo.path,
-    now: () => new Date(at), version: "0.1.0-alpha.0", render: renderCheckSummary,
+    now: () => new Date(at), version: packageVersion, render: renderCheckSummary,
     checkout: async () => ({ cwd: repo.path, stale: false, close: async () => {} }),
     policyBlob: async () => base, waitForRetry: async () => {},
     forge: {

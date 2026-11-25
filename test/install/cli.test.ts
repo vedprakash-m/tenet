@@ -9,6 +9,8 @@ import { cleanupTestRoot, tmpRepo } from "../helpers/tmpRepo.ts";
 import { init } from "../../dist/install/init.js";
 import { remove } from "../../dist/install/remove.js";
 
+import { packageVersion } from "../helpers/packageVersion.ts";
+
 const cli = fileURLToPath(new URL("../../dist/cli.js", import.meta.url));
 
 test.after(async () => {
@@ -320,7 +322,7 @@ test("local-host consent writes only Windows cmd shims and removes them", async 
           registry: {
             package: "@vedprakash-m/tenet",
             releases: {
-              "0.1.0-alpha.0": { integrity: `sha512-${"A".repeat(86)}==` },
+              [packageVersion]: { integrity: `sha512-${"A".repeat(86)}==` },
               "0.0.0": { integrity: `sha512-${"A".repeat(86)}==` },
             },
           },

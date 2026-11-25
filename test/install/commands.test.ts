@@ -7,6 +7,7 @@ import { makeDoctorCommand } from "../../dist/commands/doctor.js";
 import { makeInitCommand } from "../../dist/commands/init.js";
 import { makeRemoveCommand } from "../../dist/commands/remove.js";
 import { makeUpgradeCommand } from "../../dist/commands/upgrade.js";
+import { packageVersion } from "../helpers/packageVersion.ts";
 
 function writer() {
   let text = "";
@@ -241,7 +242,7 @@ test("init command turns policy failures into canonical findings", async () => {
 
 test("upgrade, remove and doctor wrappers preserve their public results", async () => {
   const upgradeValue = {
-    from: "0.1.0-alpha.0",
+    from: packageVersion,
     to: "0.1.0-alpha.1",
     changed: [{ path: "tenet.lock", action: "replaced" as const }],
   };
