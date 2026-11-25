@@ -6,6 +6,8 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { cleanupTestRoot, tmpRepo } from "../helpers/tmpRepo.ts";
+import { fakeTty } from "../helpers/fakeTty.ts";
+import { run as runCli } from "../../dist/cli.js";
 import { init } from "../../dist/install/init.js";
 import { remove } from "../../dist/install/remove.js";
 
@@ -237,7 +239,10 @@ test("offline empty-repo init seeds intent without template examples", async (t)
   assert.match(intent, /^## Vision$/m);
   assert.match(intent, /^\| ID \| Purpose or boundary \| Serves \/ Target \| Origin \|$/m);
   assert.doesNotMatch(intent, /^\| V-\d+ /m);
-  assert.match(intent, /<!-- Add your vision here, or run tenet onboard\. -->/);
+  assert.match(
+    intent,
+    /<!-- Add your vision here, or run tenet onboard\. -->\n\n\| ID \|/,
+  );
   const starter = await readFile(path.resolve("examples/starter/tenet/intent.md"), "utf8");
   const templateExamples = [
     "Checkout recovers cleanly from transient gateway timeouts for returning shoppers.",
@@ -255,7 +260,11 @@ test("offline empty-repo init seeds intent without template examples", async (t)
     }
     assert.match(seed, /^## Vision$/m);
     assert.match(seed, /^\| ID \| Purpose or boundary \| Serves \/ Target \| Origin \|$/m);
-    assert.match(seed, /<!-- Add your vision here, or run tenet onboard\. -->/);
+    assert.match(seed, /<!-- Add your vision here, or run tenet onboard\. -->\n\n\| ID \|/);
+    assert.doesNotMatch(
+      seed,
+      /\|---\|---\|---\|---\|\n<!-- Add your vision here, or run tenet onboard\. -->/,
+    );
     assert.doesNotMatch(seed, /^\| V-\d+ /m);
     assert.doesNotMatch(seed, /^\| V-\d+ .*\| asked \|$/m);
     assert.doesNotMatch(seed, /\{origin:\s*asked(?:;|\})/);
@@ -275,6 +284,52 @@ test("offline empty-repo init seeds intent without template examples", async (t)
     findings: Array<{ kind: string }>;
   };
   assert.deepEqual(result.findings.filter((finding) => finding.kind === "dead-path"), []);
+});
+
+test("interactive purpose seed keeps the Vision row in the table", async (t) => {
+  const repo = await tmpRepo("install-interactive-intent");
+  t.after(repo.cleanup);
+  repo.git(["config", "user.name", "Fixture Owner"]);
+  repo.git(["config", "user.email", "fixture@example.invalid"]);
+  const io = fakeTty("Recover checked-out work safely.\n\n\n");
+  const priorRegistry = process.env.TENET_TEST_REGISTRY_INTEGRITY;
+  process.env.TENET_TEST_REGISTRY_INTEGRITY = "not-found";
+  try {
+    const exit = await runCli(
+      ["--offline", "init"],
+      { cwd: repo.path, ...io, checkEnvironment: false },
+    );
+    assert.equal(exit, 0, io.stderr.text);
+  } finally {
+    if (priorRegistry === undefined) delete process.env.TENET_TEST_REGISTRY_INTEGRITY;
+    else process.env.TENET_TEST_REGISTRY_INTEGRITY = priorRegistry;
+  }
+
+  const intent = await readFile(path.join(repo.path, "tenet", "intent.md"), "utf8");
+  assert.match(
+    intent,
+    /\|---\|---\|---\|---\|\n\| V-1 \| Recover checked-out work safely\. \| Undecided \| asked \|/,
+  );
+  assert.doesNotMatch(
+    intent,
+    /\|---\|---\|---\|---\|\n<!-- Add your vision here, or run tenet onboard\. -->\n\| V-1 /,
+  );
+
+  const checked = run(repo.path, "check");
+  assert.equal(checked.child.status, 0, checked.child.stderr);
+  assert.equal(checked.envelope.ok, true);
+  assert.deepEqual(checked.envelope.errors, []);
+
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "install"]);
+  const inventory = run(repo.path, "onboard", "--inventory-only");
+  assert.equal(inventory.child.status, 0, inventory.child.stderr || inventory.child.stdout);
+  const onboard = run(repo.path, "onboard", "--card");
+  assert.equal(onboard.child.status, 0, onboard.child.stderr || onboard.child.stdout);
+  assert.match(
+    (onboard.envelope.result as { card: string }).card,
+    /Vision · 1 statement · 1 asked · 1 min/,
+  );
 });
 
 test("malformed integrity overrides return TN-LOCK-INVALID", async (t) => {
