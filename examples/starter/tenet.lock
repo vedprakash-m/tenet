@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package": "@vedprakash-m/tenet",
-  "version": "0.1.0-alpha.0",
-  "integrity": "sha512-+Xg6ziMtF/ZB64+5THZszCdNYl7yM+Ft2L0wtCvpl4qK4uHZMIK48vG8aOXawyCRA6gxuyqa1I/AZYXetmjn6Q==",
-  "kit_sha256": "5cc334a88a144e14d85a6fe727c63d37dbea7cdad7f30254b435f107712e56a0"
+  "version": "0.1.0",
+  "integrity": "sha512-zRvXQY2GThniOk5Lw7HiqRDxaEo5q77RHWPvG5YlN1m4nARr/wGZRlZg7TS7/EYJVcNpf7AKG0kxZv3p9/BMGQ==",
+  "kit_sha256": "f3cf5c979ce4dfaa7331151b01901423c0f0e36ef12f785862c46e1e9e14b987"
 }
