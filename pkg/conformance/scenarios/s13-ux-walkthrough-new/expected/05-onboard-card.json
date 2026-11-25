@@ -1,9 +1,9 @@
 {
   "ok": true,
   "command": "onboard",
-  "version": "0.0.0",
+  "version": "{{version}}",
   "result": {
-    "card": "### Tenet onboarding · drafted from 4f430df · nothing is in force until you bless it\nRead: tenet/intent.md, 0 source files, 0 test files, 0 instruction files · Skipped: none\n✓ all 0 citations checked against the code\nSections (about 2 minutes)\n  Vision · 1 statement · 1 asked · 1 min\n  Requirements · 1 statement · 1 asked · 1 min\n→ gh pr checkout <n>, then tenet bless in your terminal (or edit the files first)\n",
+    "card": "### Tenet onboarding · drafted from 4f430df · nothing is in force until you bless it\nRead: tenet/intent.md, 0 source files, 0 test files, 0 instruction files · Skipped: none\n✓ all 0 citations checked against the code\nSections (about 7 minutes)\n  _preamble · 2 statements · 2 unlabelled · 1 min\n  Vision · 1 statement · 1 asked · 1 min\n  Requirements · 2 statements · 2 asked · 1 min\n  Design · 1 statement · 1 unlabelled · 1 min\n  Experience · 1 statement · 1 unlabelled · 1 min\n  Plan · 1 statement · 1 unlabelled · 1 min\n  Completeness checklist · 1 statement · 1 unlabelled · 1 min\n→ gh pr checkout <n>, then tenet bless in your terminal (or edit the files first)\n",
     "drafted_at_rev": "4f430df3adc84ccf75c5be93cc84cc035475f2dc"
   },
   "errors": []

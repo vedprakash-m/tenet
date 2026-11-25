@@ -1,32 +1,38 @@
 {
   "ok": true,
   "command": "doctor",
-  "version": "0.0.0",
+  "version": "{{version}}",
   "result": {
     "checks": [
       {
         "name": "node",
-        "ok": true
+        "ok": true,
+        "detail": "{{any:string}}"
       },
       {
         "name": "git",
-        "ok": true
+        "ok": true,
+        "detail": "{{any:string}}"
       },
       {
         "name": "ssh",
-        "ok": true
+        "ok": true,
+        "detail": "{{any:string}}"
       },
       {
         "name": "gh",
-        "ok": true
+        "ok": true,
+        "detail": "{{any:string}}"
       },
       {
         "name": "lock",
-        "ok": true
+        "ok": true,
+        "detail": "tenet.lock and kit match"
       },
       {
         "name": "workflows",
-        "ok": true
+        "ok": true,
+        "detail": "No workflows configured (ci_mode none)"
       }
     ]
   },
