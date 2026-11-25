@@ -35,7 +35,7 @@ git add -A
 git commit -m "Set up Tenet"
 ~~~
 
-During init, answer what the project is for and choose a project kind. Tenet seeds `tenet/intent.md`. Make the first commit before running onboarding. If you want GitHub Actions for this project, create the GitHub repository and set its remote before running init.
+During init, answer what the project is for and choose a project kind. Tenet seeds `tenet/intent.md`. Review the seed with your agent and replace any example targets before blessing. Make the first commit before running onboarding. If you want GitHub Actions for this project, create the GitHub repository and set its remote before running init.
 
 ## Draft and review
 
