@@ -44,6 +44,7 @@ import { localIntegrityWarning, releaseIntegrity } from "./integrity.js";
 
 export type WritePlanOptions = PreflightOptions & {
   force?: boolean;
+  command?: "init" | "upgrade";
 };
 
 export type ApplyPlanOptions = {
@@ -654,7 +655,7 @@ export async function planWriteSet(
   }
   const cwd = path.resolve(options.cwd ?? preflight.facts.repository.cwd);
   const plan = clonePlan(preflight.plan);
-  const releaseInfo = await releaseIntegrity(options);
+  const releaseInfo = await releaseIntegrity(options, {}, options.command ?? "init");
   const kitPath = path.resolve(options.environment?.kitPath ?? installedKitPath());
   const allKitFiles = await kitFiles(kitPath);
   const digest = await kitDigest(allKitFiles);
@@ -704,21 +705,28 @@ export async function planWriteSet(
     const template = await readFile(path.join(kitPath, "templates", "intent.md"), "utf8");
     const project = path.basename(cwd);
     const owner = preflight.facts.owners[0]?.name ?? "Project Owner";
-    const purpose = preflight.facts.purpose ?? "Undecided · edit or run tenet onboard";
+    const purpose = options.answers?.purpose;
     files.set("tenet/intent.md", {
       path: "tenet/intent.md",
       content: `${seededIntent(template
         .replaceAll("<owner>", owner)
-        .replaceAll("<Project>", project)
-        .replace("Checkout recovers cleanly from transient gateway timeouts for returning shoppers.",
-          purpose))
+        .replaceAll("<Project>", project), purpose)
         .replace(/\r\n/g, "\n")
         .replace(/\n+$/, "")}\n`,
     });
   }
 
-  function seededIntent(source: string): string {
+  function seededIntent(source: string, purpose: string | undefined): string {
+    const vision = [
+      "<!-- Purpose, primary users, north star, value table, boundaries. Never name tools, files or vendors here. -->",
+      "",
+      "| ID | Purpose or boundary | Serves / Target | Origin |",
+      "|---|---|---|---|",
+      "<!-- Add your vision here, or run tenet onboard. -->",
+      ...(purpose ? [`| V-1 | ${purpose} | Undecided | asked |`] : []),
+    ].join("\n");
     const emptySections = [
+      ["vision", vision],
       ["requirements", "<!-- Add only requirements supplied by the Owner. -->"],
       ["design", "<!-- Add grounded design facts after the Owner supplies requirements. -->"],
       ["experience", "<!-- Add grounded experience facts after the Owner supplies them. -->"],
@@ -793,9 +801,13 @@ export async function planWriteSet(
     "x-created-directories": [...new Set([
       ...(priorManifest?.["x-created-directories"] ?? []),
       ...await createdDirectories(cwd, [
-      ...plan.created,
-      ...plan.blocks.map((block) => block.path),
-      ...plan.keys.map((key) => key.path),
+        ...plan.created,
+        ...plan.blocks.map((block) => block.path),
+        ...plan.keys.map((key) => key.path),
+        ".tenet/onboard/inventory.json",
+        ".tenet/reports/test.xml",
+        ".tenet/cache/generated",
+        ".tenet/runs/generated",
       ]),
     ])].sort(compareUtf16),
   };

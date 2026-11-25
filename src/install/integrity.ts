@@ -25,6 +25,25 @@ function invalid(detail: string): never {
   });
 }
 
+function registryUnavailable(
+  packageName: string,
+  version: string,
+  detail: string,
+  command: "init" | "upgrade",
+): never {
+  const words = message("TN-ENV-REGISTRY", {
+    package: packageName,
+    version,
+    detail,
+    command,
+  });
+  const finding = fail("TN-ENV-REGISTRY", words.message, words.fix);
+  throw Object.assign(new Error(words.message), {
+    code: "TN-ENV-REGISTRY",
+    finding,
+  });
+}
+
 function validateIntegrity(value: unknown, source: string): string {
   if (typeof value !== "string" || !integrityPattern.test(value)) {
     invalid(`${source} did not supply a valid sha512 integrity value.`);
@@ -45,6 +64,10 @@ async function installedPackage(): Promise<{ package: string; version: string; r
     invalid(`The installed package metadata at ${source} is missing a package name or version.`);
   }
   return { package: value.name, version: value.version, root };
+}
+
+export async function installedPackageVersion(): Promise<string> {
+  return (await installedPackage()).version;
 }
 
 async function listFiles(root: string, relative = ""): Promise<string[]> {
@@ -88,30 +111,59 @@ export async function installedLocalIntegrity(): Promise<string> {
   return localIntegrity(installed.root);
 }
 
-async function registryIntegrity(packageName: string, version: string): Promise<string | null> {
+type NpmViewResult = {
+  status: number | null;
+  stdout: string;
+  stderr: string;
+};
+
+type NpmViewRunner = (
+  args: string[],
+  options: { cwd: string },
+) => Promise<NpmViewResult>;
+
+async function runNpmView(args: string[], options: { cwd: string }): Promise<NpmViewResult> {
   const executable = process.platform === "win32" ? "npm.cmd" : "npm";
-  const child = spawn(executable, [
-    "view",
-    `${packageName}@${version}`,
-    "dist.integrity",
-    "--json",
-  ], { stdio: ["ignore", "pipe", "pipe"], windowsHide: true, shell: process.platform === "win32" });
+  const child = spawn(executable, args, {
+    cwd: options.cwd,
+    stdio: ["ignore", "pipe", "pipe"],
+    windowsHide: true,
+    shell: process.platform === "win32",
+  });
   let stdout = "";
   let stderr = "";
   child.stdout.setEncoding("utf8").on("data", (chunk: string) => { stdout += chunk; });
   child.stderr.setEncoding("utf8").on("data", (chunk: string) => { stderr += chunk; });
-  let status: number | null;
-  try {
-    status = await new Promise<number | null>((resolve, reject) => {
-      child.on("error", reject);
-      child.on("close", resolve);
-    });
-  } catch (error) {
-    invalid(`Registry lookup failed for ${packageName}@${version}: ${(error as Error).message}.`);
-  }
+  const status = await new Promise<number | null>((resolve, reject) => {
+    child.on("error", reject);
+    child.on("close", resolve);
+  });
+  return { status, stdout, stderr };
+}
+
+async function registryIntegrity(
+  packageName: string,
+  version: string,
+  cwd: string,
+  run: NpmViewRunner = runNpmView,
+  command: "init" | "upgrade" = "init",
+): Promise<string | null> {
+  const args = [
+    "view",
+    `${packageName}@${version}`,
+    "dist.integrity",
+    "--json",
+    "--registry=https://registry.npmjs.org/",
+  ];
+  const { status, stdout, stderr } = await run(args, { cwd });
   if (status !== 0) {
     if (/E404|404 Not Found|is not in this registry|No match found/i.test(`${stdout}\n${stderr}`)) return null;
-    invalid(`Registry lookup failed for ${packageName}@${version}: ${stderr.trim() || `npm exited ${String(status)}`}.`);
+    registryUnavailable(
+      packageName,
+      version,
+      stderr.trim() || `npm exited ${String(status)}`,
+      command,
+    );
   }
   let value: unknown;
   try {
@@ -129,11 +181,13 @@ export function localIntegrityWarning(packageName: string, version: string): str
 
 type IntegrityDependencies = {
   registry?: (packageName: string, version: string) => Promise<string | null>;
+  npmView?: NpmViewRunner;
 };
 
 export async function releaseIntegrity(
   options: PreflightOptions,
   dependencies: IntegrityDependencies = {},
+  command: "init" | "upgrade" = "init",
 ): Promise<ReleaseIntegrity> {
   const installed = await installedPackage();
   const environment = options.environment ?? {};
@@ -159,13 +213,31 @@ export async function releaseIntegrity(
   let registry: string | null = null;
   if (!local) {
     const injected = process.env.TENET_TEST_REGISTRY_INTEGRITY;
-    const supplied = injected === "not-found"
-      ? null
-      : injected !== undefined
-        ? injected
-        : dependencies.registry
-          ? await dependencies.registry(packageName, version)
-          : await registryIntegrity(packageName, version);
+    const injectedError = process.env.TENET_TEST_REGISTRY_ERROR;
+    let supplied: string | null;
+    try {
+      if (injectedError !== undefined) throw new Error(injectedError);
+      supplied = injected === "not-found"
+        ? null
+        : injected !== undefined
+          ? injected
+          : dependencies.registry
+            ? await dependencies.registry(packageName, version)
+            : await registryIntegrity(
+              packageName,
+              version,
+              installed.root,
+              dependencies.npmView,
+              command,
+            );
+    } catch (error) {
+      if (["TN-LOCK-INVALID", "TN-ENV-REGISTRY"].includes(
+        (error as { code?: string }).code ?? "",
+      )) {
+        throw error;
+      }
+      registryUnavailable(packageName, version, (error as Error).message, command);
+    }
     registry = supplied === null
       ? null
       : validateIntegrity(supplied, "Injected registry metadata");

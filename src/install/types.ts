@@ -313,6 +313,7 @@ export type DoctorResult = {
 export type DoctorEvaluation = DoctorResult & {
   findings: Finding[];
   exitCode: 0 | 1 | 3;
+  notices?: string[];
 };
 
 export type DoctorTool = "node" | "git" | "ssh" | "gh";

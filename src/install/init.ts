@@ -52,7 +52,7 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
       : {}),
   });
   if (resumed) return { ...resumed, findings: [...result.findings, ...resumed.findings] };
-  const plan = await planWriteSet(result, options);
+  const plan = await planWriteSet(result, { ...options, command: "init" });
   const findings = [
     ...result.findings,
     ...(plan.integrity_warning

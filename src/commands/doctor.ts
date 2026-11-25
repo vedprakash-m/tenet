@@ -27,6 +27,9 @@ export function makeDoctorCommand(dependencies: DoctorDependencies = {}): Comman
             .map((check) => `${check.ok ? "✓" : "×"} ${check.name}: ${check.detail}`)
             .join("\n")}\n`);
         }
+        for (const notice of evaluation.notices ?? []) {
+          context.stderr.write(`Warning: ${notice}\n`);
+        }
         return {
           result: context.json ? { checks: evaluation.checks } : null,
           findings: evaluation.findings,

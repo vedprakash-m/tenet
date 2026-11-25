@@ -20,24 +20,23 @@ sections:
 
 | ID | Purpose or boundary | Serves / Target | Origin |
 |---|---|---|---|
-| V-1 | Undecided · edit or run tenet onboard | ≤1% checkout timeout failure | asked |
+<!-- Add your vision here, or run tenet onboard. -->
 
 ## Requirements
 
-- R-1 A payment request that times out is retried at most once, never twice. {origin: asked; serves: V-1}
-- R-2 Card numbers and verification codes are never written to logs or error messages. {origin: asked; serves: V-1; scope: global}
+<!-- Add only requirements supplied by the Owner. -->
 
 ## Design
 
-- Requests enter `src/checkout/gateway.ts`, use `src/checkout/retry.ts` for timeout handling, and emit structured events without card payloads.
+<!-- Add grounded design facts after the Owner supplies requirements. -->
 
 ## Experience
 
-- Checkout shows a single waiting indicator during a retry and displays one plain message when payment cannot complete.
+<!-- Add grounded experience facts after the Owner supplies them. -->
 
 ## Plan
 
-- First slice: implement single-retry timeout handling (`R-1`) and verify no card data is logged (`R-2`).
+<!-- Add plan items only from supplied requirements. -->
 
 ## Conflicts
 
