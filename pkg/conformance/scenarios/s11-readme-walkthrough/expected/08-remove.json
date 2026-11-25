@@ -25,6 +25,14 @@
         "kind": "file"
       },
       {
+        "path": ".tenet/onboard/assignment.json",
+        "kind": "file"
+      },
+      {
+        "path": ".tenet/onboard/inventory.json",
+        "kind": "file"
+      },
+      {
         "path": "AGENTS.md",
         "kind": "file"
       },
