@@ -73,12 +73,27 @@ function generatedRules(blobs: Map<string, Buffer>): Array<{ match: (file: strin
   return rules;
 }
 
-function kindFor(file: string, text: string): Kind {
+function installedFiles(blobs: Map<string, Buffer>): Map<string, string> {
+  const manifest = object(parsed(blobs.get(".tenet/manifest.json")?.toString("utf8") ?? ""));
+  const created = new Map<string, string>();
+  if (manifest.schema_version !== 1 || !Array.isArray(manifest.created)) return created;
+  for (const entry of manifest.created) {
+    const { path: filename, sha256: digest } = object(entry);
+    if (typeof filename === "string" && typeof digest === "string") created.set(filename, digest);
+  }
+  return created;
+}
+
+function kindFor(file: string, text: string, installed: boolean): Kind {
   const base = path.posix.basename(file);
   if (base === "AGENTS.md") {
-    if (text.replace(/<!-- tenet:begin -->[\s\S]*?<!-- tenet:end -->/g, "").trim()) return "instructions";
+    if (text.replace(/<!-- tenet:begin(?: v[^\s]+)? -->[\s\S]*?<!-- tenet:end -->/g, "").trim()) return "instructions";
     return "config";
   }
+  // The seed intent remains a specification. Unchanged install-owned Markdown is setup, not project guidance.
+  if (file !== "tenet/intent.md" && (
+      /(?:^|\/)(?:\.agents|\.claude)\/skills\/tenet-[^/]+\/SKILL\.md$/.test(file) ||
+      (installed && /\.mdx?$/i.test(file)))) return "config";
   if (["CLAUDE.md", "GEMINI.md", ".windsurfrules"].includes(base) ||
       file === ".github/copilot-instructions.md" || file.startsWith(".cursor/rules/")) return "instructions";
   if (workflowFile.test(file)) return "ci";
@@ -116,11 +131,13 @@ async function collect(snapshot: RepositorySnapshot, policy: TenetYaml): Promise
     if (reason) skipped.push({ path: file.path, reason });
     else retained.push(file);
   }
+  const installed = installedFiles(blobs);
   const files = retained.map(({ path: filename }) => {
     const bytes = blobs.get(filename) ?? Buffer.alloc(0);
     const text = bytes.toString("utf8");
     const lines = text ? text.split("\n").length - Number(text.endsWith("\n")) : 0;
-    return { path: filename, kind: kindFor(filename, text), sha256: sha256(bytes), lines, text };
+    const digest = sha256(bytes);
+    return { path: filename, kind: kindFor(filename, text, installed.get(filename) === digest), sha256: digest, lines, text };
   });
   return { files, skipped };
 }

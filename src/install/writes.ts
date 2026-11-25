@@ -707,18 +707,34 @@ export async function planWriteSet(
     const purpose = preflight.facts.purpose ?? "Undecided · edit or run tenet onboard";
     files.set("tenet/intent.md", {
       path: "tenet/intent.md",
-      content: `${template
+      content: `${seededIntent(template
         .replaceAll("<owner>", owner)
         .replaceAll("<Project>", project)
         .replace("Checkout recovers cleanly from transient gateway timeouts for returning shoppers.",
-          purpose)
-        .replace(
-          "Requests enter `src/checkout/gateway.ts`, use `src/checkout/retry.ts` for timeout handling, and emit structured events without card payloads.",
-          "Requests use bounded timeout handling and emit structured events without card payloads.",
-        )
+          purpose))
         .replace(/\r\n/g, "\n")
         .replace(/\n+$/, "")}\n`,
     });
+  }
+
+  function seededIntent(source: string): string {
+    const emptySections = [
+      ["requirements", "<!-- Add only requirements supplied by the Owner. -->"],
+      ["design", "<!-- Add grounded design facts after the Owner supplies requirements. -->"],
+      ["experience", "<!-- Add grounded experience facts after the Owner supplies them. -->"],
+      ["plan", "<!-- Add plan items only from supplied requirements. -->"],
+    ] as const;
+    let output = source;
+    for (const [section, comment] of emptySections) {
+      const heading = `## ${section[0]?.toUpperCase()}${section.slice(1)}`;
+      const start = output.indexOf(heading);
+      if (start < 0) continue;
+      const body = start + heading.length;
+      const next = output.indexOf("\n## ", body);
+      if (next < 0) throw new Error(`Intent template section ${section} has no following heading.`);
+      output = `${output.slice(0, body)}\n\n${comment}\n${output.slice(next)}`;
+    }
+    return output;
   }
   if (options.vendor) {
     for (const file of allKitFiles) files.set(`.tenet/kit/${file.path}`, {

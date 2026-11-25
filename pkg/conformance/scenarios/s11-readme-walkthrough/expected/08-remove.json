@@ -1,7 +1,7 @@
 {
   "ok": true,
   "command": "remove",
-  "version": "0.0.0",
+  "version": "{{version}}",
   "result": {
     "removed": [
       {
@@ -22,6 +22,14 @@
       },
       {
         "path": ".gitignore",
+        "kind": "file"
+      },
+      {
+        "path": ".tenet/onboard/assignment.json",
+        "kind": "file"
+      },
+      {
+        "path": ".tenet/onboard/inventory.json",
         "kind": "file"
       },
       {

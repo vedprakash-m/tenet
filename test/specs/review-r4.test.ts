@@ -82,6 +82,50 @@ test("r4 B3 metadata markers outside braces remain malformed", () => {
   ]);
 });
 
+test("trailing metadata is parsed outside inline code only", () => {
+  const inline = parseRequirement(
+    "- R-1 Return `{path, reason}` from the parser.",
+  );
+  assert.equal("code" in inline, false);
+  assert.equal(inline.text, "Return `{path, reason}` from the parser.");
+  assert.equal(inline.origin, null);
+
+  const mid = parseRequirement(
+    "- R-2 Keep `{path: reason}` in prose before continuing.",
+  );
+  assert.equal("code" in mid, false);
+  assert.equal(mid.text, "Keep `{path: reason}` in prose before continuing.");
+  assert.equal(mid.origin, null);
+
+  const trailing = parseRequirement(
+    "- R-3 Keep shape stable. {origin: asked; scope: global}",
+  );
+  assert.equal("code" in trailing, false);
+  assert.equal(trailing.text, "Keep shape stable.");
+  assert.equal(trailing.origin, "asked");
+  assert.equal(trailing.scope, "global");
+
+  const malformed = parseRequirement(
+    "- R-4 Keep shape stable. {origin: asked",
+  );
+  assert.equal("code" in malformed, true);
+  assert.equal(malformed.code, "TN-SPEC-REQ-META");
+});
+
+test("technical prose braces do not turn non-requirement bullets into missing IDs", () => {
+  const parsed = parseDoc("intent.md", [
+    "---",
+    "tenet: {spec: 1, doc: design}",
+    "sections: {design: {state: draft}}",
+    "---",
+    "## Design",
+    "- Return `{path, reason}` without changing the shape.",
+    "- Keep {path: reason} in the explanation.",
+    "- Describe the returned shape as {path, reason}",
+  ].join("\n"));
+  assert.deepEqual(parsed.problems, []);
+});
+
 test("r4 B4 malformed citations use syntax-first classification and wording", () => {
   const doc = parseDoc("intent.md", specification([
     "- R-1 Bad doc. {origin: asked; cites: doc: guide.md#bad slug:5}",

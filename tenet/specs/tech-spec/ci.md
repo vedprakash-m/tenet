@@ -144,7 +144,7 @@ jobs:
       - run: npx -y @vedprakash-m/tenet@<locked> verify --record
 ```
 
-Both install the locked version with `npm install --no-save` and check it against the lock's `integrity` (contracts §1; on `pull_request` / PR `workflow_run` from the PR `base.sha`, and on `push` / push `workflow_run` from `event.before` when reachable, else the default-branch checkout `HEAD`).
+Both read `tenet.lock` from target (`base.sha`, else `event.before` or default-branch `HEAD`), install with `npm install --no-save --ignore-scripts` (for `x-integrity-source: "local"`, via registry, workspace `node_modules`, or repo/release `.tgz`), verify tarball `sha512` (registry) or installed-file `sha512` (local), and mark local locks advisory (`verify`/`assure` refuse).
 
 **`verify --record` steps.**
 1. **Find the change.**

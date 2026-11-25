@@ -27,7 +27,7 @@
       {
         "name": "lock",
         "ok": true,
-        "detail": "tenet.lock and kit match"
+        "detail": "tenet.lock and kit match (local integrity; CI treats it as advisory until the package is published and re-pinned with `tenet upgrade`)"
       },
       {
         "name": "workflows",

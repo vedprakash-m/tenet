@@ -4,9 +4,9 @@ Read: tenet/intent.md, 0 source files, 0 test files, 0 instruction files · Skip
 Sections (about 7 minutes)
   _preamble · 2 statements · 2 unlabelled · 1 min
   Vision · 1 statement · 1 asked · 1 min
-  Requirements · 2 statements · 2 asked · 1 min
-  Design · 1 statement · 1 unlabelled · 1 min
-  Experience · 1 statement · 1 unlabelled · 1 min
-  Plan · 1 statement · 1 unlabelled · 1 min
+  Requirements · 0 statements · 1 min
+  Design · 0 statements · 1 min
+  Experience · 0 statements · 1 min
+  Plan · 0 statements · 1 min
   Completeness checklist · 1 statement · 1 unlabelled · 1 min
 → gh pr checkout <n>, then tenet bless in your terminal (or edit the files first)

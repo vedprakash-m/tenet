@@ -59,7 +59,13 @@ async function processTools(scratch, runProcess) {
   const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
     !blocked.has(key.toUpperCase()) && !/^GIT_|^npm_|^INIT_CWD$|^NODE_OPTIONS$/i.test(key)));
   const launch = (command, args, cwd, options = {}) => runProcess(command, args, cwd, {
-    ...options, env: { ...inherited, ...gitEnv, ...options.env, ...isolated },
+    ...options, env: {
+      ...inherited,
+      ...gitEnv,
+      ...options.env,
+      ...isolated,
+      TENET_TEST_REGISTRY_INTEGRITY: "not-found",
+    },
   });
   const git = async (cwd, ...args) => requireExit(await launch("git", args, cwd), `git ${args[0]}`);
   const tenet = (cwd, ...args) => launch(process.execPath, [cli, ...args], cwd);

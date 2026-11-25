@@ -26,6 +26,9 @@ const compile = spawnSync(process.execPath, [
 assert.equal(compile.status, 0, compile.stderr || compile.stdout);
 
 const install = await import(pathToFileURL(path.join(output, "install", "index.js")).href);
+const { installedLocalIntegrity } = await import(
+  pathToFileURL(path.join(output, "install", "integrity.js")).href
+);
 const { verifyLock } = await import(pathToFileURL(path.join(output, "policy", "index.js")).href);
 const casesRoot = path.resolve("pkg/conformance/install");
 const kitPath = path.resolve("kit");
@@ -199,6 +202,75 @@ test("doctor treats a missing gh executable as an optional success", async (t) =
     ok: true,
     detail: "gh CLI not found (optional)",
   });
+});
+
+test("doctor reports matching local integrity as an advisory success", async (t) => {
+  const repo = await tmpRepo("doctor-local-integrity");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
+  const integrity = await installedLocalIntegrity();
+  await repo.write("tenet.lock", JSON.stringify({
+    schema_version: 1,
+    package: "@vedprakash-m/tenet",
+    version: "0.1.0-alpha.0",
+    integrity,
+    "x-integrity-source": "local",
+    kit_sha256: "a".repeat(64),
+  }, null, 2));
+  const result = await install.doctorEvaluation({
+    cwd: repo.path,
+    environment: environment(),
+    verifyLock: async () => ({
+      ok: true,
+      path: kitPath,
+      sha256: "a".repeat(64),
+      skipped: false,
+      lock_sha256: "a".repeat(64),
+    }),
+  });
+  assert.deepEqual(result.checks[4], {
+    name: "lock",
+    ok: true,
+    detail:
+      "tenet.lock and kit match (local integrity; CI treats it as advisory until the package is published and re-pinned with `tenet upgrade`)",
+  });
+  assert.equal(result.exitCode, 0);
+  assert.equal(result.findings.length, 0);
+});
+
+test("doctor rejects mismatched local integrity", async (t) => {
+  const repo = await tmpRepo("doctor-local-integrity-mismatch");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
+  const integrity = await installedLocalIntegrity();
+  await repo.write("tenet.lock", JSON.stringify({
+    schema_version: 1,
+    package: "@vedprakash-m/tenet",
+    version: "0.1.0-alpha.0",
+    integrity: `${integrity.slice(0, 7)}${integrity[7] === "A" ? "B" : "A"}${integrity.slice(8)}`,
+    "x-integrity-source": "local",
+    kit_sha256: "a".repeat(64),
+  }, null, 2));
+  const result = await install.doctorEvaluation({
+    cwd: repo.path,
+    environment: environment(),
+    verifyLock: async () => ({
+      ok: true,
+      path: kitPath,
+      sha256: "a".repeat(64),
+      skipped: false,
+      lock_sha256: "a".repeat(64),
+    }),
+  });
+
+  assert.equal(result.checks[4].ok, false);
+  assert.equal(
+    result.checks[4].detail,
+    "Lock file tenet.lock is invalid: installed package integrity does not match the local integrity recorded in tenet.lock.",
+  );
+  assert.equal(result.exitCode, 1);
+  assert.equal(result.findings.filter((finding: { code: string }) =>
+    finding.code === "TN-LOCK-INVALID").length, 1);
 });
 
 test("doctor parses OpenSSH for Windows versions", async (t) => {
