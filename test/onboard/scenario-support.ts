@@ -10,6 +10,7 @@ export async function isolateScenarioGit(scratch: string): Promise<() => void> {
   const overrides = {
     GIT_CONFIG_GLOBAL: config,
     GIT_CONFIG_NOSYSTEM: "1",
+    GIT_CONFIG: undefined,
     GIT_CONFIG_COUNT: undefined,
     GIT_CONFIG_PARAMETERS: undefined,
   };

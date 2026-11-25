@@ -16,9 +16,11 @@ test("scenario init uses the scratch Git owner and restores inherited config", a
   await mkdir(repo);
   execFileSync("git", ["init", "-q"], { cwd: repo });
   const inherited = process.env.GIT_CONFIG_GLOBAL;
+  const inheritedConfig = process.env.GIT_CONFIG;
   const host = path.join(scratch, "host-gitconfig");
   await writeFile(host, "[user]\n\tname = Host Owner\n\temail = host@example.invalid\n");
   process.env.GIT_CONFIG_GLOBAL = host;
+  process.env.GIT_CONFIG = host;
   try {
     const restore = await isolateScenarioGit(scratch);
     try {
@@ -37,9 +39,12 @@ test("scenario init uses the scratch Git owner and restores inherited config", a
       restore();
     }
     assert.equal(process.env.GIT_CONFIG_GLOBAL, host);
+    assert.equal(process.env.GIT_CONFIG, host);
   } finally {
     if (inherited === undefined) delete process.env.GIT_CONFIG_GLOBAL;
     else process.env.GIT_CONFIG_GLOBAL = inherited;
+    if (inheritedConfig === undefined) delete process.env.GIT_CONFIG;
+    else process.env.GIT_CONFIG = inheritedConfig;
   }
 });
 
