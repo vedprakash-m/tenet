@@ -23,6 +23,7 @@ import type { RecordsStore } from "../../dist/verify/records.js";
 import { board } from "../../dist/views/specs-board.js";
 import { onboard } from "../../dist/onboard/assignment.js";
 import { fakeTty } from "../helpers/fakeTty.ts";
+import { assertGolden, isolateScenarioGit } from "./scenario-support.ts";
 
 const suite = fileURLToPath(new URL("../../pkg/conformance/scenarios/", import.meta.url));
 const cli = fileURLToPath(new URL("../../dist/cli.js", import.meta.url));
@@ -30,10 +31,7 @@ const { version: packageVersion } = JSON.parse(await readFile(new URL("../../pac
 assert.ok(typeof packageVersion === "string" && packageVersion.length > 0, "Missing package version");
 const at = "2026-11-23T12:00:00Z";
 const now = () => new Date(at);
-const gitEnv = {
-  ...process.env,
-  GIT_CONFIG_GLOBAL: process.platform === "win32" ? "NUL" : "/dev/null",
-  GIT_CONFIG_NOSYSTEM: "1",
+const commitEnv = {
   GIT_AUTHOR_NAME: "Tenet Scenario",
   GIT_AUTHOR_EMAIL: "scenario@example.invalid",
   GIT_COMMITTER_NAME: "Tenet Scenario",
@@ -41,6 +39,12 @@ const gitEnv = {
   GIT_AUTHOR_DATE: at,
   GIT_COMMITTER_DATE: at,
 };
+
+let placeholderUses = 0;
+function compareGolden(actual: unknown, expected: unknown): void {
+  assertGolden(actual, expected, () => { placeholderUses += 1; });
+}
+test.after(() => console.log(`Scenario golden placeholder uses: ${placeholderUses}`));
 type Golden = { expectedJson?: string; expectedCard?: string; expectedLogEntry?: string; expectedTree?: "before" };
 type Claim = {
   id: string; applicable: boolean; kind: string;
@@ -70,7 +74,7 @@ type VerifyStep = Extract<Step, { kind: "verify" }>;
 
 function git(cwd: string, ...args: string[]) {
   const child = spawnSync("git", ["-c", "core.autocrlf=false", "-c", "core.fsmonitor=false", ...args], {
-    cwd, env: gitEnv, encoding: "utf8", windowsHide: true,
+    cwd, env: { ...process.env, ...commitEnv }, encoding: "utf8", windowsHide: true,
   });
   assert.ifError(child.error);
   assert.equal(child.status, 0, `git ${args.join(" ")}: ${child.stderr || child.stdout}`);
@@ -245,7 +249,7 @@ async function checkVerification(
     assert.equal(event.merged, false);
     assert.deepEqual(result, []);
     if (step.assertRecordsTipUnchanged) assert.deepEqual(records, original);
-    assert.deepEqual({ evaluated: false, wrote: false, reason: "pr-closed-unmerged", recordsUnchanged: records.tip === original.tip }, expected);
+    compareGolden({ evaluated: false, wrote: false, reason: "pr-closed-unmerged", recordsUnchanged: records.tip === original.tip }, expected);
     return;
   }
   assert.equal(result.length, 1);
@@ -290,7 +294,7 @@ async function checkVerification(
   if (fixtureId === golden.card.evaluation_id) {
     refs.set(fixtureId, evaluationId({ ...tuple, tested_commit: head, base }));
   }
-  assert.deepEqual(actual, replaceRefs(expected, refs));
+  compareGolden(actual, replaceRefs(expected, refs));
   if (goldenCard !== undefined) {
     const shortRefs = new Map([...refs].filter(([fixture]) => fixture.length === 40).map(([fixture, oid]) => [fixture.slice(0, 6), oid.slice(0, 6)]));
     assert.equal(renderCard(actual.card), replaceRefs(goldenCard, shortRefs));
@@ -322,7 +326,7 @@ syncBuiltinESMExports();
 
 function faultRun(step: CliStep, cwd: string, trace: string, stop = 0) {
   const child = spawnSync(process.execPath, ["--import", `data:text/javascript,${encodeURIComponent(faultModule)}`, cli, ...step.args], {
-    cwd, env: { ...gitEnv, TENET_SCENARIO_WRITE_TRACE: trace, TENET_SCENARIO_INTERRUPT: String(stop) },
+    cwd, env: { ...process.env, ...commitEnv, TENET_SCENARIO_WRITE_TRACE: trace, TENET_SCENARIO_INTERRUPT: String(stop) },
     encoding: "utf8", input: step.fakeTty?.join("\n"), windowsHide: true,
   });
   assert.ifError(child.error);
@@ -353,10 +357,10 @@ async function checkInterruptedInstall(
     assert.equal(partial.status, 97, checkpoint);
     const pendingManifest = ".tenet/manifest.pending.json";
     JSON.parse(await readFile(path.join(interrupted, pendingManifest), "utf8"));
-    assert.deepEqual({ interrupted: true, pendingManifest }, expected);
+    compareGolden({ interrupted: true, pendingManifest }, expected);
     const result = await cliStep(resume, interrupted);
     assert.equal(result.exit, resume.expectExitCode ?? 0, result.stderr);
-    assert.deepEqual(result.json, await readGolden(resume.expectedJson));
+    compareGolden(result.json, await readGolden(resume.expectedJson));
     assert.deepEqual(await tree(interrupted), cleanTree, checkpoint);
   }
 }
@@ -375,6 +379,7 @@ for (const name of names) {
     assert.equal(scenario.scenario, name);
     const scratch = await mkdtemp(path.join(os.tmpdir(), "tenet-scenario-"));
     t.after(() => rm(scratch, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
+    t.after(await isolateScenarioGit(scratch));
     let root = path.join(scratch, "repo");
     await fixtureRepo(source, root, scenario.steps[0]?.kind === "git-squash-shallow-clone");
     const refs = new Map<string, string>();
@@ -424,7 +429,7 @@ for (const name of names) {
               const log = await readFile(path.join(cwd, "tenet/blessed/log.jsonl"), "utf8");
               const last = log.trim().split("\n").at(-1);
               assert.ok(last, "No blessing action was logged");
-              assert.deepEqual(JSON.parse(last), await readGolden(step.expectedLogEntry));
+              compareGolden(JSON.parse(last), await readGolden(step.expectedLogEntry));
             }
             if (step.expectedTree === "before") assert.deepEqual(await tree(cwd), await tree(source));
             if (step.args[0] === "onboard" && step.args.includes("--card")) {
@@ -466,7 +471,7 @@ for (const name of names) {
           if (actual && typeof actual === "object" && /"(revision|drafted_at_rev|main)"/.test(JSON.stringify(expected))) {
             bindRevisionFields(expected, actual, git(cwd, "rev-parse", "HEAD"), refs);
           }
-          assert.deepEqual(actual, replaceRefs(expected, expectedRefs));
+          compareGolden(actual, replaceRefs(expected, expectedRefs));
         }
       } catch (error) {
         throw new Error(`${step.id} (${step.kind}): ${error instanceof Error ? error.message : String(error)}`, { cause: error });
