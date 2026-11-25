@@ -319,7 +319,7 @@ for (const caseName of positiveCases) {
         "utf8",
       );
       assert.ok(workflow.startsWith(original));
-      assert.match(workflow, /# tenet:begin v0\.1\.0-alpha\.0/);
+      assert.ok(workflow.includes(`# tenet:begin v${packageVersion}\n`));
       assert.match(workflow, /outputFile\.junit=artifacts\/unit\.xml/);
     }
     if (caseName === "p04-node-matrix") {
