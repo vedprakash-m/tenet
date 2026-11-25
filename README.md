@@ -6,7 +6,7 @@
 [![CI](https://github.com/vedprakash-m/tenet/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vedprakash-m/tenet/actions/workflows/ci.yml)
 [![Apache 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-Tenet is **the intent and proof layer for software built with AI agents.** It sits between you and whatever agent writes your code:
+Tenet is an open standard and CLI for **spec-driven development with AI agents**, from one developer and one agent today to **governed software factories** tomorrow. It is the intent and proof layer between you and whatever agents write your code:
 
 - **Your intent becomes specifications you approve:** drafted by your agent from your own code and docs, and read and blessed by you.
 - **Your agents work from what you blessed,** not from guesses.
@@ -21,6 +21,7 @@ Tenet is not another coding agent. It never calls a model, works with the agent 
 | A coding agent (Claude Code, Copilot, …) | *How do I write this code?* | Whether the result is what you meant |
 | `AGENTS.md`, `CLAUDE.md`, instructions | *How should the agent behave?* | Nothing checks that it did |
 | CI and tests | *Does the code run?* | Which intent each test proves, and whether a test was quietly weakened |
+| A factory platform or orchestrator | *Which agent does which work, and when?* | A shared, checkable record of what was intended and what was proven |
 | **Tenet** | ***Is this change what we agreed, and can it show it?*** | |
 
 ## What it looks like
