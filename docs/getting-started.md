@@ -35,7 +35,7 @@ git add -A
 git commit -m "Set up Tenet"
 ~~~
 
-During init, answer what the project is for and choose a project kind. Tenet seeds `tenet/intent.md`. Make the first commit before running onboarding. When you review the seed with your agent, replace any example targets. Before blessing a vision item, link it to a requirement you will also bless, list the item under a section called `Not yet in scope` and bless that section, or leave the vision item in draft. If you want GitHub Actions for this project, create the GitHub repository and set its remote before running init.
+During init, answer what the project is for and choose a project kind. Tenet creates a draft in `tenet/intent.md` using the purpose you provide, and leaves undecided sections for you and your agent to fill in. Make the first commit before running onboarding. Before blessing a vision item, link it to a requirement you will also bless, list the item under a section called `Not yet in scope` and bless that section, or leave the vision item in draft. If you want GitHub Actions for this project, create the GitHub repository and set its remote before running init.
 
 ## Draft and review
 

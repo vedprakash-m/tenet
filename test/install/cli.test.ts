@@ -308,7 +308,7 @@ test("registry transport failure writes nothing during init", async (t) => {
   assert.equal(output.envelope.errors[0]?.code, "TN-ENV-REGISTRY");
   assert.equal(
     output.envelope.errors[0]?.message,
-    "Could not reach the npm registry to verify @vedprakash-m/tenet@0.1.0-alpha.0 " +
+    `Could not reach the npm registry to verify @vedprakash-m/tenet@${packageVersion} ` +
       "(ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE).",
   );
   assert.deepEqual(await tree(repo.path), before);

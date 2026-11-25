@@ -1,7 +1,12 @@
 {
   "schema_version": 1,
   "version": "0.1.0",
-  "x-created-directories": [],
+  "x-created-directories": [
+    ".tenet/cache",
+    ".tenet/onboard",
+    ".tenet/reports",
+    ".tenet/runs"
+  ],
   "created": [
     {
       "path": ".agents/skills/tenet-draft-specs/SKILL.md",
@@ -41,7 +46,7 @@
     },
     {
       "path": "tenet.lock",
-      "sha256": "0e59dd4137a963b2d06ee42d1ddab22384d71107c41be4878b368c0d4f655f6e"
+      "sha256": "d8e13b94f1a83d52b8f1156c084a28285d81230f8d666c1dc940bc973e39a42f"
     },
     {
       "path": "tenet.yaml",
