@@ -122,7 +122,14 @@ export function localIntegrityWarning(packageName: string, version: string): str
     "CI workflows cannot verify it until the package is published and re-pinned with `tenet upgrade`.";
 }
 
-export async function releaseIntegrity(options: PreflightOptions): Promise<ReleaseIntegrity> {
+type IntegrityDependencies = {
+  registry?: (packageName: string, version: string) => Promise<string | null>;
+};
+
+export async function releaseIntegrity(
+  options: PreflightOptions,
+  dependencies: IntegrityDependencies = {},
+): Promise<ReleaseIntegrity> {
   const installed = await installedPackage();
   const environment = options.environment ?? {};
   const packageName = environment.registry?.package ?? installed.package;
@@ -143,8 +150,16 @@ export async function releaseIntegrity(options: PreflightOptions): Promise<Relea
       integrity: validateIntegrity(override, `TENET_INSTALL_INTEGRITY for ${packageName}@${version}`),
     };
   }
-  const local = options.offline === true || version === "0.0.0" || version.includes("-");
-  const registry = local ? null : await registryIntegrity(packageName, version);
+  const local = options.offline === true || version === "0.0.0";
+  let registry: string | null = null;
+  if (!local) {
+    const supplied = dependencies.registry
+      ? await dependencies.registry(packageName, version)
+      : await registryIntegrity(packageName, version);
+    registry = supplied === null
+      ? null
+      : validateIntegrity(supplied, "Injected registry metadata");
+  }
   if (registry) return { package: packageName, version, integrity: registry };
   return {
     package: packageName,
