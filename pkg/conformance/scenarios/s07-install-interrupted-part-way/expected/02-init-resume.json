@@ -5,33 +5,71 @@
   "result": {
     "plan": {
       "created": [
-        "tenet.yaml",
+        ".agents/skills/tenet-draft-specs/SKILL.md",
+        ".agents/skills/tenet-review-with-findings/SKILL.md",
+        ".agents/skills/tenet-work-a-change/SKILL.md",
+        ".tenet/manifest.json",
         "tenet.lock",
-        ".github/workflows/tenet.yml",
-        ".github/workflows/tenet-tests.yml",
-        ".agents/skills/tenet-onboard/SKILL.md",
-        ".agents/skills/tenet-work/SKILL.md",
-        ".agents/skills/tenet-review/SKILL.md"
+        "tenet.yaml"
       ],
       "blocks": [
-        "AGENTS.md",
-        ".github/pull_request_template.md",
-        ".gitignore",
-        ".gitattributes"
-      ],
-      "keys": [
         {
-          "path": ".mcp.json",
-          "pointer": "/mcpServers/tenet"
+          "path": ".gitattributes",
+          "kind": "yaml"
+        },
+        {
+          "path": ".gitignore",
+          "kind": "yaml"
+        },
+        {
+          "path": "AGENTS.md",
+          "kind": "markdown"
         }
-      ]
+      ],
+      "keys": [],
+      "local_keys": [],
+      "hosts": [
+        {
+          "id": "agents",
+          "capability": "skills+mcp"
+        }
+      ],
+      "ci_mode": "none",
+      "ci_reason": "non-GitHub remote: local checks and specifications are enabled; CI proof cards require GitHub in alpha.0"
     },
     "wrote": {
-      "createdCount": 7,
-      "blockCount": 4,
-      "keyCount": 1
+      "created": [
+        ".agents/skills/tenet-draft-specs/SKILL.md",
+        ".agents/skills/tenet-review-with-findings/SKILL.md",
+        ".agents/skills/tenet-work-a-change/SKILL.md",
+        ".tenet/manifest.json",
+        "tenet.lock",
+        "tenet.yaml"
+      ],
+      "blocks": [
+        {
+          "path": ".gitattributes",
+          "kind": "yaml"
+        },
+        {
+          "path": ".gitignore",
+          "kind": "yaml"
+        },
+        {
+          "path": "AGENTS.md",
+          "kind": "markdown"
+        }
+      ],
+      "keys": [],
+      "local_keys": []
     },
-    "findings": []
+    "findings": [
+      {
+        "kind": "local-integrity",
+        "path": "tenet.lock",
+        "message": "@vedprakash-m/tenet@{{version}} is not on the registry, so Tenet used local package integrity. CI workflows cannot verify it until the package is published and re-pinned with `tenet upgrade`."
+      }
+    ]
   },
   "errors": []
 }

@@ -5,6 +5,7 @@ import { parseDocument } from "yaml";
 import { message } from "../core/messages.js";
 import { errorFinding, exitCodeFor, fail, type Finding } from "../core/output.js";
 import { verifyLock as verifyPackageLock } from "../policy/index.js";
+import { installedLocalIntegrity } from "./integrity.js";
 import type {
   DoctorCheck,
   DoctorDependencies,
@@ -163,15 +164,38 @@ function canonicalLock(code: "TN-LOCK-MISSING"): Finding {
   return fail(code, text.message, text.fix);
 }
 
-async function unverifiableLock(cwd: string): Promise<Finding | null> {
+type LocalLockIntegrity = {
+  matches: boolean;
+  mismatchFinding: Finding | null;
+};
+
+async function localLockIntegrity(
+  cwd: string,
+  compute: () => Promise<string>,
+): Promise<LocalLockIntegrity | null> {
   try {
     const filename = path.join(cwd, "tenet.lock");
-    const lock = JSON.parse(await readFile(filename, "utf8")) as Record<string, unknown>;
-    if (lock["x-integrity-source"] !== "local") return null;
-    const text = message("TN-LOCK-INVALID", {
-      detail: "package integrity is local and cannot be verified in CI; publish the package and refresh the pin",
+    const document = parseDocument(await readFile(filename, "utf8"), {
+      merge: false,
+      prettyErrors: true,
+      uniqueKeys: true,
     });
-    return { ...fail("TN-LOCK-INVALID", text.message, text.fix), file: "tenet.lock" };
+    if (document.errors.length > 0) return null;
+    const lock = document.toJS({ maxAliasCount: 100 }) as Record<string, unknown> | null;
+    if (!lock || typeof lock !== "object") return null;
+    if (lock["x-integrity-source"] !== "local") return null;
+    const actual = await compute();
+    if (actual === lock.integrity) return { matches: true, mismatchFinding: null };
+    const text = message("TN-LOCK-INVALID", {
+      detail: "installed package integrity does not match the local integrity recorded in tenet.lock",
+    });
+    return {
+      matches: false,
+      mismatchFinding: {
+        ...fail("TN-LOCK-INVALID", text.message, text.fix),
+        file: "tenet.lock",
+      },
+    };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
     if (error instanceof SyntaxError) return null;
@@ -295,11 +319,14 @@ export async function doctorEvaluation(
     lockDetail = relativeKit === ".tenet/kit"
       ? "vendored kit matches tenet.lock"
       : "tenet.lock and kit match";
-    const unverifiable = await unverifiableLock(cwd);
-    if (unverifiable) {
-      findings.push(unverifiable);
+    const localIntegrity = await localLockIntegrity(cwd, installedLocalIntegrity);
+    if (localIntegrity?.matches === false && localIntegrity.mismatchFinding) {
+      findings.push(localIntegrity.mismatchFinding);
       lockOk = false;
-      lockDetail = unverifiable.message;
+      lockDetail = localIntegrity.mismatchFinding.message;
+    } else if (localIntegrity?.matches) {
+      lockDetail +=
+        " (local integrity; CI treats it as advisory until the package is published and re-pinned with `tenet upgrade`)";
     }
   } catch (error) {
     const finding = lockFinding(error);

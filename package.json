@@ -41,6 +41,7 @@
     "test": "npm run build && node scripts/run-tests.mjs",
     "coverage": "npm run build && node scripts/run-tests.mjs --coverage",
     "health:snapshot": "node scripts/health-snapshot.mjs",
+    "scenarios": "npm test -- test/onboard/scenarios.test.ts",
     "eval:onboarding": "node pkg/evals/onboarding/run.mjs",
     "check:examples": "node scripts/check-examples.mjs"
   },
