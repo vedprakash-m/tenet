@@ -1,111 +1,105 @@
 # Tenet
 
-**Spec-driven development for software factories. Agents build what you meant, and you can see that they did.**
+**Keep coding agents aligned with the intent you approved.**
 
-Tenet gives coding agents specifications you have read and blessed. With Tenet's GitHub Actions workflows configured, pull requests can show which blessed requirements they touch, which tagged tests passed on the tested commit, and what remains unchecked. The agent you already use can draft specifications from your code and docs. Underneath is an open standard, so any factory engine, tool or dashboard can work with the same records.
+[![npm version](https://img.shields.io/npm/v/%40vedprakash-m%2Ftenet)](https://www.npmjs.com/package/@vedprakash-m/tenet)
+[![CI](https://github.com/vedprakash-m/tenet/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vedprakash-m/tenet/actions/workflows/ci.yml)
+[![Apache 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-> **Status: alpha.0 in preparation.** Build a local package from this checkout to try the commands below. The [experience specification](tenet/specs/ux-spec.md) describes the full release journey.
+Agents write code faster than people can check it, and intent drifts between the request and the pull request.
+Tenet gives your agents specifications you approve and shows what each change proves.
+It never calls a model and works with the coding agent you already use.
 
-## Get started
+## Quick start
 
-You need Git and Node.js 22 or later. From a checkout of the Tenet source, build and install the local package.
+You need Node.js 22+ and Git. Start in a Git repository with at least one commit.
 
-```sh
-npm ci
-npm pack
-npm install --global ./vedprakash-m-tenet-0.1.0-alpha.0.tgz
-```
+~~~sh
+npm install --global @vedprakash-m/tenet
+tenet init
+tenet onboard
+~~~
 
-Open a terminal in the Git repository you want to onboard. It needs at least one commit.
+Read the files listed by `init` before you confirm. Tenet starts in `observe`, so its advisory rules leave the merge decision to you.
 
-```sh
-tenet --version
-tenet --help
-tenet onboard --inventory-only
-```
+Give `.tenet/onboard/assignment.json` to your agent. Ask it to follow the installed `draft-specs` skill and draft your specifications. Review and commit the draft, then run this in your terminal:
 
-Onboarding runs with defaults in a repository without `tenet.yaml`. The command writes an inventory and a drafting assignment under `.tenet/onboard/`. Give your coding agent `.tenet/onboard/assignment.json` to draft specifications. Tenet does not call a model.
+~~~sh
+tenet onboard --card
+tenet bless
+~~~
 
-In a repository configured for Tenet, use `tenet bless` to review and approve sections before their drafts take effect. Run `tenet check` to check the specifications and `tenet board` to see their status. `init`, `upgrade`, `remove` and `doctor` are part of the planned install flow. CI and agent-host setup are still release work.
+Commit your blessing and merge the setup on GitHub. On your next pull request, look for the proof card produced by the GitHub Actions workflows that `init` sets up. See [Getting started][start] for empty repositories, agent drafting and setup review.
 
----
+If your network blocks Tenet's npm lookup after installation, use `tenet init --offline`. For a one-off command without a global install, use `npx -y @vedprakash-m/tenet` in place of `tenet`. npm and npx need network access to fetch uncached packages.
 
 ## What you get
 
-| Part | What it does | Release |
-|---|---|---|
-| **Onboarding** | Your agent drafts your vision, requirements, design, experience and plan from your code and docs, with source-backed statements cited and detected conflicts listed; you bless it section by section, and blessed text stays in force until you bless a change | 0.1.0-alpha.0 |
-| **Proof card** | On every pull request, forks included: the blessed requirements the change touches, which acceptance items had their tagged tests pass on that exact commit (and whether those tests came with the change), and whether tests were deleted or skipped | 0.1.0-alpha.0 |
-| **Agent context** | Your agents get only the blessed specifications their task touches, through `AGENTS.md`, skills or a local MCP server, plus short working rules you can replace; onboarding turns your existing `copilot-instructions.md` or `CLAUDE.md` rules into blessed specifications | 0.1.0-alpha.0 |
-| **`tenet` command** | This checkout includes `onboard`, `bless`, `context`, `mcp`, `check`, `fix`, `split`, `verify` and `board` (specifications until alpha.1). Install and maintenance commands are planned for the release. | 0.1.0-alpha.0 |
-| **Rules and decisions** | Rules first show what they *would have* blocked; you turn on the ones that earned it. Decisions use your forge's normal review | 0.1.0-alpha.1 |
-| **Signed verification** | Evidence signed by a protected CI job, so the record cannot be forged or altered (it does not prove the checks were the right ones) | 0.1.0-alpha.2 |
-| **Reference agents and careful lane** | Agent cards for the shaper (definitions), test writer (independent tests), builder and judge; for risky changes, tests are written by a separate agent and pinned before the build; an optional minimal runner chains them through your own agent tool | 0.1.0 |
-| **Factory definition** | Declares your factory (workers, models, routing, environments) so it can be validated, recorded and compared | 0.1.x |
+- **Blessed specifications** your agents can work from, with the last approved text kept in force while you review edits.
+- **A proof card on pull requests** once your GitHub Actions setup is merged. It names the tested commit, relevant requirements and available test evidence.
+- **Agent context** through AGENTS.md, installed skills, or a local MCP server.
+- **Specification checks and a board** for broken citations, unblessed drafts and changed sources.
+- **Managed setup and removal** with a record of the files Tenet changed. `tenet remove` keeps your specifications and records.
 
-## Works with what you have
+### Example proof card
 
-| Your agent or engine can | What you get |
+~~~text
+Tenet proof · 9b41d0 (merge candidate) · advisory
+Your intent this change touches
+  R-1 blessed · "A payment that times out is retried once."
+Acceptance
+  ✓ AB-1 · test passed on this commit · one retry after timeout
+  ! AB-2 · no test · nothing tagged [AB-2]
+Tests 214 passed · ✓ no weakening detected by these checks
+~~~
+
+## How it works
+
+~~~mermaid
+flowchart LR
+    A[Code and docs] --> B[Your agent drafts]
+    B --> C[You bless]
+    C --> D[Agents use blessed text]
+    D --> E[Proof card on the pull request]
+~~~
+
+## Commands
+
+| Command | What it does |
 |---|---|
-| Open pull requests | Proof cards when the repository runs Tenet’s GitHub Actions workflows |
-| Read `AGENTS.md` | The map of your specifications and the rules |
-| Load skills | Onboarding, working a change, reviewing with findings |
-| Use MCP | `context`, `check` and `status` as tools |
-| Restrict file writes (a host binding, 0.1.x) | Protected files refused before they are written |
-| Run headless (Tenet's runner, a headless agent host and `gh`) | Tenet's runner chains the shipped agents through it, up to your approvals (0.1.0); bigger factories plug in the same way |
+| `tenet init` | Shows the setup plan and installs the repository files you approve. |
+| `tenet onboard` | Builds an inventory and gives your agent a drafting assignment. Add `--card` after committing the draft. |
+| `tenet bless` | Reviews and approves sections in your terminal. |
+| `tenet check` | Checks specification structure, citations and integrity. |
+| `tenet board` | Shows drafts, edits, changed sources and specification debt. |
+| `tenet context` / `tenet mcp` | Selects relevant context or serves it through local MCP. |
+| `tenet verify` | Runs the CI steps that collect test evidence and record the proof card. |
+| `tenet upgrade` | Refreshes the lock and managed setup for the installed version. |
+| `tenet remove` | Removes managed setup and generated working files. |
+| `tenet doctor` | Checks required tools, the lock and the configured workflows. |
 
-Tenet never calls a model, so it works with whatever model your agent uses; context and skills need an agent that reads `AGENTS.md`, skills or MCP, and the onboarding evaluation names the agents it was tested with. Engines can also write evidence through a JSON file contract; engine adapters that let Tenet dispatch work arrive in 0.3. GitHub is the first supported forge. Any dashboard can use the board's JSON output. Tenet's records are tool-neutral. The alpha.0 release targets an end-to-end GitHub flow with the agent hosts named in its onboarding evaluation.
+## Works with
 
-## Why Tenet
-
-A **software factory** is the system through which people and AI agents turn intent into running software: the agents that write, test and review code, the engines that run them, the checks that judge their work, and the people who decide. Factories now produce code faster than anyone can check it. Agents report work as finished when it isn't. Intent drifts between the request, the specification, the code, the checks and the release, and every factory product grades its own gates in its own format.
-
-- **Specifications are the source of truth.** From the vision down to each change, each with an owner. When code shows a specification is wrong, the fix is proposed in the same pull request, never silently worked around.
-- **Proof, not claims.** Each change lists what it must prove, and each line of the proof card says how it was shown.
-- **Autonomy earned on evidence.** People decide intent and exceptions; agents do bounded work; strictness grows only where it has paid for itself.
-- **Honest about what it knows.** Every result says whether Tenet checked it, you must judge it, or it depends on your agent; nothing says "proven" that wasn't.
-- **One form across tools.** Agent definitions, lifecycles, evidence and decisions are written down the same way whatever produces them, so factories can be declared and compared.
-
-## From one developer to a fleet
-
-| Stage | What Tenet adds |
-|---|---|
-| One developer, one agent | Blessed specifications agents work from; proof on every pull request |
-| A team with several agents | Owners per area; rules that block when the team chooses; decisions where people already work |
-| A factory with many agents and engines | A declared factory definition; agents qualified for their roles; signed evidence; cost per outcome |
-| A fleet across many repositories | Campaigns your engines run across many targets, declared and recorded by Tenet, with an honest count of what was automated, done by hand or left unresolved |
+- Claude Code, GitHub Copilot, and other agents that read AGENTS.md, load skills or connect to MCP.
+- GitHub Actions for proof cards. Local specification commands also work without GitHub.
+- Windows, macOS and Linux with Node.js and Git.
 
 ## Roadmap
 
-| Release | Delivers |
-|---|---|
-| 0.1.0-alpha.0 | Intent and proof: install, onboarding and blessing, agent context, the proof card, `check`, `fix`, `upgrade`, `remove` |
-| 0.1.0-alpha.1 | Protect: rules you turn on (they stop honest mistakes; enforcement arrives with verify), decisions on pull requests, the full board |
-| 0.1.0-alpha.2 | Verify: signed evidence and a hardened CI verifier |
-| 0.1.0 | Careful lane with independent tests, reference agents, a minimal runner that works out of the box, the quick start |
-| 0.1.x | Security-key decisions, kept promises and code health, campaigns, the factory definition, standalone downloads, an external pilot |
-| 0.2–0.3 | The full lifecycle from discovery through operation; engine adapters |
-| 1.0 | Stable rule IDs, a conformance kit for implementations and factory platforms, automatic upgrades, an open proposal process |
+- **0.2.0** · Rules, pull-request decisions and the full board.
+- **0.3.0** · Signed evidence and a hardened CI verifier.
+- **0.4.0** · Reference agents, independent tests for careful changes and a minimal runner.
 
-Details are in the [plan](tenet/specs/plan.md).
+## Learn more
 
-## Read further
+[Getting started][start] · [Commands][commands] · [Concepts][concepts] · [FAQ][faq] · [Specifications][specs] · [Report a problem][issues]
 
-| Document | What it covers |
-|---|---|
-| [Experience specification](tenet/specs/ux-spec.md) | What using Tenet is like, step by step. **Start here** |
-| [Vision](tenet/vision.md) | Why Tenet exists, its principles and how success is measured |
-| [Product requirements](tenet/specs/prd.md) | Requirements, with the [catalog](tenet/specs/prd/catalog.md), [tooling](tenet/specs/prd/tooling.md) and [decisions](tenet/specs/prd/decisions.md) parts |
-| [Technical specification](tenet/specs/tech-spec.md) | Architecture, formats, commands and the trust model, with its [contracts](tenet/specs/tech-spec/contracts.md), [algorithms](tenet/specs/tech-spec/algorithms.md), [CI](tenet/specs/tech-spec/ci.md), [agents](tenet/specs/tech-spec/agents.md) and [onboarding](tenet/specs/tech-spec/onboarding.md) parts |
-| [Plan](tenet/specs/plan.md) | Milestones and work packets |
-| [Ledger](tenet/ledger/) | Every decision, with its reasons |
-| [The standard](kit/TENET.md) | Being rewritten as a small kernel (CP-0015); until then the specifications above take precedence |
+Code is licensed under [Apache-2.0](LICENSE). The standard and documentation are licensed under [CC BY 4.0][license-docs].
 
-This repository is developed under its own standard: [tenet/now.md](tenet/now.md) shows where every change is.
-
-## Project
-
-- **Maintainer:** Ved ([@vedprakash-m](https://github.com/vedprakash-m)). The standard moves to an open proposal process with more than one steward before 1.0.
-- **Contributing:** see [AGENTS.md](AGENTS.md) for how work flows in this repository.
-- **License:** code under [Apache-2.0](LICENSE); the standard and documentation text under [CC BY 4.0](LICENSE-docs) (L-0031).
-- **Related:** Tenet for Copilot (`tenet-copilot`), a VS Code implementation of the standard.
+[start]: https://github.com/vedprakash-m/tenet/blob/main/docs/getting-started.md
+[commands]: https://github.com/vedprakash-m/tenet/blob/main/docs/commands.md
+[concepts]: https://github.com/vedprakash-m/tenet/blob/main/docs/concepts.md
+[faq]: https://github.com/vedprakash-m/tenet/blob/main/docs/faq.md
+[specs]: https://github.com/vedprakash-m/tenet/tree/main/tenet/specs
+[issues]: https://github.com/vedprakash-m/tenet/issues
+[license-docs]: https://github.com/vedprakash-m/tenet/blob/main/LICENSE-docs
