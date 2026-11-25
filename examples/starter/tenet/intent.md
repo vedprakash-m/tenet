@@ -20,7 +20,7 @@ sections:
 
 | ID | Purpose or boundary | Serves / Target | Origin |
 |---|---|---|---|
-| V-1 | Undecided · edit or run tenet onboard | Undecided |  |
+<!-- Add your vision here, or run tenet onboard. -->
 
 ## Requirements
 

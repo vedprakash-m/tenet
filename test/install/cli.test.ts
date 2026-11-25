@@ -234,10 +234,10 @@ test("offline empty-repo init seeds intent without template examples", async (t)
   assert.equal(installed.child.status, 0, installed.child.stderr);
   assert.match(installed.child.stderr, /local package integrity/i);
   const intent = await readFile(path.join(repo.path, "tenet", "intent.md"), "utf8");
-  assert.match(
-    intent,
-    /^\| V-1 \| Undecided · edit or run tenet onboard \| Undecided \| {2}\|$/m,
-  );
+  assert.match(intent, /^## Vision$/m);
+  assert.match(intent, /^\| ID \| Purpose or boundary \| Serves \/ Target \| Origin \|$/m);
+  assert.doesNotMatch(intent, /^\| V-\d+ /m);
+  assert.match(intent, /<!-- Add your vision here, or run tenet onboard\. -->/);
   const starter = await readFile(path.resolve("examples/starter/tenet/intent.md"), "utf8");
   const templateExamples = [
     "Checkout recovers cleanly from transient gateway timeouts for returning shoppers.",
@@ -253,10 +253,19 @@ test("offline empty-repo init seeds intent without template examples", async (t)
     for (const example of templateExamples) {
       assert.equal(seed.includes(example), false, `${name} retained template example: ${example}`);
     }
+    assert.match(seed, /^## Vision$/m);
+    assert.match(seed, /^\| ID \| Purpose or boundary \| Serves \/ Target \| Origin \|$/m);
+    assert.match(seed, /<!-- Add your vision here, or run tenet onboard\. -->/);
+    assert.doesNotMatch(seed, /^\| V-\d+ /m);
     assert.doesNotMatch(seed, /^\| V-\d+ .*\| asked \|$/m);
     assert.doesNotMatch(seed, /\{origin:\s*asked(?:;|\})/);
   }
   assert.doesNotMatch(intent, /^- R-\d+\b/m);
+
+  const checked = runWithoutIntegrity(repo.path, "check");
+  assert.equal(checked.child.status, 0, checked.child.stderr);
+  assert.equal(checked.envelope.ok, true);
+  assert.deepEqual(checked.envelope.errors, []);
 
   repo.git(["add", "-A"]);
   repo.git(["commit", "-qm", "install"]);

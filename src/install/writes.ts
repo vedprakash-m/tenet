@@ -705,27 +705,28 @@ export async function planWriteSet(
     const template = await readFile(path.join(kitPath, "templates", "intent.md"), "utf8");
     const project = path.basename(cwd);
     const owner = preflight.facts.owners[0]?.name ?? "Project Owner";
-    const purpose = preflight.facts.purpose ?? "Undecided · edit or run tenet onboard";
-    const purposeOrigin = options.answers?.purpose === undefined ? "" : "asked";
+    const purpose = options.answers?.purpose;
     files.set("tenet/intent.md", {
       path: "tenet/intent.md",
       content: `${seededIntent(template
         .replaceAll("<owner>", owner)
-        .replaceAll("<Project>", project), purpose, purposeOrigin)
+        .replaceAll("<Project>", project), purpose)
         .replace(/\r\n/g, "\n")
         .replace(/\n+$/, "")}\n`,
     });
   }
 
-  function seededIntent(source: string, purpose: string, origin: "" | "asked"): string {
+  function seededIntent(source: string, purpose: string | undefined): string {
+    const vision = [
+      "<!-- Purpose, primary users, north star, value table, boundaries. Never name tools, files or vendors here. -->",
+      "",
+      "| ID | Purpose or boundary | Serves / Target | Origin |",
+      "|---|---|---|---|",
+      "<!-- Add your vision here, or run tenet onboard. -->",
+      ...(purpose ? [`| V-1 | ${purpose} | Undecided | asked |`] : []),
+    ].join("\n");
     const emptySections = [
-      ["vision", [
-        "<!-- Purpose, primary users, north star, value table, boundaries. Never name tools, files or vendors here. -->",
-        "",
-        "| ID | Purpose or boundary | Serves / Target | Origin |",
-        "|---|---|---|---|",
-        `| V-1 | ${purpose} | Undecided | ${origin} |`,
-      ].join("\n")],
+      ["vision", vision],
       ["requirements", "<!-- Add only requirements supplied by the Owner. -->"],
       ["design", "<!-- Add grounded design facts after the Owner supplies requirements. -->"],
       ["experience", "<!-- Add grounded experience facts after the Owner supplies them. -->"],
