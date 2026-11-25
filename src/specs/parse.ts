@@ -140,6 +140,64 @@ function isOrigin(value: string): value is NonNullable<Requirement["origin"]> {
   return value === "observed" || value === "documented" || value === "asked" || value === "inferred";
 }
 
+type MetadataRange =
+  | { kind: "block"; open: number; close: number }
+  | { kind: "malformed" }
+  | null;
+
+function outsideInlineCode(value: string): string {
+  const output = [...value];
+  for (let index = 0; index < value.length;) {
+    if (value[index] !== "`") {
+      index += 1;
+      continue;
+    }
+    let length = 1;
+    while (value[index + length] === "`") length += 1;
+    const delimiter = "`".repeat(length);
+    let close = value.indexOf(delimiter, index + length);
+    while (close >= 0 && (value[close - 1] === "`" || value[close + length] === "`")) {
+      close = value.indexOf(delimiter, close + 1);
+    }
+    if (close < 0) {
+      index += length;
+      continue;
+    }
+    for (let cursor = index; cursor < close + length; cursor += 1) output[cursor] = " ";
+    index = close + length;
+  }
+  return output.join("");
+}
+
+function metadataRange(value: string): MetadataRange {
+  const outside = outsideInlineCode(value);
+  const trimmed = outside.trimEnd();
+  const close = trimmed.length - 1;
+  if (close < 0) return null;
+  const open = trimmed.lastIndexOf("{");
+  if (trimmed[close] === "}") {
+    if (open >= 0 && open < close) return { kind: "block", open, close };
+    return null;
+  }
+  const completedMidLine = open >= 0 ? trimmed.indexOf("}", open + 1) : -1;
+  if (open >= 0 && completedMidLine < 0 && /:/.test(trimmed.slice(open + 1))) {
+    return { kind: "malformed" };
+  }
+  return null;
+}
+
+function hasTrailingMetadata(value: string): boolean {
+  const outside = outsideInlineCode(value);
+  const range = metadataRange(value);
+  if (range === null) return false;
+  if (range.kind === "malformed") {
+    const body = outside.slice(outside.lastIndexOf("{") + 1);
+    return /(?:^|\s|;)(?:origin|cites|serves|scope|adopted_by|adopted by)\s*:/.test(body);
+  }
+  const body = outside.slice(range.open + 1, range.close);
+  return /(?:^|\s|;)(?:origin|cites|serves|scope|adopted_by|adopted by)\s*:/.test(body);
+}
+
 function parseMetadata(
   raw: string,
   prefix: string,
@@ -151,16 +209,14 @@ function parseMetadata(
   const id = idMatch[1] ?? "";
   let text = (idMatch[2] ?? "").trim();
   let metadata: Record<string, string> | undefined;
-  const open = text.indexOf("{");
-  const close = text.lastIndexOf("}");
-  if (open >= 0 || close >= 0) {
-    if (open < 0 || close < open || close !== text.length - 1) {
-      return requirementMetadataFinding();
-    }
+  const range = metadataRange(text);
+  if (range?.kind === "malformed") return requirementMetadataFinding();
+  if (range?.kind === "block") {
+    const { open, close } = range;
     metadata = {};
     const body = text.slice(open + 1, close);
     text = text.slice(0, open).trim();
-    if (/(?:^|\s)(?:origin|cites|serves|scope|adopted_by|adopted by)\s*:/.test(text)) {
+    if (/(?:^|\s)(?:origin|cites|serves|scope|adopted_by|adopted by)\s*:/.test(outsideInlineCode(text))) {
       return requirementMetadataFinding();
     }
     for (const field of body.split(";")) {
@@ -173,7 +229,7 @@ function parseMetadata(
       }
       metadata[key] = value;
     }
-  } else if (/(?:^|\s)(?:origin|cites|serves|scope|adopted_by|adopted by)\s*:/.test(text)) {
+  } else if (/(?:^|\s)(?:origin|cites|serves|scope|adopted_by|adopted by)\s*:/.test(outsideInlineCode(text))) {
     return requirementMetadataFinding();
   }
 
@@ -508,7 +564,7 @@ function parseStatements(
     if (item && !("code" in item)) {
       addItem(item, section, vision, seen, problems, path, line);
     } else if (item && "code" in item) {
-      if (item.code !== "TN-SPEC-MISSING-ID" || governed || /\{/.test(source)) {
+      if (item.code !== "TN-SPEC-MISSING-ID" || governed || hasTrailingMetadata(source)) {
         addItem(item, section, vision, seen, problems, path, line);
       }
     } else if (bullet && governed) {
