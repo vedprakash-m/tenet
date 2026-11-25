@@ -39,6 +39,22 @@ const standardReportPaths = [
   "jest.json",
   "jest-json.json",
 ].map((name) => `.tenet/reports/${name}`);
+const managedDirectoryPaths = [
+  ".tenet/onboard",
+  ".tenet/reports",
+  ".tenet/cache",
+  ".tenet/runs",
+  ".tenet",
+];
+
+function generatedWorkingPaths(reportPaths: string[]): string[] {
+  return [
+    ".tenet/onboard/inventory.json",
+    ".tenet/onboard/assignment.json",
+    ...standardReportPaths,
+    ...reportPaths,
+  ];
+}
 function pathError(itemPath: string): Error & { code: string; finding: unknown } {
   const words = message("TN-PATH-ESCAPE", { path: itemPath });
   const finding = { ...fail("TN-PATH-ESCAPE", words.message, words.fix), file: itemPath };
@@ -78,6 +94,13 @@ async function symlinkPath(cwd: string, relative: string): Promise<SymlinkPath |
     }
   }
   return null;
+}
+
+async function validateRemovalPath(cwd: string, relative: string): Promise<void> {
+  if (await symlinkPath(cwd, relative)) return;
+  await confine(relative, cwd).catch(() => {
+    throw pathError(relative);
+  });
 }
 
 async function optionalText(filename: string): Promise<string | null> {
@@ -137,12 +160,11 @@ async function validateRecordedPaths(
     ...manifest.created.map((item) => item.path),
     ...manifest.blocks.map((item) => item.path),
     ...manifest.keys.map((item) => item.path),
+    ...(manifest["x-created-directories"] ?? []),
     ...(pending?.writes.filter((item) => item.kind !== "local_key").map((item) => item.path) ?? []),
   ];
   for (const itemPath of [...new Set(repoPaths)]) {
-    await confine(itemPath, cwd).catch(() => {
-      throw pathError(itemPath);
-    });
+    await validateRemovalPath(cwd, itemPath);
   }
   const recordedRoots = Object.values(localManifest?.profile_roots ?? {});
   if (!localProfileRoot && recordedRoots.length === 0) {
@@ -365,13 +387,7 @@ async function removeGeneratedWorkingState(
   reportPaths: string[],
   removed: RemoveRemoved[],
 ): Promise<void> {
-  const exact = [
-    ".tenet/onboard/inventory.json",
-    ".tenet/onboard/assignment.json",
-    ...standardReportPaths,
-    ...reportPaths,
-  ];
-  for (const relative of new Set(exact)) {
+  for (const relative of new Set(generatedWorkingPaths(reportPaths))) {
     await removeRegularFile(cwd, relative, removed);
   }
   for (const directory of [".tenet/cache", ".tenet/runs"]) {
@@ -379,7 +395,7 @@ async function removeGeneratedWorkingState(
   }
   await removeEmptyManagedDirectories(
     cwd,
-    [".tenet/onboard", ".tenet/reports", ".tenet/cache", ".tenet/runs", ".tenet"],
+    managedDirectoryPaths,
   );
 }
 
@@ -389,6 +405,16 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
   const configuredReports = configuredReportPaths(
     await optionalText(await confine("tenet.yaml", cwd)),
   );
+  for (const relative of [
+    "tenet.yaml",
+    ".tenet/manifest.json",
+    ".tenet/manifest.pending.json",
+    ".tenet/manifest.local.json",
+    ...generatedWorkingPaths(configuredReports),
+    ...managedDirectoryPaths,
+  ]) {
+    await validateRemovalPath(cwd, relative);
+  }
   const { manifest, pending, localManifest } = await manifestFile(cwd);
   const removed: RemoveRemoved[] = [];
   const kept = new Map<string, RemoveKept["reason"]>();

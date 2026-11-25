@@ -673,6 +673,27 @@ test("remove unlinks symlinked .tenet parents without touching their targets", a
   }
 });
 
+test("remove validates generated report paths before changing the tree", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  await init(setup.options);
+  const policyPath = path.join(setup.repo.path, "tenet.yaml");
+  const policy = await readFile(policyPath, "utf8");
+  const edited = policy.replace(
+    "report_path: .tenet/reports/test.xml",
+    "report_path: .tenet/reports/../secrets.json",
+  );
+  assert.notEqual(edited, policy);
+  await writeFile(policyPath, edited);
+  await writeFile(path.join(setup.repo.path, ".tenet", "secrets.json"), "keep\n");
+  const before = await tree(setup.repo.path);
+
+  await assert.rejects(remove(setup.options), (error: unknown) =>
+    findingCode(error) === "TN-PATH-ESCAPE");
+
+  assert.deepEqual(await tree(setup.repo.path), before);
+});
+
 test("p17 loader upgrades owned pins without changing policy", async (t) => {
   const setup = await makeCase("p17-upgrade-pins-and-policy");
   t.after(() => dispose(setup));
