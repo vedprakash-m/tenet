@@ -18,9 +18,10 @@ sections:
 
 <!-- Purpose, primary users, north star, value table, boundaries. Never name tools, files or vendors here. -->
 
+<!-- Add your vision here, or run tenet onboard. -->
+
 | ID | Purpose or boundary | Serves / Target | Origin |
 |---|---|---|---|
-<!-- Add your vision here, or run tenet onboard. -->
 
 ## Requirements
 
