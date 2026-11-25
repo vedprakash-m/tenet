@@ -3,7 +3,7 @@ Read: tenet/intent.md, 0 source files, 0 test files, 0 instruction files · Skip
 ✓ all 0 citations checked against the code
 Sections (about 7 minutes)
   _preamble · 2 statements · 2 unlabelled · 1 min
-  Vision · 1 statement · 1 unlabelled · 1 min
+  Vision · 0 statements · 1 min
   Requirements · 0 statements · 1 min
   Design · 0 statements · 1 min
   Experience · 0 statements · 1 min
