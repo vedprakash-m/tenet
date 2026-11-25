@@ -652,6 +652,27 @@ test("remove deletes known generated .tenet state but preserves user state", asy
   assert.equal(await readFile(path.join(outside, "sentinel.txt"), "utf8"), "keep\n");
 });
 
+test("remove unlinks symlinked .tenet parents without touching their targets", async (t) => {
+  for (const location of ["inside", "outside"] as const) {
+    const setup = await makeCase("p02-node-vitest");
+    t.after(() => dispose(setup));
+    await init(setup.options);
+    const target = location === "inside"
+      ? path.join(setup.repo.path, "owner-notes")
+      : path.join(setup.sandbox, "outside-onboard");
+    await mkdir(target, { recursive: true });
+    await writeFile(path.join(target, "inventory.json"), `keep-${location}\n`);
+    await writeFile(path.join(target, "sentinel.txt"), "keep\n");
+    await symlink(target, path.join(setup.repo.path, ".tenet", "onboard"), "junction");
+
+    await remove(setup.options);
+
+    await assert.rejects(lstat(path.join(setup.repo.path, ".tenet", "onboard")), { code: "ENOENT" });
+    assert.equal(await readFile(path.join(target, "inventory.json"), "utf8"), `keep-${location}\n`);
+    assert.equal(await readFile(path.join(target, "sentinel.txt"), "utf8"), "keep\n");
+  }
+});
+
 test("p17 loader upgrades owned pins without changing policy", async (t) => {
   const setup = await makeCase("p17-upgrade-pins-and-policy");
   t.after(() => dispose(setup));

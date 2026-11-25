@@ -45,6 +45,41 @@ function pathError(itemPath: string): Error & { code: string; finding: unknown }
   return Object.assign(new Error(words.message), { code: "TN-PATH-ESCAPE", finding });
 }
 
+type SymlinkPath = {
+  filename: string;
+  relative: string;
+};
+
+async function symlinkPath(cwd: string, relative: string): Promise<SymlinkPath | null> {
+  const portable = relative.replaceAll("\\", "/");
+  if (
+    portable.length === 0 ||
+    portable.includes("\0") ||
+    path.posix.isAbsolute(portable) ||
+    path.win32.isAbsolute(relative) ||
+    portable.startsWith("//") ||
+    portable.split("/").includes("..")
+  ) {
+    throw pathError(relative);
+  }
+  let filename = path.resolve(cwd);
+  const visited: string[] = [];
+  for (const part of portable.split("/").filter((item) => item !== "" && item !== ".")) {
+    filename = path.join(filename, part);
+    visited.push(part);
+    try {
+      const stat = await lstat(filename);
+      if (stat.isSymbolicLink()) {
+        return { filename, relative: visited.join("/") };
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+      throw error;
+    }
+  }
+  return null;
+}
+
 async function optionalText(filename: string): Promise<string | null> {
   try {
     return await readFile(filename, "utf8");
@@ -59,6 +94,12 @@ async function manifestFile(cwd: string): Promise<{
   pending: PendingManifest | null;
   localManifest: LocalManifest | null;
 }> {
+  const activeLink = await symlinkPath(cwd, ".tenet/manifest.json");
+  const pendingLink = await symlinkPath(cwd, ".tenet/manifest.pending.json");
+  const localLink = await symlinkPath(cwd, ".tenet/manifest.local.json");
+  if (activeLink || pendingLink || localLink) {
+    return { manifest: null, pending: null, localManifest: null };
+  }
   const activePath = await confine(".tenet/manifest.json", cwd).catch(() => {
     throw pathError(".tenet/manifest.json");
   });
@@ -211,6 +252,11 @@ function removeAppendedBlock(
 
 async function removeEmptyManagedDirectories(cwd: string, directories: string[]): Promise<void> {
   for (const candidate of [...new Set(directories)].sort((left, right) => right.length - left.length)) {
+    const link = await symlinkPath(cwd, candidate);
+    if (link) {
+      await rm(link.filename, { force: true });
+      continue;
+    }
     const filename = await confine(candidate, cwd);
     try {
       const stat = await lstat(filename);
@@ -248,6 +294,14 @@ async function removePathTree(
   removed: RemoveRemoved[],
 ): Promise<void> {
   const portable = relative.replaceAll("\\", "/");
+  const link = await symlinkPath(cwd, portable);
+  if (link) {
+    await rm(link.filename, { force: true });
+    if (!removed.some((item) => item.path === link.relative && item.kind === "file")) {
+      removed.push({ path: link.relative, kind: "file" });
+    }
+    return;
+  }
   const parent = path.posix.dirname(portable);
   let parentPath: string;
   try {
@@ -282,6 +336,14 @@ async function removeRegularFile(
   relative: string,
   removed: RemoveRemoved[],
 ): Promise<void> {
+  const link = await symlinkPath(cwd, relative);
+  if (link) {
+    await rm(link.filename, { force: true });
+    if (!removed.some((item) => item.path === link.relative && item.kind === "file")) {
+      removed.push({ path: link.relative, kind: "file" });
+    }
+    return;
+  }
   let filename: string;
   try {
     filename = await confine(relative, cwd);
@@ -331,10 +393,16 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
   const removed: RemoveRemoved[] = [];
   const kept = new Map<string, RemoveKept["reason"]>();
   if (!manifest) {
-    await Promise.all([
-      rm(await confine(".tenet/manifest.json", cwd), { force: true }),
-      rm(await confine(".tenet/manifest.pending.json", cwd), { force: true }),
-    ]);
+    for (const relative of [
+      ".tenet/manifest.json",
+      ".tenet/manifest.pending.json",
+      ".tenet/manifest.local.json",
+    ]) {
+      const link = await symlinkPath(cwd, relative);
+      if (link) await rm(link.filename, { force: true });
+      else await rm(await confine(relative, cwd), { force: true });
+    }
+    await removeGeneratedWorkingState(cwd, configuredReports, removed);
     return { removed, kept: [], reminder };
   }
   await validateRecordedPaths(
