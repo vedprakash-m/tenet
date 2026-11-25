@@ -66,6 +66,14 @@ type SymlinkPath = {
   relative: string;
 };
 
+function samePath(left: string, right: string, caseInsensitive: boolean): boolean {
+  const normalizedLeft = left.replaceAll("\\", "/");
+  const normalizedRight = right.replaceAll("\\", "/");
+  return caseInsensitive
+    ? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase()
+    : normalizedLeft === normalizedRight;
+}
+
 async function symlinkPath(cwd: string, relative: string): Promise<SymlinkPath | null> {
   const portable = relative.replaceAll("\\", "/");
   if (
@@ -130,6 +138,28 @@ async function optionalText(filename: string): Promise<string | null> {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
     throw error;
   }
+}
+
+type WindowsPathMatch = {
+  filename: string;
+  link: boolean;
+} | null;
+
+async function windowsPathMatch(cwd: string, relative: string): Promise<WindowsPathMatch> {
+  let current = path.resolve(cwd);
+  const parts = relative.replaceAll("\\", "/").split("/").filter((item) =>
+    item !== "" && item !== ".");
+  for (const [index, part] of parts.entries()) {
+    const entries = await readdir(current);
+    const actual = entries.find((entry) => entry.toLowerCase() === part.toLowerCase());
+    if (!actual) return null;
+    if (index === parts.length - 1 && actual !== part) return null;
+    current = path.join(current, actual);
+    const stat = await lstat(current);
+    if (stat.isSymbolicLink()) return { filename: current, link: true };
+    if (index !== parts.length - 1 && !stat.isDirectory()) return null;
+  }
+  return { filename: current, link: false };
 }
 
 async function manifestFile(cwd: string): Promise<{
@@ -311,7 +341,7 @@ async function removeEmptyManagedDirectories(cwd: string, directories: string[])
   }
 }
 
-function configuredReportPaths(source: string | null): string[] {
+function configuredReportPaths(source: string | null, caseInsensitive: boolean): string[] {
   if (source === null) return [];
   try {
     const document = parseDocument(source, { merge: false, uniqueKeys: true });
@@ -323,7 +353,10 @@ function configuredReportPaths(source: string | null): string[] {
       const reportPath = (check as Record<string, unknown>).report_path;
       if (typeof reportPath !== "string") return [];
       const normalized = reportPath.replaceAll("\\", "/").replace(/^\.\/+/, "");
-      return normalized.startsWith(".tenet/reports/") ? [normalized] : [];
+      const prefix = ".tenet/reports/";
+      return (caseInsensitive
+        ? normalized.toLowerCase().startsWith(prefix)
+        : normalized.startsWith(prefix)) ? [normalized] : [];
     });
   } catch {
     return [];
@@ -388,7 +421,17 @@ async function removeRegularFile(
   cwd: string,
   relative: string,
   removed: RemoveRemoved[],
+  caseInsensitive: boolean,
 ): Promise<boolean> {
+  if (caseInsensitive) {
+    const matched = await windowsPathMatch(cwd, relative);
+    if (!matched) return false;
+    const stat = await lstat(matched.filename);
+    if (!matched.link && !stat.isFile()) return false;
+    await rm(matched.filename);
+    removed.push({ path: relative, kind: "file" });
+    return true;
+  }
   const link = await symlinkPath(cwd, relative);
   if (link) {
     await rm(link.filename, { force: true });
@@ -420,10 +463,11 @@ async function removeGeneratedWorkingState(
   reportPaths: string[],
   removed: RemoveRemoved[],
   createdDirectories: Set<string> | null,
+  caseInsensitive: boolean,
 ): Promise<void> {
   const removedParents = new Set<string>();
   for (const relative of new Set(generatedWorkingPaths(reportPaths))) {
-    if (await removeRegularFile(cwd, relative, removed)) {
+    if (await removeRegularFile(cwd, relative, removed, caseInsensitive)) {
       removedParents.add(path.posix.dirname(relative));
     }
   }
@@ -437,7 +481,9 @@ async function removeGeneratedWorkingState(
   }
   const removableParents = createdDirectories === null
     ? [...removedParents, ".tenet"]
-    : [...removedParents].filter((directory) => createdDirectories.has(directory));
+    : [...removedParents].filter((directory) =>
+      [...createdDirectories].some((created) =>
+        samePath(created, directory, caseInsensitive)));
   await removeEmptyManagedDirectories(
     cwd,
     removableParents.filter((directory) => directory.startsWith(".tenet")),
@@ -446,9 +492,11 @@ async function removeGeneratedWorkingState(
 
 export async function remove(options: RemoveOptions = {}): Promise<RemoveResult> {
   const cwd = path.resolve(options.cwd ?? process.cwd());
+  const caseInsensitive = (options.environment?.platform ?? process.platform) === "win32";
   const retained = await retainedRoots(cwd);
   const configuredReports = configuredReportPaths(
     await optionalText(await confine("tenet.yaml", cwd)),
+    caseInsensitive,
   );
   for (const relative of [
     "tenet.yaml",
@@ -473,7 +521,13 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
       if (link) await rm(link.filename, { force: true });
       else await rm(await confine(relative, cwd), { force: true });
     }
-    await removeGeneratedWorkingState(cwd, configuredReports, removed, null);
+    await removeGeneratedWorkingState(
+      cwd,
+      configuredReports,
+      removed,
+      null,
+      caseInsensitive,
+    );
     return { removed, kept: [], reminder };
   }
   await validateRecordedPaths(
@@ -606,7 +660,13 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
   await rm(pendingPath, { force: true });
   if (!keptCreated.has(".tenet/manifest.local.json")) await rm(localPath, { force: true });
   const createdDirectories = manifest["x-created-directories"] ?? [];
-  await removeGeneratedWorkingState(cwd, configuredReports, removed, new Set(createdDirectories));
+  await removeGeneratedWorkingState(
+    cwd,
+    configuredReports,
+    removed,
+    new Set(createdDirectories),
+    caseInsensitive,
+  );
   await removeEmptyManagedDirectories(cwd, createdDirectories);
   for (const root of retained) {
     if (!createdDirectories.includes(root) || await retainedRoot(cwd, root)) {

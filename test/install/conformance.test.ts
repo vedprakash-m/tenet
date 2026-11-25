@@ -697,6 +697,42 @@ test("remove validates generated report paths before changing the tree", async (
   assert.deepEqual(await tree(setup.repo.path), before);
 });
 
+test("remove matches configured reports but preserves case-mismatched standard reports", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  await init(setup.options);
+  const policyPath = path.join(setup.repo.path, "tenet.yaml");
+  const policy = await readFile(policyPath, "utf8");
+  await writeFile(
+    policyPath,
+    policy.replace(
+      "report_path: .tenet/reports/test.xml",
+      "report_path: .tenet/Reports/CUSTOM.XML",
+    ),
+  );
+  await setup.repo.write(".tenet/Reports/CUSTOM.XML", "<testsuite/>\n");
+  await setup.repo.write(".tenet/reports/TEST.XML", "keep\n");
+
+  await remove({
+    ...setup.options,
+    environment: {
+      ...(setup.options.environment as Record<string, unknown>),
+      platform: "win32",
+    },
+  });
+
+  await assert.rejects(readFile(path.join(
+    setup.repo.path,
+    ".tenet",
+    "Reports",
+    "CUSTOM.XML",
+  )), { code: "ENOENT" });
+  assert.equal(
+    await readFile(path.join(setup.repo.path, ".tenet", "reports", "TEST.XML"), "utf8"),
+    "keep\n",
+  );
+});
+
 test("remove rejects a recorded file under a symlinked parent before any deletion", async (t) => {
   const setup = await makeCase("p02-node-vitest");
   t.after(() => dispose(setup));
