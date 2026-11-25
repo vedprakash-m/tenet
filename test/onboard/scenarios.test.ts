@@ -183,9 +183,16 @@ function scenarioTty(step: CliStep) {
 
 async function cliStep(step: CliStep, cwd: string) {
   const tty = scenarioTty(step);
-  const exit = await run(step.args, { ...tty, cwd, now, checkEnvironment: false });
-  const json = tty.stdout.text.trim() ? JSON.parse(tty.stdout.text) : undefined;
-  return { exit, json, stderr: tty.stderr.text };
+  const priorRegistryIntegrity = process.env.TENET_TEST_REGISTRY_INTEGRITY;
+  if (priorRegistryIntegrity === undefined) process.env.TENET_TEST_REGISTRY_INTEGRITY = "not-found";
+  try {
+    const exit = await run(step.args, { ...tty, cwd, now, checkEnvironment: false });
+    const json = tty.stdout.text.trim() ? JSON.parse(tty.stdout.text) : undefined;
+    return { exit, json, stderr: tty.stderr.text };
+  } finally {
+    if (priorRegistryIntegrity === undefined) delete process.env.TENET_TEST_REGISTRY_INTEGRITY;
+    else process.env.TENET_TEST_REGISTRY_INTEGRITY = priorRegistryIntegrity;
+  }
 }
 
 type Records = { tip: string | null; files: Record<string, string> };
@@ -326,7 +333,13 @@ syncBuiltinESMExports();
 
 function faultRun(step: CliStep, cwd: string, trace: string, stop = 0) {
   const child = spawnSync(process.execPath, ["--import", `data:text/javascript,${encodeURIComponent(faultModule)}`, cli, ...step.args], {
-    cwd, env: { ...process.env, ...commitEnv, TENET_SCENARIO_WRITE_TRACE: trace, TENET_SCENARIO_INTERRUPT: String(stop) },
+    cwd, env: {
+      ...process.env,
+      ...commitEnv,
+      TENET_SCENARIO_WRITE_TRACE: trace,
+      TENET_SCENARIO_INTERRUPT: String(stop),
+      TENET_TEST_REGISTRY_INTEGRITY: process.env.TENET_TEST_REGISTRY_INTEGRITY ?? "not-found",
+    },
     encoding: "utf8", input: step.fakeTty?.join("\n"), windowsHide: true,
   });
   assert.ifError(child.error);
