@@ -22,7 +22,7 @@ tenet onboard
 
 Read the files listed by `init` before you confirm. Tenet starts in `observe`, so its advisory rules leave the merge decision to you.
 
-Give `.tenet/onboard/assignment.json` to your agent. Ask it to follow the installed `draft-specs` skill and draft your specifications. Review and commit the draft, then run this in your terminal:
+Give `.tenet/onboard/assignment.json` to your agent. Ask it to follow the installed `tenet-draft-specs` skill and draft your specifications. Review and commit the draft, then run this in your terminal:
 
 ~~~sh
 tenet onboard --card
@@ -31,7 +31,7 @@ tenet bless
 
 Commit your blessing and merge the setup on GitHub. On your next pull request, look for the proof card produced by the GitHub Actions workflows that `init` sets up. See [Getting started][start] for empty repositories, agent drafting and setup review.
 
-If your network blocks Tenet's npm lookup after installation, use `tenet init --offline`. For a one-off command without a global install, use `npx -y @vedprakash-m/tenet` in place of `tenet`. npm and npx need network access to fetch uncached packages.
+If your network blocks Tenet's npm lookup after installation, use `tenet init --offline`. Run an online `tenet upgrade` to pin the published package before using GitHub proof cards. For a one-off command without a global install, use `npx -y @vedprakash-m/tenet` in place of `tenet`. npm and npx need network access to fetch uncached packages.
 
 ## What you get
 

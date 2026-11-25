@@ -15,7 +15,7 @@ npm and npx need registry access to fetch uncached packages. With Tenet already 
 
 ## Use Tenet in an existing repository
 
-Open a terminal at the root of a Git repository with at least one commit. If you already ran the README quick start, continue at [Draft and review](#draft-and-review).
+Open a terminal at the root of a Git repository with at least one commit. If you finished the README quick start, continue at [Use Tenet on the next change](#use-tenet-on-the-next-change).
 
 ~~~sh
 tenet init
@@ -41,7 +41,7 @@ During init, answer what the project is for and choose a project kind. Tenet see
 
 On GitHub, do this work on a branch so you can open a setup pull request. You can also do it locally and review the files in your working tree.
 
-1. Ask your coding agent to run `tenet onboard`, open `.tenet/onboard/assignment.json` and follow the installed `draft-specs` skill. Tell it to ask you about unclear intent and cite the sources it uses. Your agent or its provider may receive project content.
+1. Ask your coding agent to run `tenet onboard`, open `.tenet/onboard/assignment.json` and follow the installed `tenet-draft-specs` skill. Tell it to ask you about unclear intent and cite the sources it uses. Your agent or its provider may receive project content.
 2. Read the drafts and commit the setup and draft files. Run `tenet onboard --card` to check citations and print the onboarding summary. The command records the draft revision in the specifications. Paste its output into the setup pull request if you use one.
 3. Run `tenet bless` in your terminal. Review flagged statements and conflicts and approve only the sections you want in force. Run `tenet check` and `tenet board` to see structural issues and what still needs review. Commit the generated card metadata and blessing changes. On GitHub, push your changes and merge the setup pull request after review.
 
