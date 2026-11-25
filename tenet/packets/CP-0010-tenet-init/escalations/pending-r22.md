@@ -1,0 +1,17 @@
+# Pending round 22 — Code/runner/spec checks for scenario goldens s07 and s13
+
+Scenario fixtures checked against GPT's runner (`origin/r11/cp-0052-fixes`, `fcab5f7`) in a scratch worktree:
+
+## 1. `s07` (`pkg/conformance/scenarios/s07-install-interrupted-part-way`)
+
+- **`expected/02-init-resume.json` updated & proven:** Resumed `init` (`src/install/init.ts`, `src/install/writes.ts`) now agrees with `kit/schemas/results/init.json`, `contracts.md §8`, `onboarding.md §2` (`ALG-12`), and `answers-r20.md` (`local-integrity` emitted for unpublished `@vedprakash-m/tenet@{{version}}`, full `plan` objects and complete `wrote` arrays). All interruption checkpoints (`01-interrupted-init` and `02-init-resume` + clean tree parity) **pass** in `scenarios.test.ts`.
+- **Remaining registry check gap vs `answers-r20.md §1`:** `src/install/integrity.ts` still skips registry lookup whenever `version.includes("-")` instead of trying `npm view` for prereleases first; for unpublished `0.1.0-alpha.0`, the resulting `local-integrity` finding is the same.
+- **Downstream blocker in `s07` (`expected/03-doctor.json`):** `02-init-resume` now advances to `03-doctor`, which fails `assert.deepEqual` because `expected/03-doctor.json` omits `detail` on every `checks[]` item, whereas `contracts.md §8` (`kit/schemas/results/doctor.json`) requires `{name, ok, detail}` and `detail` contains host-specific versions (`Node.js`, `Git`, `OpenSSH`, `gh CLI`) plus `workflows`/`lock` text (`tenet.lock and kit match`, `No workflows configured (ci_mode none)`). `scenarios.test.ts` needs host-version normalization or structural comparison on `doctor`.
+
+## 2. `s13` (`pkg/conformance/scenarios/s13-ux-walkthrough-new`)
+
+- **`expected/04-onboard-inventory.json` updated where code and spec agree:** Updated `version: "{{version}}"`, `preflight.read_count: 11` (all 11 files committed by `03-commit-main`, with all 10 Tenet-installed/config files classified as `kind: "config"` per PR #23 `src/onboard/inventory.ts` and `tenet/intent.md` as `kind: "doc"` with `56` lines), `docs[0].title: "repo intent"` (first `# ` heading `# <Project> intent` for temp dir `repo`, per `onboarding.md §1`), and `docs[0].sections` (`["vision", "requirements", "design", "experience", "plan", "conflicts", "open-questions", "completeness-checklist"]`, per `onboarding.md §1`).
+- **Two self-referential/host-dependent hash blockers prevent static `04-onboard-inventory.json` from staying green in `scenarios.test.ts`:**
+  1. **Self-referential `localIntegrity` hash (`src/install/integrity.ts`, `answers-r20.md §2`):** For unpublished `0.1.0-alpha.0`, `init` computes `tenet.lock` integrity over `pkg/conformance/**` (including `04-onboard-inventory.json` and `s07`). Any commit editing any file under `pkg/conformance/` alters `tenet.lock`'s `sha256` and `.tenet/manifest.json`'s `sha256` inside `04-onboard-inventory.json`'s `sources.files[]`. (`AGENTS.md` `sha256` also embeds `v{{version}}`.)
+  2. **Host `git config` in `cliStep` (`test/onboard/scenarios.test.ts:182`):** `cliStep` invokes `run(step.args, { cwd, now, checkEnvironment: false })` in-process without setting local `git config user.name` / `user.email` in `fixtureRepo`, so `tenet.yaml` (`owners[]`) depends on the runner host's git identity (here `27` lines, changing `tenet.yaml` and `.tenet/manifest.json` `sha256`).
+- **Downstream note:** `expected/05-onboard-card.json` / `expected/05-card.md` still expect 2 sections (`Vision`, `Requirements`) instead of the 8 sections from `kit/templates/intent.md`.
