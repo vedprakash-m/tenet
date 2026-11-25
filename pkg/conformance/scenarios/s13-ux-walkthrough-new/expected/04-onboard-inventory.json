@@ -54,7 +54,7 @@
             "path": ".tenet/manifest.json",
             "kind": "config",
             "sha256": "{{any:string}}",
-            "lines": 75
+            "lines": 79
           },
           {
             "path": "AGENTS.md",
