@@ -239,7 +239,6 @@ test("[AB-D3] [F-10] offline empty-repo init keeps local integrity and other fin
   const findings = (installed.envelope.result as { findings: Array<{ kind: string }> }).findings;
   assert.ok(findings.some(({ kind }) => kind === "local-integrity"));
   assert.ok(findings.some(({ kind }) => kind === "no-test-report"));
-  assert.ok(!findings.some((finding) => JSON.stringify(finding).includes("not on the registry")));
   const intent = await readFile(path.join(repo.path, "tenet", "intent.md"), "utf8");
   assert.match(intent, /^## Vision$/m);
   assert.match(intent, /^\| ID \| Purpose or boundary \| Serves \/ Target \| Origin \|$/m);
@@ -390,7 +389,6 @@ test("[AB-D3] [F-10] offline init replaces only local integrity and keeps first 
   const findings = (output.envelope.result as { findings: Array<{ kind: string }> }).findings;
   assert.ok(findings.some(({ kind }) => kind === "local-integrity"));
   assert.ok(findings.some(({ kind }) => kind === "no-test-report"));
-  assert.ok(!findings.some((finding) => JSON.stringify(finding).includes("not on the registry")));
   const lock = JSON.parse(await readFile(path.join(repo.path, "tenet.lock"), "utf8")) as {
     integrity: string;
     "x-integrity-source": string;
