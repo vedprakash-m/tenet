@@ -72,7 +72,7 @@ async function discoverDefaultBranch(
   currentBranch: string | null,
 ): Promise<string> {
   if (injectedBranch !== undefined) {
-    return injectedBranch === "main" || injectedBranch === "master" ? injectedBranch : "main";
+    return injectedBranch || "main";
   }
   const remoteHead = await gitValue(["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"], cwd);
   if (remoteHead) {

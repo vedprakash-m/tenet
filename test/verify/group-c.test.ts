@@ -316,6 +316,22 @@ test("[AB-C4] [F-36] [F-42] init uses default branch instead of setup branch and
   const repaired = await readFile(workflowPath, "utf8");
   assert.match(repaired, /push:\s*\{branches:\s*\[main\]\}/);
   assert.doesNotMatch(repaired, /setup\/tenet/);
+
+  const { preflight } = await import("../../dist/install/preflight.js");
+  const injectedPreflight = await preflight({
+    cwd: repo.path,
+    environment: {
+      ...environment,
+      git: {
+        version: "2.45.0",
+        head: "a".repeat(40),
+        branch: "trunk",
+        remote: "https://github.com/fixture/checkout.git",
+        userName: "Fixture Owner",
+      },
+    },
+  });
+  assert.equal(injectedPreflight.facts.repository.default_branch, "trunk");
 });
 
 test("[AB-C5] [F-58] review-with-findings skill covers reviewing when no proof card exists", async () => {
