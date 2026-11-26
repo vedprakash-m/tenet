@@ -17,7 +17,7 @@ import { sectionDigest } from "../specs/sections.js";
 import { createInterface } from "node:readline";
 import { message } from "../core/messages.js";
 import { fail, type Finding } from "../core/output.js";
-import { itemLine, type ConflictOrQuestion, type ParsedDoc, type SpecSection } from "../specs/parse.js";
+import { isOpenSpecItem, itemLine, openItemsFor, type ConflictOrQuestion, type ParsedDoc, type SpecSection } from "../specs/parse.js";
 
 type Action = "bless" | "confirm" | "edit" | "reject" | "defer";
 export type CompletedAction = Exclude<Action, "edit">;
@@ -37,10 +37,11 @@ type SessionState = {
   owners: string[];
   targets: Array<{ path: string; slug: string }>;
   conflicts: Array<{ path: string; id: string }>;
+  records: string;
   read(path: string, slug: string): Promise<SectionState | null>;
   edit(state: SectionState): Promise<void>;
-  resolveConflict(state: SectionState, conflict: ConflictOrQuestion, resolution: string): Promise<void>;
-  commit(state: SectionState, action: CompletedAction, by: string, restore: boolean, adopt: boolean): Promise<Finding[]>;
+  resolve(state: SectionState, item: ConflictOrQuestion, field: "answer" | "resolution", value: string): Promise<void>;
+  commit(state: SectionState, action: CompletedAction, by: string, restore: boolean, adopt: boolean, minutes: number): Promise<Finding[]>;
   flags(state: SectionState): string[];
   showAnchors(state: SectionState): Promise<string[]>;
 };
@@ -52,7 +53,11 @@ export const blessText = {
   conflict: (id: string, text: string) => `Conflict ${id}: ${text}`,
   postpone: "Decide later",
   writeResolution: "Write a resolution, or press Enter to decide later > ",
-  contradiction: "Does this choice contradict a drafted statement? Enter its ID, or type no > ",
+  contradiction: (ids: string) => `Does this choice contradict a drafted statement? Enter one of ${ids}, or type no > `,
+  question: (id: string, text: string) => `Question ${id}: ${text}\n  1. Answer\n  2. Not a blocker\n  3. Skip section`,
+  answer: "Write an answer > ",
+  skipped: (heading: string, ids: string) => `Skipping ${heading} · open items: ${ids}`,
+  revisit: "→ Run tenet bless when you’re ready to review the remaining sections.",
   editConflict: (id: string) => `Edit ${id} to agree with the selected resolution.`,
   conflictUnchanged: "The statement is unchanged. The conflict is still open.",
   section: (heading: string, minutes: number, actions: string[]) => `${heading} (${minutes} min) · ${actions.join(" / ")}? `,
@@ -63,7 +68,8 @@ export const blessText = {
   noLines: "(unavailable)",
   textInForce: "Blessed text in force",
   confirmSources: "Confirm these source changes? [y/N] ",
-  summary: (value: BlessResult) => `✓ ${value.blessed} blessed · ${value.confirmed} confirmed · ${value.rejected} rejected · ${value.deferred} for later`,
+  summary: (count: number, total: number) => `Blessed ${count} of ${total} sections`,
+  nothingBlessed: "Nothing is in force yet",
   commit: (root: string) => `→ git add -- ${root} && git commit -m "Bless specifications"`,
   missingTarget: "the selected document or section was not found",
   invalidOptions: "pass one document and one section at most",
@@ -84,34 +90,12 @@ export function statements(section: SpecSection) {
   return [...section.vision_items, ...section.requirements];
 }
 
-function belongs(item: ConflictOrQuestion, doc: ParsedDoc, section: SpecSection): boolean {
-  if (item.section === null) return true;
-  return item.section === section.slug || item.section === section.heading ||
-    item.section === `${doc.path}#${section.slug}`;
-}
-
-function relevantOpen(doc: ParsedDoc, section: SpecSection): ConflictOrQuestion[] {
-  return doc.sections.flatMap((part) => [...part.conflicts, ...part.questions])
-    .filter((item) => belongs(item, doc, section) && (!item.checked || !(item.resolution ?? item.answer)));
-}
-
 function sourceLine(text: string, line: number | null): string {
   return line === null ? "" : text.replaceAll("\r\n", "\n").split("\n")[line - 1] ?? "";
 }
 
 export function parseBlessDocument(file: string, text: string, prefix: string): ParsedDoc {
-  const doc = parseDoc(file, text, { prefix });
-  for (const section of doc.sections) {
-    for (const conflict of section.conflicts) {
-      if (conflict.resolution) continue;
-      const line = sourceLine(text, itemLine(conflict));
-      const resolution = /(?:^|[\s;|])resolution:\s*(.+)$/i.exec(line)?.[1]?.trim();
-      if (!resolution) continue;
-      conflict.resolution = resolution;
-      conflict.text = conflict.text.replace(/(?:^|[\s;|])resolution:.*$/i, "").replace(/[;|\s]+$/, "");
-    }
-  }
-  return doc;
+  return parseDoc(file, text, { prefix });
 }
 
 function choices(text: string): string[] {
@@ -128,18 +112,16 @@ async function pick(ask: Ask, prompt: string, allowed: readonly string[], write:
   }
 }
 
-async function settle(state: SessionState, ask: Ask, write: (value: string) => void, findings: Finding[]): Promise<boolean> {
+async function settleConflicts(state: SessionState, ask: Ask, write: (value: string) => void, findings: Finding[]): Promise<boolean> {
   for (const { path, id } of state.conflicts) {
     const source = await state.read(path, "conflicts");
     const conflict = source?.section.conflicts.find((item) => item.id === id);
-    if (!source || !conflict || (conflict.checked && conflict.resolution)) continue;
+    if (!source || !conflict || !isOpenSpecItem(conflict, "conflicts")) continue;
     write(blessText.conflict(id, conflict.text));
     const line = sourceLine(source.text, itemLine(conflict));
-    const sections = source.doc.sections.filter((section) => governing(section) && belongs(conflict, source.doc, section));
-    const postpone = () => {
-      findings.push(diagnostic("TN-BLESS-OPEN-CONFLICT", { slug: sections[0]?.slug ?? "conflicts", ids: id }));
-      return false;
-    };
+    const sections = source.doc.sections.filter((section) =>
+      governing(section) && openItemsFor(source.doc, section, "conflicts").includes(conflict));
+    const unresolved = () => diagnostic("TN-BLESS-OPEN-CONFLICT", { slug: sections[0]?.slug ?? "conflicts", ids: id });
     const alternatives = choices(line);
     let resolution: string | null;
     if (alternatives.length) {
@@ -152,11 +134,15 @@ async function settle(state: SessionState, ask: Ask, write: (value: string) => v
       resolution = await ask(blessText.writeResolution);
       if (resolution === null) return false;
     }
-    if (!resolution) return postpone();
+    if (!resolution) {
+      findings.push({ ...unresolved(), severity: "warning" });
+      continue;
+    }
     const affected = /\(affects:\s*([^)]+)\)/i.exec(line)?.[1]?.split(",").map((entry) => entry.trim().toLowerCase());
     const items = sections.flatMap(statements).filter((item) => !affected || affected.includes(item.id.toLowerCase()));
     const answer = items.length ? await pick(
-      ask, blessText.contradiction, ["no", ...items.map(({ id: itemId }) => itemId.toLowerCase())], write,
+      ask, blessText.contradiction(items.map(({ id }) => id).join(", ")),
+      ["no", ...items.map(({ id: itemId }) => itemId.toLowerCase())], write,
     ) : "no";
     if (answer === null) return false;
     if (answer !== "no") {
@@ -167,15 +153,47 @@ async function settle(state: SessionState, ask: Ask, write: (value: string) => v
       const remaining = updated?.doc.sections.flatMap(statements).find((entry) => entry.id === item?.id);
       if (!updated || (remaining && cleanText(remaining.text) === cleanText(item?.text ?? ""))) {
         write(blessText.conflictUnchanged);
-        return postpone();
+        findings.push(unresolved());
+        continue;
       }
       const current = updated.section.conflicts.find((entry) => entry.id === id);
-      if (current) await state.resolveConflict(updated, current, resolution);
+      if (current) await state.resolve(updated, current, "resolution", resolution);
     } else {
-      await state.resolveConflict(source, conflict, resolution);
+      await state.resolve(source, conflict, "resolution", resolution);
     }
   }
   return true;
+}
+
+async function settleQuestions(
+  state: SessionState,
+  initial: SectionState,
+  ask: Ask,
+  write: (value: string) => void,
+): Promise<SectionState | "skip" | null> {
+  let current = initial;
+  while (true) {
+    const question = openItemsFor(current.doc, current.section, "questions")[0];
+    if (!question) return current;
+    write(blessText.question(question.id, question.text));
+    const choice = await pick(ask, "> ", ["1", "2", "3", "answer", "not a blocker", "skip section"], write);
+    if (choice === null) return null;
+    if (choice === "3" || choice === "skip section") {
+      write(blessText.skipped(current.section.heading, question.id));
+      return "skip";
+    }
+    let answer: string | null = "Not a blocker";
+    if (choice === "1" || choice === "answer") {
+      do {
+        answer = await ask(blessText.answer);
+        if (answer === null) return null;
+      } while (!answer);
+    }
+    await state.resolve(current, question, "answer", answer);
+    const updated = await state.read(current.doc.path, current.section.slug);
+    if (!updated) return "skip";
+    current = updated;
+  }
 }
 
 export async function blessSession(state: SessionState, io: BlessIO = {}) {
@@ -203,25 +221,47 @@ export async function blessSession(state: SessionState, io: BlessIO = {}) {
     if (answer.done || interrupted) return null;
     return answer.value.trim();
   };
-  const editableState = {
+  let changed = false;
+  const editableState: SessionState = {
     ...state,
+    resolve: async (entry, item, field, value) => {
+      await state.resolve(entry, item, field, value);
+      changed = true;
+    },
     edit: async (entry: SectionState) => {
       if (!terminalClosed) lines.pause();
-      try { await state.edit(entry); }
-      finally { if (!terminalClosed) lines.resume(); }
+      try {
+        await state.edit(entry);
+        changed ||= await readFile(entry.filename, "utf8") !== entry.text;
+      } finally { if (!terminalClosed) lines.resume(); }
     },
   };
   try {
-    if (!state.owners.length) return { result, findings: [diagnostic("TN-SCHEMA", { path: "tenet.yaml", schema: "tenet-yaml", pointer: "/owners" })] };
-    const owner = await pick(ask, blessText.owner(state.owners.map((id, i) => `${i + 1}. ${id}`).join("  ")),
-      state.owners.map((_, i) => String(i + 1)), write);
-    const by = owner === null ? undefined : state.owners[Number(owner) - 1];
-    if (by && await settle(editableState, ask, write, findings)) {
+    if (!state.owners.length) {
+      findings.push(diagnostic("TN-SCHEMA", { path: "tenet.yaml", schema: "tenet-yaml", pointer: "/owners" }));
+      return { result, findings };
+    }
+    const ownerOptions = state.owners.map((_, i) => String(i + 1));
+    const onlyOwner = state.owners.length === 1;
+    if (onlyOwner) ownerOptions.push("");
+    const owner = await pick(ask, blessText.owner(state.owners.map((id, i) =>
+      `${i + 1}. ${id}${onlyOwner ? " (Enter)" : ""}`).join("  ")), ownerOptions, write);
+    const by = owner === null ? undefined : state.owners[Number(owner || "1") - 1];
+    if (by && await settleConflicts(editableState, ask, write, findings)) {
       for (const target of state.targets) {
+        const reviewStarted = now().valueOf();
         while (!interrupted) {
-          const current = await state.read(target.path, target.slug);
-          if (!current) break;
-          const { doc, section } = current;
+          const entry = await state.read(target.path, target.slug);
+          if (!entry) break;
+          const conflicts = openItemsFor(entry.doc, entry.section, "conflicts");
+          if (conflicts.length) {
+            write(blessText.skipped(entry.section.heading, conflicts.map(({ id }) => id).join(", ")));
+            break;
+          }
+          const current = await settleQuestions(editableState, entry, ask, write);
+          if (current === null) { interrupted = true; break; }
+          if (current === "skip") break;
+          const { section } = current;
           const flags = state.flags(current);
           if (section.text.trim()) write(section.text.trimEnd());
           const available: Action[] = flags.includes("sources-changed")
@@ -230,11 +270,6 @@ export async function blessSession(state: SessionState, io: BlessIO = {}) {
           if (selected === null) { interrupted = true; break; }
           if (selected === "edit") { await editableState.edit(current); continue; }
           const action = (selected === "later" ? "defer" : selected) as CompletedAction;
-          const open = relevantOpen(doc, section);
-          if ((action === "bless" || action === "confirm") && open.length) {
-            findings.push(diagnostic("TN-BLESS-OPEN-CONFLICT", { slug: section.slug, ids: open.map(({ id }) => id).join(", ") }));
-            break;
-          }
           let adopt = false;
           const inferred = statements(section).filter((item) => item.origin === "inferred");
           if (action === "bless" && inferred.length) {
@@ -260,21 +295,29 @@ export async function blessSession(state: SessionState, io: BlessIO = {}) {
             if (choice === null) { interrupted = true; break; }
             restore = choice === "y";
           }
-          const errors = await state.commit(current, action, by, restore, adopt);
+          const minutes = Math.max(0, now().valueOf() - reviewStarted) / 60_000;
+          const errors = await state.commit(current, action, by, restore, adopt, minutes);
           findings.push(...errors);
           if (!errors.some((finding) => finding.severity === "error")) {
             const key = ({ bless: "blessed", confirm: "confirmed", reject: "rejected", defer: "deferred" } as const)[action];
             result[key]++;
+            changed = true;
           }
           break;
         }
         if (interrupted) break;
       }
     }
+  } catch (error) {
+    findings.push(findingFrom(error));
   } finally {
     lines.close();
     if (input === process.stdin) process.off("SIGINT", stop);
     result.minutes = Math.max(0, now().valueOf() - started) / 60_000;
+    const blessed = result.blessed + result.confirmed;
+    write(`\n${blessText.summary(blessed, state.targets.length)}`);
+    if (blessed === 0) write(blessText.nothingBlessed);
+    write(changed ? blessText.commit(`"${state.records}"`) : blessText.revisit);
   }
   return { result, findings };
 }
@@ -282,7 +325,7 @@ export async function blessSession(state: SessionState, io: BlessIO = {}) {
 type Front = ReturnType<typeof matter>;
 type Counts = { drafted: number | null; kept: number | null; edited: number | null; adopted: number | null; added: number | null };
 type Patch = { path: string; text: string; expected?: string };
-type Workspace = { cwd: string; head: string; records: string; prefix: string; started: number; now: () => Date; write: typeof writeAtomic };
+type Workspace = { cwd: string; head: string; records: string; prefix: string; now: () => Date; write: typeof writeAtomic };
 const normalize = (text: string) => text.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
 const cleanText = (text: string) => text.replace(/\{[^{}]*\}/g, "").trim().replace(/\s+/g, " ");
 const portable = (value: string) => value.replaceAll("\\", "/").replace(/^\.\//, "");
@@ -328,7 +371,7 @@ function reader(cwd: string): (filename: string) => string | null {
 
 function targetsConflict(doc: ParsedDoc): Array<{ path: string; id: string }> {
   return doc.sections.flatMap((section) => section.conflicts
-    .filter(({ checked, resolution }) => !checked || !resolution)
+    .filter((item) => isOpenSpecItem(item, "conflicts"))
     .map(({ id }) => ({ path: doc.path, id })));
 }
 
@@ -535,7 +578,7 @@ function findingFrom(error: unknown): Finding {
   return diagnostic("TN-INTERNAL", { detail: error instanceof Error ? error.message : String(error) });
 }
 
-async function writeAction(ws: Workspace, entry: SectionState, action: CompletedAction, by: string, restore: boolean, adopt: boolean) {
+async function writeAction(ws: Workspace, entry: SectionState, action: CompletedAction, by: string, restore: boolean, adopt: boolean, minutes: number) {
   try {
     await unchanged(entry);
     const checked = adopt ? adoptStatements(entry, by, ws.prefix) : entry;
@@ -591,7 +634,7 @@ async function writeAction(ws: Workspace, entry: SectionState, action: Completed
     const counts = await countDraft(checked, measured, ws);
     await persist(ws, patches, {
       doc: checked.doc.path, section: section.slug, action, by, at: utcSeconds(ws.now),
-      minutes: Math.max(0, ws.now().valueOf() - ws.started) / 60_000, statements: counts,
+      minutes, statements: counts,
     });
     return [];
   } catch (error) { return [findingFrom(error)]; }
@@ -626,7 +669,7 @@ export async function runBless(options: BlessOptions = {}, io: BlessIO = {}): Pr
     const records = portable(policy.paths.records);
     const prefix = policy.specs.id_prefix;
     const now = io.now ?? (() => new Date());
-    const ws: Workspace = { cwd, head, records, prefix, now, started: now().valueOf(), write: io.write ?? writeAtomic };
+    const ws: Workspace = { cwd, head, records, prefix, now, write: io.write ?? writeAtomic };
     const read = reader(cwd);
     const load = async (relative: string) => {
       const filename = await confine(relative, cwd);
@@ -652,39 +695,36 @@ export async function runBless(options: BlessOptions = {}, io: BlessIO = {}): Pr
       return { result: null, findings: [diagnostic("TN-USAGE-BLESS", { command: "bless", detail: blessText.missingTarget })] };
     }
     const conflicts = selected.flatMap(({ doc }) => targetsConflict(doc).filter(({ id }) => {
-      const conflict = doc.sections.flatMap((section) => section.conflicts).find((item) => item.id === id);
-      return targets.some((target) =>
-        target.path === doc.path && doc.sections.some((section) => section.slug === target.slug && conflict && belongs(conflict, doc, section)));
+      return targets.some((target) => target.path === doc.path && doc.sections.some((section) =>
+        section.slug === target.slug && openItemsFor(doc, section, "conflicts").some((item) => item.id === id)));
     }));
-    const result = await blessSession({
+    return await blessSession({
       owners: policy.owners?.length ? policy.owners.map(({ id }) => id) :
         [...new Set(targets.flatMap(({ path }) => ownersFor(path)))],
       targets,
       conflicts,
+      records,
       read: async (file, selector) => {
         const entry = await load(file);
         const section = entry?.doc.sections.find(({ slug, heading }) => slug === selector || heading === selector);
         return entry && section ? { ...entry, section } : null;
       },
       edit: (entry) => (io.edit ?? editInTerminal)(entry.filename, cwd),
-      resolveConflict: async (entry, conflict, resolution) => {
+      resolve: async (entry, item, field, value) => {
         await unchanged(entry);
         const lines = normalize(entry.text).split("\n");
-        const index = (itemLine(conflict) ?? 0) - 1;
+        const index = (itemLine(item) ?? 0) - 1;
         const source = lines[index];
         if (!source) return;
-        lines[index] = `${source.replace(/^(\s*[-*+]\s+)\[[ xX]\]/, "$1[x]").replace(/(?:^|[;|\s])resolution:\s*.*$/i, "").replace(/[;|\s]*$/, "")} | resolution: ${resolution}`;
+        const checked = source.replace(/^(\s*[-*+]\s+)(?:\[[ xX]\]\s+)?/, "$1[x] ");
+        const prompt = checked.replace(/(?:^|[;|\s])(?:resolution|answer):\s*.*$/i, "").replace(/[;|\s]*$/, "");
+        lines[index] = `${prompt} | ${field}: ${value}`;
         await writeAtomic(entry.filename, lines.join("\n"));
       },
-      commit: (entry, action, by, restore, adopt) => writeAction(ws, entry, action, by, restore, adopt),
+      commit: (entry, action, by, restore, adopt, minutes) => writeAction(ws, entry, action, by, restore, adopt, minutes),
       flags: (entry) => flags(entry.section, read),
       showAnchors: async (entry) => anchorsToShow(entry, read),
     }, io);
-    if (result.result && result.result.blessed + result.result.confirmed + result.result.rejected + result.result.deferred > 0) {
-      const output = io.stdout ?? process.stdout;
-      output.write(`\n${blessText.summary(result.result)}\n${blessText.commit(`"${records}"`)}\n`);
-    }
-    return result;
   } catch (error) {
     return { result: null, findings: [findingFrom(error)] };
   }

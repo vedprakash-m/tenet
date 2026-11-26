@@ -32,9 +32,14 @@ export function makeOnboardCommand(deps: OnboardDeps) {
   return {
     name: "onboard",
     description: onboardText.description,
-    options: ["--inventory-only", "--refresh", "--layout <layout>", "--card"],
+    options: ["--inventory-only", "--refresh", "--layout <layout>", "--card", "--pr <number>"],
     async handler({ cwd, args, options, json }: OnboardCommandContext) {
       const layout = options["--layout"];
+      const prOption = options["--pr"];
+      if (prOption !== undefined && (options["--card"] !== true || typeof prOption !== "string" || !/^\d+$/.test(prOption))) {
+        return { findings: [diagnostic("TN-USAGE-ONBOARD", { command: "onboard", detail: "--pr needs a pull request number and --card" })] };
+      }
+      const pr = typeof prOption === "string" ? Number(prOption) : undefined;
       if (args.length || (layout !== undefined && layout !== "one-file" && layout !== "separate")) {
         const detail = args.length ? onboardText.unexpectedPositionals : onboardText.invalidLayout;
         return { findings: [diagnostic("TN-USAGE-ONBOARD", { command: "onboard", detail })] };
@@ -44,7 +49,8 @@ export function makeOnboardCommand(deps: OnboardDeps) {
           if (options["--inventory-only"] || options["--refresh"] || layout) {
             return { findings: [diagnostic("TN-USAGE-ONBOARD", { command: "onboard", detail: onboardingCardText.incompatible })] };
           }
-          return { value: json ? await onboardingCard({ cwd, format: "result" }) : await onboardingCard({ cwd }) };
+          const cardOptions = { cwd, ...(pr === undefined ? {} : { pr }) };
+          return { value: json ? await onboardingCard({ ...cardOptions, format: "result" }) : await onboardingCard(cardOptions) };
         }
         const { value, diagnostics } = await prepareOnboard({
           cwd,

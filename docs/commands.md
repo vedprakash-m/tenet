@@ -8,12 +8,12 @@ Run `tenet --help` for the command list and `tenet --version` for the installed 
 |---|---|
 | `tenet init` | Lists setup writes and asks for confirmation. `--yes` accepts defaults, `--local-hosts` explicitly allows supported local host edits, and `--vendor` copies the kit into the repository. `--force` can replace colliding setup files. |
 | `tenet onboard` | Reads committed files and writes an inventory and drafting assignment under `.tenet/onboard/`. `--inventory-only` is the local inspection step. `--layout one-file` and `--layout separate` override layout selection. `--refresh` requests an updated assignment. |
-| `tenet onboard --card` | Checks citations, records the draft revision and prints a summary for a committed draft. Use it on its own. |
+| `tenet onboard --card` | Checks that citations resolve, records the draft revision and lists changed files. Pass `--pr <number>` when a pull request is open. |
 | `tenet bless` | Reviews and approves sections in a terminal. Use `--doc <path>` or `--section <slug>` to narrow the session. |
 | `tenet check` | Reports structural, citation and integrity findings. Pass paths for a focused check or `--pack` to validate a pack. |
 | `tenet fix` | Repairs mechanical specification metadata and IDs. Use `--dry-run` to see proposed changes. |
 | `tenet split <document> <section>` | Moves a section to a separate document, leaves a pointer and updates links. |
-| `tenet board` | Shows specification state and debt. `--all` includes clean blessed sections. |
+| `tenet board` | Groups specification sections by file and shows open conflicts, open questions and spec debt. `--all` includes clean blessed sections. |
 | `tenet context` | Selects relevant specification context. Use `--paths`, `--ids`, `--query` or `--budget-tokens`. Add `--include-drafts` for labeled draft hints. |
 | `tenet mcp` | Starts a local MCP server on standard input and output. It exposes context, check and status tools to a compatible host. |
 | `tenet upgrade` | Refreshes the lock and managed files for the installed package version. |
@@ -47,5 +47,7 @@ Global options include `--cwd <path>`, `--json`, `--quiet`, `--verbose` and `--o
 | 2 | Invalid usage, including blessing without a terminal |
 | 3 | An environment problem, such as a missing repository or an unavailable registry |
 | 4 | A policy refusal |
+
+A blessing session exits 0 when it finishes without errors, even when it blesses nothing or you choose to skip sections. Unresolved review errors exit 1. Blessing needs a terminal and exits 2 without one.
 
 See the [command contract](../tenet/specs/tech-spec/contracts.md#8-commands) for exact output shapes and error codes.

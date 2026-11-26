@@ -373,7 +373,7 @@ test("check warns at the local budget threshold and only crosses in CI", async (
     repo.git(["commit", "-m", "base"]);
     await repo.write(
       "tenet/specs/tech-spec.md",
-      spec("tenet/specs/tech-spec.md", "design", `x${".".repeat(300)}`, "L2"),
+      spec("tenet/specs/tech-spec.md", "design", `x${".".repeat(400)}`, "L2"),
     );
     const local = await check({ cwd: repo.path });
     const warning = local.findings.find((finding) => finding.code === "TN-BUDGET-WARN");
@@ -1062,5 +1062,56 @@ test("check meets cold and warm 500-document timing with batched Git calls", asy
   } finally {
     await repo.cleanup();
   }
+});
+
+
+test("[AB-A6] [F-49] blessing metadata does not count toward a document budget", async (t) => {
+  const repo = await tmpRepo("body-budget");
+  t.after(repo.cleanup);
+  await seed(repo);
+  const body = "## Requirements\n- R-1 Keep a receipt. {origin: asked}";
+  const filename = "tenet/specs/prd.md";
+  const text = spec(filename, "requirements", body.split("\n")[1] ?? "")
+    .replace('"state": "draft"', '"state": "draft", "anchors": {"src/receipt.js:1": "sha256:' + "a".repeat(64) + '"}');
+  await repo.write(filename, text);
+  const policyText = await readFile(path.join(repo.path, "tenet.yaml"), "utf8");
+  const policy = JSON.parse(policyText);
+  policy.specs.documents.find(({ path }: { path: string }) => path === "specs/prd.md").budget = 35;
+  await repo.write("tenet.yaml", JSON.stringify(policy));
+  const result = await check({ cwd: repo.path });
+  assert.equal(result.findings.some(({ code, file }) => code.startsWith("TN-BUDGET") && file === filename), false);
+});
+
+test("[AB-A7] [F-50] draft requirements account for a grouped vision warning at observe", async (t) => {
+  const repo = await tmpRepo("draft-vision-coverage");
+  t.after(repo.cleanup);
+  await seed(repo);
+  const body = "- V-1 Keep a receipt. {origin: asked}\n- V-2 List the format. {origin: asked}\n";
+  const copy = "tenet/blessed/tenet__vision.md/vision.md";
+  const document = spec("tenet/vision.md", "vision", body.trimEnd(), "L0");
+  const front = JSON.parse(document.split("\n---\n")[0]?.slice(4) ?? "");
+  Object.assign(front.sections.vision, {
+    state: "blessed",
+    blessed_copy: copy,
+    blessed_digest: sectionDigest(body),
+    blessed_at_rev: "a".repeat(40),
+    blessed_by: "owner",
+    blessed_at: "2026-11-26T10:00:00Z",
+    recorded: "self",
+    anchors: {},
+  });
+  await repo.write("tenet/vision.md", `---\n${JSON.stringify(front)}\n---\n## vision\n${body}`);
+  await repo.write(copy, body);
+  await repo.write(`${copy}.anchors.json`, "{}");
+  await repo.write("tenet/specs/prd.md", spec("tenet/specs/prd.md", "requirements", [
+    "- R-1 Keep a printed receipt. {origin: asked; serves: V-1}",
+    "- R-2 List the receipt format. {origin: asked; serves: V-2}",
+  ].join("\n")));
+  const result = await check({ cwd: repo.path });
+  const coverage = result.findings.filter(({ code }) => code.includes("VISION"));
+  assert.equal(coverage.length, 1);
+  assert.equal(coverage[0]?.severity, "warning");
+  assert.equal(coverage[0]?.message, "2 vision items wait for a blessed requirement; bless the PRD next");
+  assert.equal(result.summary.errors, 0);
 });
 

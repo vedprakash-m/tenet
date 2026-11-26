@@ -35,15 +35,15 @@ git add -A
 git commit -m "Set up Tenet"
 ~~~
 
-During init, answer what the project is for and choose a project kind. Tenet creates a draft in `tenet/intent.md` using the purpose you provide, and leaves undecided sections for you and your agent to fill in. Make the first commit before running onboarding. Before blessing a vision item, link it to a requirement you will also bless, list the item under a section called `Not yet in scope` and bless that section, or leave the vision item in draft. If you want GitHub Actions for this project, create the GitHub repository and set its remote before running init.
+During init, answer what the project is for and choose a project kind. Tenet creates a draft in `tenet/intent.md` using the purpose you provide, and leaves undecided sections for you and your agent to fill in. Make the first commit before running onboarding. If you want GitHub Actions for this project, create the GitHub repository and set its remote before running init.
 
 ## Draft and review
 
 On GitHub, do this work on a branch so you can open a setup pull request. You can also do it locally and review the files in your working tree.
 
 1. Ask your coding agent to run `tenet onboard`, open `.tenet/onboard/assignment.json` and follow the installed `tenet-draft-specs` skill. Tell it to ask you about unclear intent and cite the sources it uses. Your agent or its provider may receive project content.
-2. Read the drafts and commit the setup and draft files. Run `tenet onboard --card` to check citations and print the onboarding summary. The command records the draft revision in the specifications. Paste its output into the setup pull request if you use one.
-3. Run `tenet bless` in your terminal. Review flagged statements and conflicts and approve only the sections you want in force. Run `tenet check` and `tenet board` to see structural issues and what still needs review. Commit the generated card metadata and blessing changes. On GitHub, push your changes and merge the setup pull request after review.
+2. Read the drafts and commit the setup and draft files. Run `tenet onboard --card` to check that citations resolve and print the onboarding summary. Commit the files it lists. If you have opened a setup pull request, rerun with `--pr <number>` and paste the card into its description.
+3. Run `tenet bless` in your terminal. Review the vision first, then bless the requirements in the PRD or the Requirements section of `tenet/intent.md`. Link each vision item to a requirement or include it in a section called `Not yet in scope` and bless that section. Review design, experience and plan after the requirements. Open conflicts and questions block only the sections they apply to. Answer a question, mark it as not a blocker, or skip its section and come back later. Run `tenet check` and `tenet board` to see structural issues and what still needs review. Commit the blessing changes. On GitHub, push your changes and merge the setup pull request after review.
 
 For a small repository the assignment can select `tenet/intent.md`. For a larger repository it can select separate documents. Follow the paths in the assignment.
 

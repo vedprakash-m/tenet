@@ -13,7 +13,7 @@ import type { Finding } from "../types/generated.js";
 import { citationParts } from "./anchors.js";
 import { resolveCitations } from "./citations.js";
 import { ladder, type LadderEntry } from "./ladder.js";
-import { parseDoc, itemLine, sectionLocation, type ParsedDoc, type Requirement, type SpecSection } from "./parse.js";
+import { parseDoc, itemLine, sectionLocation, specificationBody, type ParsedDoc, type Requirement, type SpecSection } from "./parse.js";
 import { sectionDigest } from "./sections.js";
 
 export type CheckOptions = {
@@ -45,6 +45,7 @@ const rules = {
   "TN-SPEC-BLESSED-COPY": null,
   "TN-SPEC-DUP-ID": null,
   "TN-SPEC-UNCOVERED-VISION": null,
+  "TN-SPEC-VISION-WAITS-FOR-PRD": null,
   "TN-SPEC-REQ-META": null,
 } as const;
 
@@ -125,7 +126,7 @@ function defaultBudget(filename: string): number | null {
 }
 
 function tokens(text: string): number {
-  return Math.ceil(text.replaceAll("\r\n", "\n").replaceAll("\r", "\n").length / 4);
+  return Math.ceil(specificationBody(text).length / 4);
 }
 
 async function baseTexts(cwd: string, base: string | undefined, paths: string[]): Promise<Map<string, string | null>> {
@@ -267,19 +268,25 @@ function visionCoverage(entries: LadderEntry[]): Finding[] {
   const blessedVision = entries.flatMap((entry) => visionOf(entry.doc)
     .filter(({ section }) => section.state === "blessed")
     .map(({ item }) => ({ path: entry.path, line: itemLine(item), id: item.id })));
-  const covered = new Set(entries.flatMap((entry) => requirementsOf(entry.doc))
-    .filter(({ section }) => section.state === "blessed")
+  const requirements = entries.flatMap((entry) => requirementsOf(entry.doc));
+  const covered = new Set(requirements.filter(({ section }) => section.state === "blessed")
+    .flatMap(({ item }) => item.serves));
+  const draftCoverage = new Set(requirements.filter(({ section }) => section.state === "draft")
     .flatMap(({ item }) => item.serves));
   const deferred = new Set(entries.flatMap((entry) => entry.doc.sections
     .filter((section) => section.slug === "not-yet-in-scope" && section.state === "blessed")
     .flatMap(deferredVisionIds)));
   const uncovered = blessedVision.filter(({ id }) => !covered.has(id) && !deferred.has(id));
-  if (uncovered.length === 0) return [];
-  return uncovered.map(({ id, path: filename, line }) =>
-    makeFinding("TN-SPEC-UNCOVERED-VISION", "error", filename, line, {
-      id,
-    }),
-  );
+  const waiting = uncovered.filter(({ id }) => draftCoverage.has(id));
+  const findings = uncovered.filter(({ id }) => !draftCoverage.has(id)).map(({ id, path: filename, line }) =>
+    makeFinding("TN-SPEC-UNCOVERED-VISION", "error", filename, line, { id }));
+  if (waiting.length) {
+    findings.push(makeFinding("TN-SPEC-VISION-WAITS-FOR-PRD", "warning", null, null, {
+      count: String(waiting.length),
+      items: waiting.length === 1 ? "item waits" : "items wait",
+    }));
+  }
+  return findings;
 }
 
 function applyRuleMode(finding: Finding, policy: Policy): Finding | null {
