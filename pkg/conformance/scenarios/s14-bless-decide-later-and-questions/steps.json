@@ -1,7 +1,6 @@
 {
   "schema": 1,
   "scenario": "s14-bless-decide-later-and-questions",
-  "pending": "CP-0066 group A (AB-A1, AB-A2, AB-A3, AB-A7)",
   "spec_refs": [
     "tenet/packets/CP-0066-dogfood-0.1.1/definition.md#a--blessing-can-be-finished-and-the-card-and-board-show-what-blocks-it-track-1"
   ],

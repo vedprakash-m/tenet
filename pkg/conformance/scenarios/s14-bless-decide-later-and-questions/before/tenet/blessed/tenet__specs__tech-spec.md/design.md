@@ -1,2 +1,2 @@
-## Design
 Minimal design stub.
+
