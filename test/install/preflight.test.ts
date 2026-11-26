@@ -81,6 +81,38 @@ test("host descriptors detect markers and own their exact shared writes", async 
   ]);
 });
 
+test("[AB-B4] [F-21] a repository stays host-neutral until init --host selects a host", async (t) => {
+  const repo = await tmpRepo("install-no-agent-config");
+  t.after(repo.cleanup);
+  await repo.write("README.md", "# Fixture\n");
+  await commit(repo);
+
+  const result = await preflight({
+    cwd: repo.path,
+    yes: true,
+    environment: githubEnvironment,
+  });
+  assert.deepEqual(result.plan?.hosts, [{ id: "agents", capability: "skills+mcp" }]);
+  assert.equal(result.plan?.created.includes(".claude/skills/tenet-draft-specs/SKILL.md"), false);
+  assert.equal(result.plan?.keys.some(({ path, pointer }) =>
+    path === ".mcp.json" && pointer === "/mcpServers/tenet"
+  ), false);
+  assert.equal(result.plan?.blocks.some(({ path }) => path === "CLAUDE.md"), false);
+
+  const explicit = await preflight({
+    cwd: repo.path,
+    yes: true,
+    hosts: ["claude"],
+    environment: githubEnvironment,
+  });
+  assert.equal(explicit.plan?.hosts.some(({ id }) => id === "claude"), true);
+  assert.ok(explicit.plan?.created.includes(".claude/skills/tenet-draft-specs/SKILL.md"));
+  assert.ok(explicit.plan?.keys.some(({ path, pointer }) =>
+    path === ".mcp.json" && pointer === "/mcpServers/tenet"
+  ));
+  assert.ok(explicit.plan?.blocks.some(({ path }) => path === "CLAUDE.md"));
+});
+
 test("Windows MCP descriptors plan only host-required local profile keys", async () => {
   const root = "C:/Users/fixture/AppData/Roaming";
   const context = {
@@ -140,7 +172,9 @@ test("preflight detects Node Vitest, package setup, hosts and deterministic plan
     { path: ".gitattributes", kind: "yaml" },
     { path: ".gitignore", kind: "yaml" },
   ]);
-  assert.deepEqual(result.plan?.keys, [{ path: ".vscode/mcp.json", pointer: "/servers/tenet" }]);
+  assert.deepEqual(result.plan?.keys, [
+    { path: ".vscode/mcp.json", pointer: "/servers/tenet" },
+  ]);
 });
 
 test("preflight injects Windows shim requirements into detected hosts", async (t) => {
@@ -513,7 +547,7 @@ test("empty repositories expose purpose and kind prompts and --yes metadata", as
   t.after(repo.cleanup);
   repo.git(["remote", "add", "origin", "https://github.com/fixture/empty.git"]);
 
-  const interactive = await preflight({ cwd: repo.path });
+  const interactive = await preflight({ cwd: repo.path, environment: { platform: "linux" } });
   assert.deepEqual(interactive.prompts.map(({ key }) => key), ["purpose", "kind"]);
   assert.equal(interactive.facts.repository.empty, true);
   assert.equal(interactive.facts.kind, null);

@@ -1,8 +1,8 @@
 ---
-name: draft-specs
+name: tenet-draft-specs
 description: Draft grounded project specifications from the repository inventory and Owner interview answers during onboarding, without blessing or resolving conflicts.
 ---
-# Draft Specifications (`draft-specs`)
+# Draft Specifications (`tenet-draft-specs`)
 
 Follow these steps in order when onboarding a repository to Tenet:
 

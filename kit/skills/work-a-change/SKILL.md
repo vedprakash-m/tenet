@@ -1,8 +1,8 @@
 ---
-name: work-a-change
+name: tenet-work-a-change
 description: Implement a code or spec change using Tenet blessed context, pull-request acceptance items, tagged tests, and local verification.
 ---
-# Work a Change (`work-a-change`)
+# Work a Change (`tenet-work-a-change`)
 
 Follow these steps in order for every change:
 

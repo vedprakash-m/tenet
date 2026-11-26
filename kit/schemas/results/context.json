@@ -87,6 +87,9 @@
           },
           "integrity_failed": {
             "type": "boolean"
+          },
+          "over_budget": {
+            "type": "boolean"
           }
         },
         "required": [

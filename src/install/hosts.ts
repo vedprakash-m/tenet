@@ -1,6 +1,6 @@
 import { access, constants } from "node:fs/promises";
 import path from "node:path";
-import type { HostContext, HostDescriptor, HostWritePlan } from "./types.js";
+import type { HostContext, HostDescriptor, HostWritePlan, SelectableHost } from "./types.js";
 
 const skillNames = ["draft-specs", "review-with-findings", "work-a-change"] as const;
 
@@ -101,10 +101,16 @@ export const hostDescriptors: HostDescriptor[] = [
 
 export const HOST_DESCRIPTORS = hostDescriptors;
 
-export async function detectHosts(context: HostContext): Promise<HostDescriptor[]> {
+export async function detectHosts(
+  context: HostContext,
+  requested: SelectableHost[] = [],
+): Promise<HostDescriptor[]> {
   const detected: HostDescriptor[] = [];
+  const selected = new Set(requested);
   for (const descriptor of hostDescriptors) {
-    if (await descriptor.detect(context)) detected.push(descriptor);
+    if (selected.has(descriptor.id as SelectableHost) || await descriptor.detect(context)) {
+      detected.push(descriptor);
+    }
   }
   return detected.sort((left, right) => compareUtf16(left.id, right.id));
 }

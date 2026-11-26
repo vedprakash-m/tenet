@@ -183,6 +183,7 @@ function usage(): string {
 
 type ParsedOption = {
   value: "none" | "required" | "optional";
+  variadic: boolean;
 };
 
 function optionDeclarations(spec: CommandSpec): Map<string, ParsedOption> {
@@ -190,11 +191,26 @@ function optionDeclarations(spec: CommandSpec): Map<string, ParsedOption> {
   for (const option of spec.options ?? []) {
     const flags = typeof option === "string" ? option : option.flags;
     const value = /<[^>]+>/.test(flags) ? "required" : /\[[^\]]+\]/.test(flags) ? "optional" : "none";
+    const variadic = /<[^>]*\.\.\.>/.test(flags);
     for (const match of flags.matchAll(/--?[A-Za-z0-9][A-Za-z0-9-]*/g)) {
-      declarations.set(match[0], { value });
+      declarations.set(match[0], { value, variadic });
     }
   }
   return declarations;
+}
+
+function collectOption(
+  options: CommandContext["options"],
+  flag: string,
+  value: string | string[],
+): void {
+  const previous = options[flag];
+  if (previous === undefined || typeof previous === "boolean") {
+    options[flag] = value;
+    return;
+  }
+  const incoming = Array.isArray(value) ? value : [value];
+  options[flag] = [...(Array.isArray(previous) ? previous : [previous]), ...incoming];
 }
 
 function parseCommandArgs(spec: CommandSpec, argv: string[]): { args: string[]; options: CommandContext["options"] } {
@@ -221,13 +237,24 @@ function parseCommandArgs(spec: CommandSpec, argv: string[]): { args: string[]; 
       if (inline === "" && declaration.value === "required") {
         throw fail("TN-USAGE-OPTION-VALUE", `${flag} needs a value`, "Pass a value after the option.");
       }
-      options[flag] = inline;
+      collectOption(options, flag, inline);
       continue;
     }
-    const next = argv[index + 1];
-    if (next !== undefined && !next.startsWith("-")) {
-      options[flag] = next;
-      index += 1;
+    const values: string[] = [];
+    if (declaration.variadic) {
+      while (argv[index + 1] !== undefined && !(argv[index + 1] ?? "").startsWith("-")) {
+        values.push(argv[index + 1] ?? "");
+        index += 1;
+      }
+    } else {
+      const next = argv[index + 1];
+      if (next !== undefined && !next.startsWith("-")) {
+        values.push(next);
+        index += 1;
+      }
+    }
+    if (values.length > 0) {
+      collectOption(options, flag, declaration.variadic ? values : values[0] ?? "");
     } else if (declaration.value === "required") {
       throw fail("TN-USAGE-OPTION-VALUE", `${flag} needs a value`, "Pass a value after the option.");
     } else {

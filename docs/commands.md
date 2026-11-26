@@ -6,7 +6,7 @@ Run `tenet --help` for the command list and `tenet --version` for the installed 
 
 | Command | Options and behavior |
 |---|---|
-| `tenet init` | Lists setup writes and asks for confirmation. `--yes` accepts defaults, `--local-hosts` explicitly allows supported local host edits, and `--vendor` copies the kit into the repository. `--force` can replace colliding setup files. |
+| `tenet init` | Lists setup writes and asks for confirmation. `--yes` accepts defaults, `--local-hosts` explicitly allows supported local host edits, and `--vendor` copies the kit into the repository. `--force` can replace colliding setup files. **Proposal:** repeat `--host <name>` to select `claude`, `cursor`, `copilot` or `vscode` when its marker is absent. With no detected or selected host, portable skills remain under `.agents/skills/`. |
 | `tenet onboard` | Reads committed files and writes an inventory and drafting assignment under `.tenet/onboard/`. `--inventory-only` is the local inspection step. `--layout one-file` and `--layout separate` override layout selection. `--refresh` requests an updated assignment. |
 | `tenet onboard --card` | Checks that citations resolve, records the draft revision and lists changed files. Pass `--pr <number>` when a pull request is open. |
 | `tenet bless` | Reviews and approves sections in a terminal. Use `--doc <path>` or `--section <slug>` to narrow the session. |
@@ -14,7 +14,7 @@ Run `tenet --help` for the command list and `tenet --version` for the installed 
 | `tenet fix` | Repairs mechanical specification metadata and IDs. Use `--dry-run` to see proposed changes. |
 | `tenet split <document> <section>` | Moves a section to a separate document, leaves a pointer and updates links. |
 | `tenet board` | Groups specification sections by file and shows open conflicts, open questions and spec debt. `--all` includes clean blessed sections. |
-| `tenet context` | Selects relevant specification context. Use `--paths`, `--ids`, `--query` or `--budget-tokens`. Add `--include-drafts` for labeled draft hints. |
+| `tenet context` | Selects relevant specification context. Use `--paths app.py,src/lib.py`, repeat `--paths` (for example `--paths app.py --paths src/lib.py`), or use separate values after one flag (`--paths app.py src/lib.py`). Use `--ids`, `--query` or `--budget-tokens` to narrow or budget the result. Add `--include-drafts` to select labeled draft text with the same rules. |
 | `tenet mcp` | Starts a local MCP server on standard input and output. It exposes context, check and status tools to a compatible host. |
 | `tenet upgrade` | Refreshes the lock and managed files for the installed package version. |
 | `tenet remove` | Removes managed setup and generated working state, and reports what it kept. |

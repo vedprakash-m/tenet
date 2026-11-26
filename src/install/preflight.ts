@@ -527,7 +527,7 @@ export async function preflight(options: PreflightOptions = {}): Promise<Preflig
     cwd,
     platform: environment.platform ?? process.platform,
   };
-  const descriptors = await detectHosts(detectedContext);
+  const descriptors = await detectHosts(detectedContext, options.hosts);
   const profileRoots = localProfileRoots(environment);
   const shimHosts = windowsCommandShimRequired(
     environment,

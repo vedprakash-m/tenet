@@ -3,6 +3,7 @@ import type { CheckResult } from "../specs/check.js";
 import type { LockVerification } from "../policy/index.js";
 
 export type HostCapability = "skills+mcp" | "mcp" | "instructions";
+export type SelectableHost = "claude" | "cursor" | "copilot" | "vscode";
 export type ProjectKind = "service" | "library" | "data" | "infrastructure" | "ml" | "other";
 export type RunnerKind = "vitest" | "jest" | "node:test" | "pytest" | "go" | "ctrf" | "other";
 export type CiMode = "existing-ci" | "tenet-workflow" | "none";
@@ -105,6 +106,7 @@ export type PreflightEnvironment = {
 export type PreflightOptions = {
   cwd?: string;
   yes?: boolean;
+  hosts?: SelectableHost[];
   localHosts?: boolean;
   offline?: boolean;
   vendor?: boolean;
