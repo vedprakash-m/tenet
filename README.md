@@ -110,7 +110,27 @@ flowchart LR
 
 **Using GitHub Copilot?** [Tenet for GitHub Copilot](https://github.com/vedprakash-m/tenet-copilot), a full implementation inside VS Code and the GitHub Copilot app, is in progress.
 
-**Behind a corporate network that blocks the npm registry?** Use `tenet init --offline`, and run `tenet upgrade` once you're online so GitHub proof cards can verify the package. To try Tenet without installing it globally, use `npx -y @vedprakash-m/tenet` in place of `tenet`.
+## Install from a release tarball
+
+If your npm registry or corporate mirror has not synced Tenet, npm install and npx may return 404. Download or build the release tarball, then verify it:
+
+~~~sh
+gh release download <version> --pattern "vedprakash-m-tenet-<version>.tgz"
+gh release download <version> --pattern "SHA256SUMS"
+sha256sum -c SHA256SUMS
+npm install --global ./vedprakash-m-tenet-<version>.tgz
+~~~
+
+You can also download both files from the GitHub release page. The tarball includes Tenet, but npm dependencies still come from the registry or mirror configured for npm.
+
+Once Tenet is installed, use `--offline` after the release-tarball install if network lookups are unavailable:
+
+~~~sh
+tenet init --offline
+tenet upgrade --offline
+~~~
+
+`--offline` records local package integrity. Run `tenet upgrade` without `--offline` once the registry is reachable so GitHub proof cards can verify the package. If no checks appear on your pull request, check that GitHub Actions can run on the account.
 
 ## Roadmap
 
