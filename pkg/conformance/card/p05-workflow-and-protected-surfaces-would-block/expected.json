@@ -81,6 +81,10 @@
       {
         "text": "tests written in this change require reviewer judgment",
         "class": "judge"
+      },
+      {
+        "text": "check command changed for unit; runs base policy (takes effect after merge)",
+        "class": "host"
       }
     ],
     "degraded": []
