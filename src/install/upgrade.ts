@@ -1,9 +1,14 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
-import { confine } from "../core/fs.js";
+import { confine, writeAtomic } from "../core/fs.js";
+import { git } from "../core/git.js";
+import { sha256 } from "../core/hash.js";
 import { message } from "../core/messages.js";
-import { fail } from "../core/output.js";
+import { fail, version } from "../core/output.js";
+import { loadPolicy } from "../policy/index.js";
+import { anchorBlock, citationParts, type AnchorRecord } from "../specs/anchors.js";
+import { parseDoc } from "../specs/parse.js";
 import { preflight } from "./preflight.js";
 import { decodeJson, pointerValue, sha256Bytes } from "./manifest.js";
 import { applyPlan, planWriteSet, readPendingPlan, resumePendingPlan } from "./writes.js";
@@ -21,6 +26,116 @@ import type {
 import { localProfileRoots } from "./environment.js";
 
 type ChangeIndex = Map<string, UpgradeChanged["action"]>;
+
+async function historicalSource(
+  cwd: string,
+  revision: string,
+  filename: string,
+): Promise<string | null> {
+  try {
+    return await git(["show", `${revision}:${filename}`], { cwd });
+  } catch {
+    return null;
+  }
+}
+
+async function currentSource(cwd: string, filename: string): Promise<string | null> {
+  try {
+    const resolved = await confine(filename, cwd);
+    return await readFile(resolved, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+function anchorTextHash(text: string): string {
+  const normalized = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
+  if (normalized.at(-1) === "") normalized.pop();
+  return `sha256:${sha256(normalized.map((line) => line.replace(/[ \t]+$/, "")).join("\n"))}`;
+}
+
+async function migratedAnchor(
+  cwd: string,
+  citation: string,
+  hash: string,
+  revision: string | null,
+): Promise<AnchorRecord> {
+  const parsed = citationParts(citation);
+  let start: number | null = parsed?.kind === "path" ? parsed.start : null;
+  let end: number | null = parsed?.kind === "path" ? parsed.end : null;
+  if (parsed) {
+    const historical = revision === null ? null : await historicalSource(cwd, revision, parsed.path);
+    const historicalBlock = historical === null
+      ? null
+      : anchorBlock(citation, (filename) => filename === parsed.path ? historical : null);
+    if (historicalBlock?.hash === hash) {
+      start = historicalBlock.start;
+      end = historicalBlock.end;
+    } else {
+      const current = await currentSource(cwd, parsed.path);
+      const currentBlock = current === null
+        ? null
+        : anchorBlock(citation, (filename) => filename === parsed.path ? current : null);
+      if (currentBlock?.hash === hash) {
+        start = currentBlock.start;
+        end = currentBlock.end;
+      }
+    }
+  }
+  return { hash, start, end, blessed_at_rev: revision };
+}
+
+async function migrateLegacyAnchors(cwd: string): Promise<string[]> {
+  const policy = await loadPolicy({ cwd });
+  const changed: string[] = [];
+  const documentPaths = [...new Set([
+    ...policy.specs.documents.map((document) =>
+      `${policy.paths.records}/${document.path.replaceAll("\\", "/")}`),
+    `${policy.paths.records}/intent.md`,
+  ])];
+  for (const documentPath of documentPaths) {
+    const filename = await confine(documentPath, cwd);
+    const text = await readFile(filename, "utf8").catch((error: NodeJS.ErrnoException) => {
+      if (error.code === "ENOENT") return null;
+      throw error;
+    });
+    if (text === null) continue;
+    const parsed = parseDoc(documentPath, text, { prefix: policy.specs.id_prefix });
+    for (const section of parsed.sections) {
+      if (!section.blessed_copy) continue;
+      const sidecarPath = `${section.blessed_copy}.anchors.json`;
+      const sidecarFile = await confine(sidecarPath, cwd);
+      const raw = await readFile(sidecarFile, "utf8").catch((error: NodeJS.ErrnoException) => {
+        if (error.code === "ENOENT") return null;
+        throw error;
+      });
+      if (raw === null) continue;
+      const old = JSON.parse(raw) as Record<string, unknown>;
+      const needsMigration = Object.values(old).some((value) => typeof value === "string");
+      if (!needsMigration) continue;
+      const records: Record<string, AnchorRecord> = {};
+      const citations = new Set([...Object.keys(section.anchors), ...Object.keys(old)]);
+      for (const citation of citations) {
+        const storedHash = section.anchors[citation] ?? "";
+        const legacyText = old[citation];
+        if (typeof legacyText === "string" && anchorTextHash(legacyText) !== storedHash) {
+          const words = message("TN-SPEC-BLESSED-COPY", { slug: section.slug });
+          throw { ...fail("TN-SPEC-BLESSED-COPY", words.message, words.fix), file: documentPath };
+        }
+        records[citation] = await migratedAnchor(
+          cwd,
+          citation,
+          storedHash,
+          section.blessed_at_rev,
+        );
+      }
+      await writeAtomic(sidecarFile, `${JSON.stringify(records, null, 2)}\n`);
+      changed.push(sidecarPath);
+    }
+  }
+  return changed.sort();
+}
 
 async function currentManifest(cwd: string): Promise<InstallManifest | null> {
   try {
@@ -69,6 +184,15 @@ function replaceKey(
 ): void {
   manifest.keys = manifest.keys.filter((item) => item.path !== itemPath || item.pointer !== pointer);
   if (replacement) manifest.keys.push(replacement);
+}
+
+function replaceBlock(
+  manifest: InstallManifest,
+  itemPath: string,
+  replacement: InstallManifest["blocks"][number] | undefined,
+): void {
+  manifest.blocks = manifest.blocks.filter((item) => item.path !== itemPath);
+  if (replacement) manifest.blocks.push(replacement);
 }
 
 function actionFor(before: string | null, after: string): UpgradeChanged["action"] {
@@ -181,6 +305,10 @@ function sortChanged(index: ChangeIndex): UpgradeChanged[] {
 }
 
 export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResult> {
+  const cwd = path.resolve(options.cwd ?? process.cwd());
+  const prior = await currentManifest(cwd);
+  const pending = await readPendingPlan(cwd, options.environment?.localProfileRoot);
+  const installedVersion = options.environment?.installedVersion ?? version;
   const preflightOptions = { ...options };
   const result = await preflight(preflightOptions);
   if (!result.plan || result.diagnostics.length > 0) {
@@ -189,8 +317,6 @@ export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResu
       { finding: result.diagnostics[0] },
     );
   }
-  const cwd = path.resolve(options.cwd ?? process.cwd());
-  const prior = await currentManifest(cwd);
   const local = await currentLocalManifest(cwd);
   const profileRoots = {
     ...localProfileRoots(options.environment),
@@ -205,7 +331,6 @@ export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResu
     result.plan.created = [...new Set([...result.plan.created, ".tenet/manifest.local.json"])];
     result.plan.created.sort();
   }
-  const pending = await readPendingPlan(cwd, options.environment?.localProfileRoot);
   if (pending) {
     const original = pending.upgrade;
     if (!original) {
@@ -242,30 +367,59 @@ export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResu
       ? { localProfileRoot: options.environment.localProfileRoot }
       : {}),
   });
-  const planned = await planWriteSet(result, { ...options, force: true, command: "upgrade" });
+  const sameVersion = prior.version === installedVersion;
+  const anchorChanges = sameVersion ? await migrateLegacyAnchors(cwd) : [];
+  const planned = await planWriteSet(result, {
+    ...options,
+    ...(sameVersion ? { offline: true } : {}),
+    force: true,
+    command: "upgrade",
+  });
   const targetVersion = planned.version;
   const packageName = options.environment?.registry?.package ?? "@vedprakash-m/tenet";
   const previousVersion = prior?.version ?? targetVersion;
   const changes: ChangeIndex = new Map();
-  changes.set("tenet.yaml", "kept");
+  if (!sameVersion) changes.set("tenet.yaml", "kept");
+  for (const itemPath of anchorChanges) changes.set(itemPath, "replaced");
 
   const writes: PendingWrite[] = [];
-  const manifest = structuredClone(planned.manifest);
+  const manifest = structuredClone(sameVersion ? prior : planned.manifest);
   for (const write of planned.writes) {
+    if (sameVersion && (
+      (write.kind === "file" && !prior.created.some((item) => item.path === write.path)) ||
+      (write.kind === "block" && !prior.blocks.some((item) => item.path === write.path)) ||
+      (write.kind === "key" && !prior.keys.some((item) =>
+        item.path === write.path && item.pointer === write.pointer)) ||
+      (write.kind === "local_key" && !local?.keys.some((item) =>
+        item.path === write.path && item.pointer === write.pointer))
+    )) continue;
     if (write.path === "tenet.yaml" && write.kind === "file") {
-      replaceCreated(manifest, write.path, prior?.created.find((item) => item.path === write.path));
+      if (!sameVersion) replaceCreated(manifest, write.path, prior.created.find((item) => item.path === write.path));
+      continue;
+    }
+    if (sameVersion && write.path === "tenet.lock" && write.kind === "file") {
       continue;
     }
     let decision: { apply: boolean; action: UpgradeChanged["action"] };
     if (write.kind === "file") {
       decision = await shouldApplyCreated(cwd, prior, write);
-      if (!decision.apply) {
+      if (sameVersion && decision.apply) {
+        replaceCreated(manifest, write.path, planned.manifest.created.find((item) => item.path === write.path));
+      } else if (!decision.apply && !sameVersion) {
         const old = prior?.created.find((item) => item.path === write.path);
         replaceCreated(manifest, write.path, old);
       }
     } else if (write.kind === "key") {
       decision = await shouldApplyKey(cwd, prior, write);
-      if (!decision.apply) {
+      if (sameVersion && decision.apply) {
+        replaceKey(
+          manifest,
+          write.path,
+          write.pointer ?? "",
+          planned.manifest.keys.find((item) =>
+            item.path === write.path && item.pointer === write.pointer),
+        );
+      } else if (!decision.apply && !sameVersion) {
         const old = prior?.keys.find((item) =>
           item.path === write.path && item.pointer === write.pointer);
         replaceKey(manifest, write.path, write.pointer ?? "", old);
@@ -278,9 +432,13 @@ export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResu
         write,
       );
     } else {
-      decision = { apply: true, action: actionFor(write.before_sha256, write.after_sha256) };
+      const action = actionFor(write.before_sha256, write.after_sha256);
+      decision = { apply: action !== "kept", action };
+      if (sameVersion && decision.apply && write.kind === "block") {
+        replaceBlock(manifest, write.path, planned.manifest.blocks.find((item) => item.path === write.path));
+      }
     }
-    changes.set(write.path, decision.action);
+    if (!sameVersion || decision.apply) changes.set(write.path, decision.action);
     if (decision.apply) writes.push(write);
   }
   for (const block of prior?.blocks ?? []) {
@@ -320,12 +478,14 @@ export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResu
       changed,
     },
   };
-  await applyPlan(plan, {
-    ...(options.fault ? { fault: options.fault } : {}),
-    ...(options.environment?.localProfileRoot
-      ? { localProfileRoot: options.environment.localProfileRoot }
-      : {}),
-  });
+  if (writes.length > 0) {
+    await applyPlan(plan, {
+      ...(options.fault ? { fault: options.fault } : {}),
+      ...(options.environment?.localProfileRoot
+        ? { localProfileRoot: options.environment.localProfileRoot }
+        : {}),
+    });
+  }
   const check = options.check ?? (await import("../specs/check.js")).check;
   await check({ cwd, installedVersion: targetVersion });
   return {

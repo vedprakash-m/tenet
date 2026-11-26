@@ -4,6 +4,12 @@ import { sectionDigest } from "./sections.js";
 
 type Reader = (path: string) => string | null;
 type CitationBlock = { start: number; end: number; text: string; hash: string };
+export type AnchorRecord = {
+  hash: string;
+  start: number | null;
+  end: number | null;
+  blessed_at_rev: string | null;
+};
 
 function normalizedLines(text: string): string[] {
   const lines = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
@@ -171,6 +177,27 @@ export function anchorsFor(
     texts[cite] = block.text;
   }
   return { anchors, texts };
+}
+
+export function anchorRecordsFor(
+  section: SpecSection,
+  readFile: Reader,
+  blessedAtRev: string,
+): { anchors: Record<string, string>; records: Record<string, AnchorRecord> } {
+  const anchors: Record<string, string> = {};
+  const records: Record<string, AnchorRecord> = {};
+  for (const cite of citationsOf(section)) {
+    const block = anchorBlock(cite, readFile);
+    if (!block) continue;
+    anchors[cite] = block.hash;
+    records[cite] = {
+      hash: block.hash,
+      start: block.start,
+      end: block.end,
+      blessed_at_rev: blessedAtRev,
+    };
+  }
+  return { anchors, records };
 }
 
 export function relocate(

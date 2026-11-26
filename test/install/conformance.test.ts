@@ -809,7 +809,7 @@ test("p17 loader upgrades owned pins without changing policy", async (t) => {
   }
 });
 
-test("upgrade refreshes a changed integrity pin", async (t) => {
+test("[AB-E1] [F-56] same-version upgrade leaves an edited integrity pin untouched", async (t) => {
   const setup = await makeCase("p01-empty");
   t.after(() => dispose(setup));
   const firstIntegrity = `sha512-${"A".repeat(86)}==`;
@@ -841,12 +841,124 @@ test("upgrade refreshes a changed integrity pin", async (t) => {
       },
     },
   });
-  assert.ok(upgraded.changed.some((item) =>
-    item.path === "tenet.lock" && item.action === "replaced"));
+  assert.deepEqual(upgraded.changed, []);
   assert.equal(
     (JSON.parse(await readFile(lockPath, "utf8")) as { integrity: string }).integrity,
-    refreshedIntegrity,
+    editedIntegrity,
   );
+});
+
+test("[AB-E1] [F-56] same-version offline upgrade preserves the install manifest and remove set", async (t) => {
+  const setup = await makeCase("p09-init-repeat-upgrade-remove");
+  t.after(() => dispose(setup));
+  await init(setup.options);
+  const before = await tree(setup.repo.path);
+  const manifestPath = path.join(setup.repo.path, ".tenet", "manifest.json");
+  const manifest = await readFile(manifestPath, "utf8");
+  const result = await upgrade({
+    ...setup.options,
+    offline: true,
+    environment: {
+      ...(setup.options.environment as Record<string, unknown>),
+      installedVersion: packageVersion,
+    },
+  });
+  assert.equal(result.from, packageVersion);
+  assert.equal(result.to, packageVersion);
+  assert.deepEqual(result.changed, []);
+  assert.equal(await readFile(manifestPath, "utf8"), manifest);
+  assert.deepEqual(await tree(setup.repo.path), before);
+  const removed = await remove(setup.options);
+  for (const expected of [
+    ".github/pull_request_template.md",
+    ".github/workflows/tenet.yml",
+    ".github/workflows/tenet-tests.yml",
+  ]) {
+    assert.ok(removed.removed.some(({ path: itemPath }) => itemPath === expected));
+  }
+});
+
+test("[AB-E2] [F-47] same-version upgrade migrates legacy anchor text to hashes and ranges", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  const revision = setup.repo.git(["rev-parse", "HEAD"]).trim();
+  const body = "- R-1 Retry once. {origin: observed; cites: src/retry.ts:1}\n";
+  const copyPath = "tenet/blessed/intent/requirements.md";
+  await setup.repo.write("tenet/intent.md", [
+    "---",
+    `tenet: {spec: 1, doc: intent, level: L1}`,
+    `sections: {requirements: {state: blessed, digest: "sha256:copy", blessed_digest: "sha256:copy", blessed_at_rev: "${revision}", blessed_copy: "${copyPath}", anchors: {"src/retry.ts:1": "sha256:9a74cf030d03b1a7ce2bb020957fe891795bd801afad57ba43ed64776d2afced"}, flags: []}}`,
+    "---",
+    "## Requirements",
+    body,
+  ].join("\n"));
+  await setup.repo.write(copyPath, body);
+  await setup.repo.write(`${copyPath}.anchors.json`, '{"src/retry.ts:1":"export const retries = 1;"}\n');
+  await init(setup.options);
+  const result = await upgrade({
+    ...setup.options,
+    offline: true,
+    environment: {
+      ...(setup.options.environment as Record<string, unknown>),
+      installedVersion: packageVersion,
+    },
+  });
+  assert.deepEqual(result.changed, [{ path: `${copyPath}.anchors.json`, action: "replaced" }]);
+  const migrated = JSON.parse(await readFile(
+    path.join(setup.repo.path, ...`${copyPath}.anchors.json`.split("/")),
+    "utf8",
+  ));
+  assert.deepEqual(Object.keys(migrated["src/retry.ts:1"]).sort(), [
+    "blessed_at_rev", "end", "hash", "start",
+  ]);
+  assert.equal(migrated["src/retry.ts:1"].start, 1);
+  assert.equal(migrated["src/retry.ts:1"].end, 1);
+  assert.equal(migrated["src/retry.ts:1"].blessed_at_rev, revision);
+  assert.doesNotMatch(JSON.stringify(migrated), /export const retries/);
+});
+
+test("[AB-E2] [F-47] legacy migration keeps the stored hash when the blessing commit is unavailable", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  const missingRevision = "0123456789012345678901234567890123456789";
+  const storedHash = "sha256:9a74cf030d03b1a7ce2bb020957fe891795bd801afad57ba43ed64776d2afced";
+  const body = "- R-1 Retry once. {origin: observed; cites: src/retry.ts:1-1}\n";
+  const copyPath = "tenet/blessed/intent/requirements.md";
+  await setup.repo.write("tenet/intent.md", [
+    "---",
+    "tenet: {spec: 1, doc: intent, level: L1}",
+    `sections: {requirements: {state: blessed, digest: "sha256:copy", blessed_digest: "sha256:copy", blessed_at_rev: "${missingRevision}", blessed_copy: "${copyPath}", anchors: {"src/retry.ts:1-1": "${storedHash}"}, flags: []}}`,
+    "---",
+    "## Requirements",
+    body,
+  ].join("\n"));
+  await setup.repo.write(copyPath, body);
+  await setup.repo.write(
+    `${copyPath}.anchors.json`,
+    '{"src/retry.ts:1-1":"export const retries = 1;"}\n',
+  );
+  await setup.repo.write("src/retry.ts", "export const retries = 2;\n");
+  await init(setup.options);
+  const result = await upgrade({
+    ...setup.options,
+    offline: true,
+    environment: {
+      ...(setup.options.environment as Record<string, unknown>),
+      installedVersion: packageVersion,
+    },
+  });
+  assert.deepEqual(result.changed, [{ path: `${copyPath}.anchors.json`, action: "replaced" }]);
+  const migrated = JSON.parse(await readFile(
+    path.join(setup.repo.path, ...`${copyPath}.anchors.json`.split("/")),
+    "utf8",
+  ));
+  assert.deepEqual(migrated["src/retry.ts:1-1"], {
+    hash: storedHash,
+    start: 1,
+    end: 1,
+    blessed_at_rev: missingRevision,
+  });
+  assert.doesNotMatch(JSON.stringify(migrated), /export const retries = 1;/);
 });
 
 test("p17 lexical JSON formatting survives owned pin replacement", async (t) => {

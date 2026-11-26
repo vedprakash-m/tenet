@@ -393,7 +393,7 @@ test("offline init records local integrity despite registry failure", async (t) 
   assert.equal(lock.integrity, await packageIntegrity());
 });
 
-test("registry transport failure writes nothing during upgrade", async (t) => {
+test("[AB-E1] [F-56] same-version upgrade ignores registry failure and writes nothing", async (t) => {
   const repo = await tmpRepo("upgrade-registry-transport-failure");
   t.after(repo.cleanup);
   repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
@@ -407,12 +407,14 @@ test("registry transport failure writes nothing during upgrade", async (t) => {
     "upgrade",
   );
 
-  assert.equal(output.child.status, 3, output.child.stdout);
-  assert.equal(output.envelope.errors[0]?.code, "TN-ENV-REGISTRY");
-  assert.match(
-    output.envelope.errors[0]?.message ?? "",
-    /Could not reach the npm registry.*ETIMEDOUT/,
-  );
+  assert.equal(output.child.status, 0, output.child.stderr);
+  assert.equal(output.envelope.ok, true);
+  assert.deepEqual(output.envelope.errors, []);
+  assert.deepEqual(output.envelope.result, {
+    from: packageVersion,
+    to: packageVersion,
+    changed: [],
+  });
   assert.deepEqual(await tree(repo.path), before);
 });
 
