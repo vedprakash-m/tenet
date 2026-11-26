@@ -333,6 +333,7 @@ test("[AB-C2] [AB-C3] verify --local runs base check command on working tree whe
   const localPass = runCli(passingBaseRepo.path, ["--offline", "verify", "--local"]);
   assert.equal(localPass.status, 0, localPass.stderr);
   assert.equal(await readFile(path.join(passingBaseRepo.path, "ran.txt"), "utf8"), "base-pass");
+  assert.match(localPass.stdout, /check command changed for unit; runs base policy \(takes effect after merge\)/);
 
   // 3. Base without tenet.yaml -> falls back to the working tree's policy.
   const noBaseRepo = await tmpRepo("c2-c3-no-base-policy");
@@ -360,6 +361,148 @@ test("[AB-C2] [AB-C3] verify --local runs base check command on working tree whe
   const localFallback = runCli(noBaseRepo.path, ["--offline", "verify", "--local"]);
   assert.equal(localFallback.status, 0, localFallback.stderr);
   assert.equal(await readFile(path.join(noBaseRepo.path, "ran.txt"), "utf8"), "working");
+});
+
+test("[AB-C3] card notes check command change without degrading card or changing conclusion when base check passes", async (t) => {
+  const repo = await tmpRepo("c3-passing-base");
+  t.after(repo.cleanup);
+  repo.git(["config", "user.name", "Fixture Owner"]);
+  repo.git(["config", "user.email", "fixture@example.invalid"]);
+  await repo.write("kit/TENET.md", "# Kit\n");
+  await repo.write("tenet/intent.md", "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"owner\"}\nsections:\n  vision: {\"state\":\"draft\",\"digest\":null,\"flags\":[]}\n---\n## Vision\n- V-1 Passing base check still notes command change. {origin: asked}\n");
+  await repo.write("tenet.yaml", JSON.stringify({
+    standard: "~0.1",
+    kit_path: "kit",
+    paths: { records: "tenet" },
+    level: "observe",
+    specs: { id_prefix: "R", documents: [{ path: "intent.md", level: "L1" }] },
+    owners: [{ id: "owner", name: "Owner", roles: ["owner"] }],
+    checks: {
+      unit: { run: `node -e "require('node:fs').writeFileSync('ran.txt','base')"`, report: "junit", report_path: ".tenet/reports/unit.xml", report_from: "file" },
+    },
+    protect: [],
+  }, null, 2));
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "base"]);
+  repo.git(["branch", "-M", "main"]);
+  const baseSha = repo.git(["rev-parse", "HEAD"]).trim();
+
+  repo.git(["checkout", "-b", "chore/tweak-check"]);
+  await repo.write("tenet.yaml", JSON.stringify({
+    standard: "~0.1",
+    kit_path: "kit",
+    paths: { records: "tenet" },
+    level: "observe",
+    specs: { id_prefix: "R", documents: [{ path: "intent.md", level: "L1" }] },
+    owners: [{ id: "owner", name: "Owner", roles: ["owner"] }],
+    checks: {
+      unit: { run: `node -e "require('node:fs').writeFileSync('ran.txt','head')"`, report: "junit", report_path: ".tenet/reports/unit.xml", report_from: "file" },
+    },
+    protect: [],
+  }, null, 2));
+  await repo.write("test/app.test.js", "import { test } from \"node:test\";\ntest(\"[AB-1] passes\", () => {});\n");
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "change check command"]);
+  const headSha = repo.git(["rev-parse", "HEAD"]).trim();
+
+  // 1. CI record() path with passing base check: note appears in why without degrading or changing conclusion.
+  const junitXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites>\n  <testsuite name=\"suite\" file=\"test/app.test.js\">\n    <testcase name=\"[AB-1] passes\" time=\"0.010\"/>\n  </testsuite>\n</testsuites>\n";
+  const { createHash } = await import("node:crypto");
+  const reportSha = createHash("sha256").update(junitXml, "utf8").digest("hex");
+  const { record } = await import("../../dist/verify/record.js");
+  const { renderCheckSummary } = await import("../../dist/verify/card.js");
+  const { touched } = await import("../../dist/specs/touched.js");
+  const { deltas } = await import("../../dist/specs/deltas.js");
+  const { parseDoc } = await import("../../dist/specs/parse.js");
+  const { sectionDigest } = await import("../../dist/specs/sections.js");
+  const { loadPolicy } = await import("../../dist/policy/index.js");
+
+  const bundle = {
+    schema_version: 1 as const,
+    "x-repository": "fixture/repo",
+    run: { id: "1", attempt: 1, workflow: "Tenet tests", job: "test", index: 0 },
+    pr: 1,
+    tested: { commit: headSha, kind: "head" as const, head: headSha, base: baseSha },
+    checks: [{
+      name: "unit",
+      exit_code: 0,
+      outcome: "success" as const,
+      duration_ms: 10,
+      report: "reports/unit.xml",
+      report_sha256: reportSha,
+      inputs: [],
+    }],
+  };
+  let rendered = "";
+  let recordedConclusion = "";
+  const recorded = await record({
+    kind: "workflow_run",
+    repository: "fixture/repo",
+    base: baseSha,
+    run: { id: "1", attempt: 1, workflow: "Tenet tests", head: headSha, repository: "fixture/repo", startedAt: "2026-11-26T00:00:00Z" },
+    pulls: [1],
+  }, {
+    check: async () => ({ findings: [], summary: { errors: 0, warnings: 0, advises: 0 } }),
+    policy: async (ref, cwd) => loadPolicy({ ref, cwd }),
+    verifyLock: async () => {},
+    touched,
+    deltas,
+    parseDoc,
+    sectionDigest,
+  }, {
+    cwd: repo.path,
+    version: packageVersion,
+    now: () => new Date("2026-11-26T00:00:00Z"),
+    render: renderCheckSummary,
+    checkout: async () => ({ cwd: repo.path, stale: false, close: async () => {} }),
+    forge: {
+      getPullRequest: async (number) => ({ number, base: baseSha, head: headSha, body: "## Acceptance\n- [AB-1] passes\n" }),
+      findPullRequests: async () => [],
+      latestRun: async () => null,
+      downloadBundles: async () => ({
+        total: 1,
+        missing: 0,
+        bundles: [{
+          bundle,
+          files: new Map([
+            ["bundle.json", Buffer.from(JSON.stringify(bundle))],
+            ["reports/unit.xml", Buffer.from(junitXml)],
+          ]),
+        }],
+      }),
+      upsertCheckRun: async (payload) => {
+        rendered = payload.summary;
+        recordedConclusion = payload.conclusion;
+      },
+    },
+    records: { read: async () => ({ tip: null, files: {} }), write: async () => true },
+  });
+  assert.deepEqual(recorded.card.degraded, []);
+  assert.deepEqual(recorded.card.rules.map((entry) => entry.rule), ["protected-surfaces"]);
+  assert.equal(recorded.conclusion, "neutral");
+  assert.equal(recordedConclusion, "neutral");
+  assert.ok(recorded.card.why.some((entry) => entry.text === "check command changed for unit; runs base policy (takes effect after merge)" && entry.class === "host"));
+  assert.doesNotMatch(rendered, /^Degraded:/m);
+  assert.match(rendered, /^Why: .*check command changed for unit; runs base policy \(takes effect after merge\) \[host\]$/m);
+
+  // 2. verify --local path with passing base check: base runs and card notes change without degrading.
+  await repo.write(".tenet/reports/unit.xml", junitXml);
+  const localRes = runCli(repo.path, ["--offline", "--json", "verify", "--local"]);
+  assert.equal(localRes.status, 0, localRes.stderr);
+  assert.equal(await readFile(path.join(repo.path, "ran.txt"), "utf8"), "base");
+  const envelope = JSON.parse(localRes.stdout) as {
+    result: {
+      conclusion: string;
+      markdown: string;
+      card: { degraded: string[]; rules: Array<{ rule: string }>; why: Array<{ text: string; class: string }> };
+    };
+  };
+  assert.deepEqual(envelope.result.card.degraded, []);
+  assert.deepEqual(envelope.result.card.rules.map((entry) => entry.rule), ["protected-surfaces", "acceptance-passed"]);
+  assert.equal(envelope.result.conclusion, "neutral");
+  assert.ok(envelope.result.card.why.some((entry) => entry.text === "check command changed for unit; runs base policy (takes effect after merge)"));
+  assert.doesNotMatch(envelope.result.markdown, /^Degraded:/m);
+  assert.match(envelope.result.markdown, /takes effect after merge/);
 });
 
 test("[AB-C4] [F-36] [F-42] init uses default branch instead of setup branch and upgrade rewrites generated workflows", async (t) => {

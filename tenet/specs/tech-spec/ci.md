@@ -40,7 +40,7 @@
 
 ## 2. Running checks
 
-1. Read `tenet.yaml` from the target (`git show <base>:tenet.yaml`). **First policy:** at `observe` and `protect`, a check the pull request adds runs labelled "proposed check · approve tenet.yaml to pin"; if the head changes an existing check's command and that base check does not succeed, CI still runs the base command and the card notes that the change takes effect after merge; at `verify` an unpinned check never runs.
+1. Read `tenet.yaml` from the target (`git show <base>:tenet.yaml`). **First policy:** at `observe` and `protect`, a check the pull request adds runs labelled "proposed check · approve tenet.yaml to pin"; **Proposal · CP-0066 AB-C3.** if the head changes an existing check's command, CI still runs the base command and the card notes that the change takes effect after merge (whether the base check passes or fails; when it passes, the note is informational and neither degrades the card nor changes its conclusion); at `verify` an unpinned check never runs.
 2. Create `.tenet/reports/`.
 3. Run each check's `setup` commands, then `run`, from the repository root. CI runners use `bash -eo pipefail -c` (locally: `bash` where present, else the platform shell), within `timeout_minutes` (default 30). Locally, `tenet verify --local` runs configured checks on the working tree against the default branch's merge base (from the base's `tenet.yaml` when present, else the working tree's) with no CI event file and no network, and prints a local preview proof card.
 4. `report_from: stdout` captures standard output as UTF-8 into `.tenet/reports/<name>.<ext>`; `file` (default) reads `report_path` (default `.tenet/reports/<name>.xml` or `.json`).
