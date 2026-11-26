@@ -41,8 +41,8 @@ test("registry transport failures are environment errors", async () => {
     (error: unknown) =>
       (error as { code?: string }).code === "TN-ENV-REGISTRY" &&
       (error as { message?: string }).message ===
-        "Could not reach the npm registry to verify @vedprakash-m/tenet@0.1.0-alpha.0 " +
-          "(ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE)." &&
+        "Could not reach the npm registry to verify @vedprakash-m/tenet@0.1.0-alpha.0: " +
+          "the TLS or proxy handshake failed." &&
       (error as { finding?: { fix?: string } }).finding?.fix ===
         "Check your network or proxy, or run `tenet init --offline` to record local package integrity.",
   );

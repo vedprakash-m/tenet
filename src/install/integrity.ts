@@ -31,13 +31,22 @@ function registryUnavailable(
   detail: string,
   command: "init" | "upgrade",
 ): never {
+  const cause = /ERR_SSL|TLS|SSL/i.test(detail)
+    ? "the TLS or proxy handshake failed"
+    : /ETIMEDOUT|timeout/i.test(detail)
+      ? "the npm request timed out"
+      : /ECONNREFUSED|ENETUNREACH|EAI_AGAIN/i.test(detail)
+        ? "the registry could not be reached"
+        : /E404|404|not found/i.test(detail)
+          ? "the package is not available on this registry"
+          : "the npm registry request failed";
   const words = message("TN-ENV-REGISTRY", {
     package: packageName,
     version,
-    detail,
+    cause,
     command,
   });
-  const finding = fail("TN-ENV-REGISTRY", words.message, words.fix);
+  const finding = { ...fail("TN-ENV-REGISTRY", words.message, words.fix), detail };
   throw Object.assign(new Error(words.message), {
     code: "TN-ENV-REGISTRY",
     finding,
@@ -128,7 +137,7 @@ async function runNpmView(args: string[], options: { cwd: string }): Promise<Npm
     cwd: options.cwd,
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
-    shell: process.platform === "win32",
+    shell: false,
   });
   let stdout = "";
   let stderr = "";
