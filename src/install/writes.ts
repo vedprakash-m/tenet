@@ -52,6 +52,7 @@ export type ApplyPlanOptions = {
     after?: "pending" | string | number;
   };
   localProfileRoot?: string;
+  offline?: boolean;
 };
 
 async function createdDirectories(cwd: string, paths: string[]): Promise<string[]> {
@@ -1124,7 +1125,7 @@ function completeWrote(plan: WriteSet, writes: PendingWrite[]): InitWrote {
   return wrote;
 }
 
-function pendingIntegrityFinding(pending: PendingManifest): InstallFinding[] {
+function pendingIntegrityFinding(pending: PendingManifest, offline = false): InstallFinding[] {
   const lock = pending.writes.find((write) => write.path === "tenet.lock");
   if (!lock?.content) return [];
   try {
@@ -1141,7 +1142,7 @@ function pendingIntegrityFinding(pending: PendingManifest): InstallFinding[] {
     return [{
       kind: "local-integrity",
       path: "tenet.lock",
-      message: localIntegrityWarning(value.package, value.version),
+      message: localIntegrityWarning(value.package, value.version, offline),
     }];
   } catch {
     return [];
@@ -1258,7 +1259,7 @@ export async function resumePendingPlan(
   return {
     plan: plan.plan,
     wrote,
-    findings: pendingIntegrityFinding(pending),
+    findings: pendingIntegrityFinding(pending, options.offline === true),
   };
 }
 

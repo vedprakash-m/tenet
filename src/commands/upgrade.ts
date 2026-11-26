@@ -55,7 +55,7 @@ export function makeUpgradeCommand(dependencies: UpgradeDependencies = {}): Comm
             typeof lock.package === "string" &&
             typeof lock.version === "string"
           ) {
-            context.stderr.write(`Warning: ${localIntegrityWarning(lock.package, lock.version)}\n`);
+            context.stderr.write(`Warning: ${localIntegrityWarning(lock.package, lock.version, context.offline)}\n`);
           }
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;

@@ -193,7 +193,11 @@ async function registryIntegrity(
   return validateIntegrity(value, `The registry response for ${packageName}@${version}`);
 }
 
-export function localIntegrityWarning(packageName: string, version: string): string {
+export function localIntegrityWarning(packageName: string, version: string, offline = false): string {
+  if (offline) {
+    return `Registry not checked (offline), so Tenet used local package integrity for ${packageName}@${version}. ` +
+      "CI workflows cannot verify it until `tenet upgrade` is run while online.";
+  }
   return `${packageName}@${version} is not on the registry, so Tenet used local package integrity. ` +
     "CI workflows cannot verify it until the package is published and re-pinned with `tenet upgrade`.";
 }
@@ -266,6 +270,6 @@ export async function releaseIntegrity(
     package: packageName,
     version,
     integrity: await localIntegrity(installed.root),
-    warning: localIntegrityWarning(packageName, version),
+    warning: localIntegrityWarning(packageName, version, options.offline === true),
   };
 }

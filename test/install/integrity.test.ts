@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import test from "node:test";
-import { releaseIntegrity, runNpmView } from "../../dist/install/integrity.js";
+import { localIntegrityWarning, releaseIntegrity, runNpmView } from "../../dist/install/integrity.js";
 
 import { packageVersion } from "../helpers/packageVersion.ts";
 
@@ -11,6 +11,12 @@ test("[AB-D5] [F-07] Windows npm runner executes npm CLI without shell", async (
   const result = await runNpmView(["--version"], { cwd: process.cwd() });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /^\d+\.\d+\.\d+/);
+});
+
+test("[AB-D3] [F-10] offline local-integrity warning never claims the package is unpublished", () => {
+  const warning = localIntegrityWarning("@vedprakash-m/tenet", "0.1.0", true);
+  assert.match(warning, /Registry not checked \(offline\)/);
+  assert.doesNotMatch(warning, /not on the registry/i);
 });
 
 test("published prereleases query the registry", async () => {
