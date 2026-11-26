@@ -35,13 +35,13 @@
           {
             "path": ".gitattributes",
             "kind": "config",
-            "sha256": "7db5c7c5adc4fe952a8cc6b3c9897cd88333a72c59d236fe7d41088e08a549ca",
+            "sha256": "1d356d209df557b2107ac7ebe7332a917b7d9907e701cd9f22002b9e188bc621",
             "lines": 12
           },
           {
             "path": ".gitignore",
             "kind": "config",
-            "sha256": "09de3ea02bc5cfcc9c9ea5a0d13881e3af4cff012389323adc4938de3e322e99",
+            "sha256": "b34625591b1938316459605a0433362f905d5b8e72a4fea757e0606d490bce4a",
             "lines": 6
           },
           {
@@ -59,7 +59,7 @@
           {
             "path": "AGENTS.md",
             "kind": "config",
-            "sha256": "fc204a5bde7c289275601d9d77bd2d62c23ce725889f2b81eb580e44629dc7ff",
+            "sha256": "ebca14647ce5640be40b8d3b4e35221849037ad3c1f849f5741eb0873405478c",
             "lines": 43
           },
           {
