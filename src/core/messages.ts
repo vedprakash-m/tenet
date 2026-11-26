@@ -69,7 +69,7 @@ export const messageTemplates = {
     "fix": "Run `git init` or run from inside a Git repository."
   },
   "TN-ENV-REGISTRY": {
-    "message": "Could not reach the npm registry to verify {package}@{version} ({detail}).",
+    "message": "Could not reach the npm registry to verify {package}@{version}: {cause}.",
     "fix": "Check your network or proxy, or run `tenet {command} --offline` to record local package integrity."
   },
   "TN-ENV-OFFLINE": {

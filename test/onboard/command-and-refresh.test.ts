@@ -138,7 +138,8 @@ test("onboard uses the public CLI, emits a schema-valid result, and declares no 
   assert.equal(conforms(envelope.result), true, JSON.stringify(conforms.errors));
   const human = await cli(["onboard", "--inventory-only"], repo.path);
   assert.match(human.stdout, /Drafting sends project content/);
-  assert.match(human.stdout, /First findings: No machine-readable test report configured/);
+  assert.match(human.stdout, /First findings: 1 total \(no-test-report 1\)/);
+  assert.match(human.stdout, /- No machine-readable test report configured/);
   assert.equal((await cli(["onboard", "--card"], repo.path)).code, 2);
   assert.equal((await cli(["onboard", "--layout", "invalid"], repo.path)).code, 2);
 });

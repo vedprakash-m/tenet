@@ -32,7 +32,7 @@
 | `TN-ENV-NODE` | Node.js {found} is below required version 22. | Install Node.js 22 LTS or newer and retry. |
 | `TN-ENV-NOT-GIT` | Directory {path} is not a Git repository. | Run `git init` or run from inside a Git repository. |
 | `TN-ENV-OFFLINE` | Command `tenet {command}` requires network access, which is disabled by `--offline`. | Re-run `tenet {command}` without `--offline`. |
-| `TN-ENV-REGISTRY` | Could not reach the npm registry to verify {package}@{version} ({detail}). | Check your network or proxy, or run `tenet {command} --offline` to record local package integrity. |
+| `TN-ENV-REGISTRY` | Could not reach the npm registry to verify {package}@{version}: {cause}. | Check your network or proxy, or run `tenet {command} --offline` to record local package integrity. |
 | `TN-EV-DUP` | Duplicate event ID {id} has conflicting content. | Keep one canonical event for {id} and remove the conflicting entry. |
 | `TN-EV-ORPHAN` | Event {id} references unknown predecessor {prev}. | Include or fetch event {prev} before reducing work item events. |
 | `TN-GATE-*` | Gate blocked or held by rule {rule}: {reason}. | Resolve {reason} and re-run the gate check. |

@@ -31,6 +31,8 @@ export const checkCommand: CommandSpec = {
       ...(typeof context.options["--base"] === "string" ? { base: context.options["--base"] } : {}),
     };
     const value = await check(options);
-    return { result: value, findings: value.findings };
+    if (context.json) return { result: value, findings: value.findings };
+    const summary = `Check: ${value.summary.errors} errors · ${value.summary.warnings} warnings · ${value.summary.advises} advises`;
+    return { value: summary, findings: value.findings };
   },
 };

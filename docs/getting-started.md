@@ -13,6 +13,27 @@ For a project-local install use `npm install --save-dev @vedprakash-m/tenet` and
 
 npm and npx need registry access to fetch uncached packages. With Tenet already installed, `init` and `upgrade` normally get package integrity from npm. If Tenet reports `TN-ENV-REGISTRY` or you know the registry is blocked, use `tenet init --offline` or `tenet upgrade --offline`. These commands record local package integrity. The flag belongs to Tenet and works after the tool and its dependencies are installed. You can run `tenet doctor` to check the lock and available tools.
 
+### Install from a release tarball
+
+A mirror that has not synced Tenet can return 404 for both `npm install --global @vedprakash-m/tenet` and `npx`. Download a release tarball and its `SHA256SUMS` file from GitHub:
+
+~~~sh
+gh release download <version> --pattern "vedprakash-m-tenet-<version>.tgz"
+gh release download <version> --pattern "SHA256SUMS"
+sha256sum -c SHA256SUMS
+npm install --global ./vedprakash-m-tenet-<version>.tgz
+~~~
+
+You can use the release page in a browser instead of `gh release download`. npm dependencies in the tarball still come from your configured registry or mirror.
+
+After the global install works, use the offline step:
+
+~~~sh
+tenet init --offline
+~~~
+
+Run `tenet upgrade` once online so CI can verify the package. If no checks appear on a pull request, check that GitHub Actions can run on the account.
+
 ## Use Tenet in an existing repository
 
 Open a terminal at the root of a Git repository with at least one commit. If you finished the README quick start, continue at [Use Tenet on the next change](#use-tenet-on-the-next-change).
@@ -107,6 +128,15 @@ checks:
 
 Use `report: none` when a check exits 0 or non-zero without producing a machine-readable report.
 
+To keep folders out of onboarding inventory, add an `onboard.exclude` list to `tenet.yaml`:
+
+~~~yaml
+onboard:
+  exclude:
+    - "archive/**"
+    - "vendor/**"
+~~~
+
 ## Start a new project
 
 Run these commands inside an empty project folder. If you already created the Git repository, continue with `tenet init`.
@@ -127,6 +157,15 @@ On GitHub, do this work on a branch so you can open a setup pull request. You ca
 1. Ask your coding agent to run `tenet onboard`, open `.tenet/onboard/assignment.json` and follow the installed `tenet-draft-specs` skill. Tell it to ask you about unclear intent and cite the sources it uses. Your agent or its provider may receive project content.
 2. Read the drafts and commit the setup and draft files. Run `tenet onboard --card` to check that citations resolve and print the onboarding summary. Commit the files it lists. If you have opened a setup pull request, rerun with `--pr <number>` and paste the card into its description.
 3. Run `tenet bless` in your terminal. Review the vision first, then bless the requirements in the PRD or the Requirements section of `tenet/intent.md`. Link each vision item to a requirement or include it in a section called `Not yet in scope` and bless that section. Review design, experience and plan after the requirements. Open conflicts and questions block only the sections they apply to. Answer a question, mark it as not a blocker, or skip its section and come back later. Run `tenet check` and `tenet board` to see structural issues and what still needs review. Commit the blessing changes. On GitHub, push your changes and merge the setup pull request after review.
+
+For the setup pull request, keep the acceptance block independent of any implementation:
+
+~~~markdown
+## Acceptance
+Implements: none
+- [ ] Setup checks run
+- [ ] No tagged tests are expected yet
+~~~
 
 For a small repository the assignment can select `tenet/intent.md`. For a larger repository it can select separate documents. Follow the paths in the assignment.
 

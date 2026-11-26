@@ -1,11 +1,23 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import test from "node:test";
-import { releaseIntegrity } from "../../dist/install/integrity.js";
+import { localIntegrityWarning, releaseIntegrity, runNpmView } from "../../dist/install/integrity.js";
 
 import { packageVersion } from "../helpers/packageVersion.ts";
 
 const prereleaseVersion = `${packageVersion}-rc.1`;
+
+test("[AB-D5] [F-07] Windows npm runner executes npm CLI without shell", async () => {
+  const result = await runNpmView(["--version"], { cwd: process.cwd() });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /^\d+\.\d+\.\d+/);
+});
+
+test("[AB-D3] [F-10] offline local-integrity warning never claims the package is unpublished", () => {
+  const warning = localIntegrityWarning("@vedprakash-m/tenet", "0.1.0", true);
+  assert.match(warning, /Registry not checked \(offline\)/);
+  assert.doesNotMatch(warning, /not on the registry/i);
+});
 
 test("published prereleases query the registry", async () => {
   const integrity = `sha512-${"A".repeat(86)}==`;
@@ -41,8 +53,8 @@ test("registry transport failures are environment errors", async () => {
     (error: unknown) =>
       (error as { code?: string }).code === "TN-ENV-REGISTRY" &&
       (error as { message?: string }).message ===
-        "Could not reach the npm registry to verify @vedprakash-m/tenet@0.1.0-alpha.0 " +
-          "(ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE)." &&
+        "Could not reach the npm registry to verify @vedprakash-m/tenet@0.1.0-alpha.0: " +
+          "the TLS or proxy handshake failed." &&
       (error as { finding?: { fix?: string } }).finding?.fix ===
         "Check your network or proxy, or run `tenet init --offline` to record local package integrity.",
   );

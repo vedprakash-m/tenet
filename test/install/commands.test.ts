@@ -111,7 +111,7 @@ test("init command prompts, collects answers and returns the exact install resul
   });
   assert.equal(preflightCalls, 2);
   assert.match(request.captures.stdout.text(),
-    /Add a test reporter[\s\S]*Will create: \.github\/workflows\/ci.yml, tenet\.yaml/);
+    /Add a test reporter[\s\S]*Will edit: \.github\/workflows\/ci\.yml, tenet\.yaml/);
   assert.match(request.captures.stdout.text(), /Continue\? \[Y\/n\]/);
 });
 

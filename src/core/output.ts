@@ -10,6 +10,7 @@ export type Finding = {
   line: number | null;
   message: string;
   fix: string;
+  detail?: string;
 };
 
 export type Envelope<T = unknown> = {

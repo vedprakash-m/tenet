@@ -228,7 +228,7 @@ test("unpublished local versions use exact local integrity and warn", async (t) 
   assert.match(upgraded.child.stderr, /not on the registry.*local package integrity/i);
 });
 
-test("offline empty-repo init seeds intent without template examples", async (t) => {
+test("[AB-D3] [F-10] offline empty-repo init keeps local integrity and other findings", async (t) => {
   const repo = await tmpRepo("install-empty-intent");
   t.after(repo.cleanup);
   repo.git(["config", "user.name", "Fixture Owner"]);
@@ -236,7 +236,10 @@ test("offline empty-repo init seeds intent without template examples", async (t)
 
   const installed = runWithoutIntegrity(repo.path, "init", "--yes", "--offline");
   assert.equal(installed.child.status, 0, installed.child.stderr);
-  assert.match(installed.child.stderr, /local package integrity/i);
+  const findings = (installed.envelope.result as { findings: Array<{ kind: string }> }).findings;
+  assert.ok(findings.some(({ kind }) => kind === "local-integrity"));
+  assert.ok(findings.some(({ kind }) => kind === "no-test-report"));
+  assert.ok(!findings.some((finding) => JSON.stringify(finding).includes("not on the registry")));
   const intent = await readFile(path.join(repo.path, "tenet", "intent.md"), "utf8");
   assert.match(intent, /^## Vision$/m);
   assert.match(intent, /^\| ID \| Purpose or boundary \| Serves \/ Target \| Origin \|$/m);
@@ -363,13 +366,13 @@ test("registry transport failure writes nothing during init", async (t) => {
   assert.equal(output.envelope.errors[0]?.code, "TN-ENV-REGISTRY");
   assert.equal(
     output.envelope.errors[0]?.message,
-    `Could not reach the npm registry to verify @vedprakash-m/tenet@${packageVersion} ` +
-      "(ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE).",
+    `Could not reach the npm registry to verify @vedprakash-m/tenet@${packageVersion}: ` +
+      "the TLS or proxy handshake failed.",
   );
   assert.deepEqual(await tree(repo.path), before);
 });
 
-test("offline init records local integrity despite registry failure", async (t) => {
+test("[AB-D3] [F-10] offline init replaces only local integrity and keeps first findings", async (t) => {
   const repo = await tmpRepo("install-offline-registry-transport-failure");
   t.after(repo.cleanup);
   repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
@@ -384,7 +387,10 @@ test("offline init records local integrity despite registry failure", async (t) 
 
   assert.equal(output.child.status, 0, output.child.stderr);
   assert.equal(output.envelope.ok, true);
-  assert.match(output.child.stderr, /local package integrity/i);
+  const findings = (output.envelope.result as { findings: Array<{ kind: string }> }).findings;
+  assert.ok(findings.some(({ kind }) => kind === "local-integrity"));
+  assert.ok(findings.some(({ kind }) => kind === "no-test-report"));
+  assert.ok(!findings.some((finding) => JSON.stringify(finding).includes("not on the registry")));
   const lock = JSON.parse(await readFile(path.join(repo.path, "tenet.lock"), "utf8")) as {
     integrity: string;
     "x-integrity-source": string;
@@ -486,7 +492,6 @@ test("real node-service fixture initializes, is idempotent and removes exactly",
   const first = invoke("init", "--yes");
   assert.equal(first.child.status, 0, first.child.stderr);
   assert.equal(first.envelope.ok, true);
-  assert.match(first.child.stderr, /local package integrity/i);
   assert.ok(Array.isArray((first.envelope.result.plan as { created: unknown[] }).created));
   assert.ok(((first.envelope.result.wrote as { created: unknown[] }).created).length > 0);
   assert.doesNotMatch(
