@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "command": "context",
+  "result": {
+    "drafts": {
+      "$assert": "contains",
+      "value": [
+        {
+          "path": "tenet/specs/prd.md",
+          "state": "draft",
+          "text": {
+            "$assert": "includes",
+            "value": "Upcoming feature must emit structured events."
+          }
+        }
+      ]
+    }
+  }
+}

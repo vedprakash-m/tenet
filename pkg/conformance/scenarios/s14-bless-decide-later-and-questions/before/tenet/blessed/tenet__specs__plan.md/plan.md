@@ -1,0 +1,2 @@
+## Plan
+Minimal plan stub.

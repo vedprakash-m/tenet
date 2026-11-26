@@ -1,0 +1,142 @@
+{
+  "schema": 1,
+  "scenario": "s14-bless-decide-later-and-questions",
+  "pending": "CP-0066 group A (AB-A1, AB-A2, AB-A3, AB-A7)",
+  "spec_refs": [
+    "tenet/packets/CP-0066-dogfood-0.1.1/definition.md#a--blessing-can-be-finished-and-the-card-and-board-show-what-blocks-it-track-1"
+  ],
+  "steps": [
+    {
+      "id": "01-bless-settle-cf1-defer-cf2-answer-q1",
+      "kind": "cli",
+      "args": [
+        "bless",
+        "--json"
+      ],
+      "fakeTty": [
+        "1",
+        "1",
+        "no",
+        "3",
+        "bless",
+        "bless",
+        "bless",
+        "bless",
+        "answer",
+        "Include UTC timestamps",
+        "bless"
+      ],
+      "expectExitCodes": [
+        0,
+        4
+      ],
+      "expectedTextIncludes": [
+        "Blessed 5 of 6 sections"
+      ],
+      "expectedFilesInclude": {
+        "tenet/specs/prd.md": [
+          "[x] Q-1",
+          "Include UTC timestamps"
+        ]
+      }
+    },
+    {
+      "id": "02-board-after-partial-bless",
+      "kind": "cli",
+      "args": [
+        "board",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/02-board.json"
+    },
+    {
+      "id": "03-reset-worktree",
+      "kind": "git",
+      "args": [
+        "reset",
+        "--hard",
+        "HEAD"
+      ]
+    },
+    {
+      "id": "04-clean-untracked",
+      "kind": "git",
+      "args": [
+        "clean",
+        "-fd"
+      ]
+    },
+    {
+      "id": "05-bless-defer-everything",
+      "kind": "cli",
+      "args": [
+        "bless"
+      ],
+      "fakeTty": [
+        "1",
+        "3",
+        "3",
+        "defer",
+        "defer",
+        "defer",
+        "skip section"
+      ],
+      "expectExitCodes": [
+        0,
+        4
+      ],
+      "expectedTextIncludes": [
+        "Blessed 0 of 6",
+        "Nothing is in force yet"
+      ]
+    },
+    {
+      "id": "06-reset-worktree-for-check",
+      "kind": "git",
+      "args": [
+        "reset",
+        "--hard",
+        "HEAD"
+      ]
+    },
+    {
+      "id": "07-clean-untracked-for-check",
+      "kind": "git",
+      "args": [
+        "clean",
+        "-fd"
+      ]
+    },
+    {
+      "id": "08-bless-vision-only",
+      "kind": "cli",
+      "args": [
+        "bless",
+        "--doc",
+        "tenet/vision.md",
+        "--json"
+      ],
+      "fakeTty": [
+        "1",
+        "bless",
+        "bless",
+        "bless"
+      ],
+      "expectExitCode": 0,
+      "expectedTextIncludes": [
+        "Blessed 3 of 3 sections"
+      ]
+    },
+    {
+      "id": "09-check-grouped-vision-warning",
+      "kind": "cli",
+      "args": [
+        "check",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/09-check.json"
+    }
+  ]
+}
