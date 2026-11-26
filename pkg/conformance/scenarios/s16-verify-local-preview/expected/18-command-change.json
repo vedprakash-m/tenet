@@ -1,0 +1,8 @@
+{
+  "stdoutMatches": [
+    "\\bTenet proof\\b",
+    "\\blocal preview\\b",
+    "\\b(?:1\\s+(?:tagged\\s+)?tests?(?:\\(s\\))?\\s+passed|Tests\\s+1\\s+passed)\\b",
+    "\\btakes effect after merge\\b"
+  ]
+}

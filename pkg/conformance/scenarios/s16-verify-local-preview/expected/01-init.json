@@ -1,0 +1,14 @@
+{
+  "absentYamlPaths": {
+    "tenet.yaml": [
+      [
+        "checks",
+        "test"
+      ],
+      [
+        "checks",
+        "tests"
+      ]
+    ]
+  }
+}
