@@ -6,6 +6,7 @@ import path from "node:path";
 import { PassThrough } from "node:stream";
 import { test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { parse as parseYaml } from "yaml";
 import { run } from "../../dist/cli.js";
 import { context } from "../../dist/context/index.js";
 import { serveMcp } from "../../dist/mcp/index.js";
@@ -74,12 +75,17 @@ type Step = Golden & { id: string; workdir?: string } & (
   | { kind: "git-squash-shallow-clone"; branch: string; cloneDepth: number; targetDir: string }
   | { kind: "write"; files: Record<string, string> }
   | { kind: "cli"; args: string[]; fakeTty?: string[]; expectExitCode?: number; expectExitCodes?: number[];
+      expectedProjection?: string; withoutCiEvent?: boolean;
       interrupt?: { at: string; oneFreshCopyPerPoint: boolean }; compareTreeToCleanRun?: boolean }
   | { kind: "mcp"; requests: object[] }
   | { kind: "sdk"; export: string; input: Record<string, unknown> }
   | { kind: "verify"; event: ForgeEvent; bundle?: BundleFixture; reuseBundleRunId?: string; assertRecordsTipUnchanged?: boolean }
 );
 type Scenario = { schema: number; scenario: string; pending?: string; steps: Step[] };
+type CliProjection = {
+  stdoutMatches?: string[];
+  absentYamlPaths?: Record<string, string[][]>;
+};
 type CliStep = Extract<Step, { kind: "cli" }>;
 type VerifyStep = Extract<Step, { kind: "verify" }>;
 
@@ -195,7 +201,9 @@ function scenarioTty(step: CliStep) {
 async function cliStep(step: CliStep, cwd: string) {
   const tty = scenarioTty(step);
   const priorRegistryIntegrity = process.env.TENET_TEST_REGISTRY_INTEGRITY;
+  const priorCiEvent = process.env.GITHUB_EVENT_PATH;
   if (priorRegistryIntegrity === undefined) process.env.TENET_TEST_REGISTRY_INTEGRITY = "not-found";
+  if (step.withoutCiEvent) delete process.env.GITHUB_EVENT_PATH;
   try {
     const exit = await run(step.args, { ...tty, cwd, now, checkEnvironment: false });
     const stdout = tty.stdout.text;
@@ -204,6 +212,24 @@ async function cliStep(step: CliStep, cwd: string) {
   } finally {
     if (priorRegistryIntegrity === undefined) delete process.env.TENET_TEST_REGISTRY_INTEGRITY;
     else process.env.TENET_TEST_REGISTRY_INTEGRITY = priorRegistryIntegrity;
+    if (step.withoutCiEvent && priorCiEvent !== undefined) process.env.GITHUB_EVENT_PATH = priorCiEvent;
+  }
+}
+
+async function assertCliProjection(cwd: string, stdout: string, projection: CliProjection): Promise<void> {
+  for (const pattern of projection.stdoutMatches ?? []) {
+    assert.match(stdout, new RegExp(pattern, "im"));
+  }
+  for (const [file, paths] of Object.entries(projection.absentYamlPaths ?? {})) {
+    const document: unknown = parseYaml(await readFile(path.join(cwd, file), "utf8"));
+    for (const keys of paths) {
+      let value = document;
+      for (const key of keys) {
+        value = value !== null && typeof value === "object" && Object.hasOwn(value, key)
+          ? Reflect.get(value, key) : undefined;
+      }
+      assert.equal(value, undefined, `${file} unexpectedly sets ${keys.join(".")}`);
+    }
   }
 }
 
@@ -475,6 +501,9 @@ for (const name of names) {
                 assert.ok(index >= 0, `Expected stdout to include ${JSON.stringify(fragment)} after offset ${cursor}\n${result.stdout}`);
                 cursor = index + fragment.length;
               }
+            }
+            if (step.expectedProjection) {
+              await assertCliProjection(cwd, result.stdout, await readGolden(step.expectedProjection));
             }
             actual = result.json;
             if (step.expectedLogEntry) {
