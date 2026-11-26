@@ -35,6 +35,16 @@ The proof card is advisory in this release. Use repository branch protection to 
 
 ## Network access and output
 
+Use `onboard.exclude` in `tenet.yaml` to keep matching folders out of onboarding inventory:
+
+~~~yaml
+onboard:
+  exclude:
+    - "archive/**"
+    - ".archive/**"
+    - "old/**"
+~~~
+
 - npm install and uncached npx invocations reach the registry. A host that launches MCP through npx may need the registry too. The installed `tenet mcp` executable serves context locally.
 - `init` and `upgrade` normally look up the package's integrity on npm. If you get `TN-ENV-REGISTRY`, retry the installed command with `--offline` to record local integrity. When the registry becomes reachable, use `tenet upgrade` to refresh the pin for GitHub CI.
 - Inventory, blessing, specification checks, the board, context, doctor and removal use local data. Your agent may use its model provider. The GitHub CI commands need their workflow environment and reject `--offline`.
