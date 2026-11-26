@@ -67,6 +67,7 @@ export type HostDescriptor = {
 export type PreflightAnswers = {
   purpose?: string;
   kind?: ProjectKind;
+  testCommand?: string;
   allowReporterEdit?: boolean;
   allowLocalHosts?: boolean;
   continue?: boolean;
@@ -112,7 +113,7 @@ export type PreflightOptions = {
 };
 
 export type PreflightPrompt = {
-  key: "purpose" | "kind" | "reporterEdit" | "localHosts";
+  key: "purpose" | "kind" | "reporterEdit" | "localHosts" | "testCommand";
   question: string;
   options?: ProjectKind[];
   default?: string | boolean;
@@ -148,6 +149,7 @@ export type PreflightFacts = {
     git: boolean;
     head: string | null;
     branch: string | null;
+    default_branch?: string | null;
     remote: string | null;
     forge: "github" | "other" | "none";
     empty: boolean;

@@ -30,6 +30,7 @@ type GitFacts = {
   version: string | null;
   head: string | null;
   branch: string | null;
+  defaultBranch: string | null;
   remote: string | null;
   userName: string | null;
   empty: boolean;
@@ -65,6 +66,30 @@ async function gitValue(args: string[], cwd: string): Promise<string | null> {
   }
 }
 
+async function discoverDefaultBranch(
+  cwd: string,
+  injectedBranch: string | undefined,
+  currentBranch: string | null,
+): Promise<string> {
+  if (injectedBranch !== undefined) {
+    return injectedBranch || "main";
+  }
+  const remoteHead = await gitValue(["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"], cwd);
+  if (remoteHead) {
+    const slash = remoteHead.indexOf("/");
+    const candidate = slash >= 0 ? remoteHead.slice(slash + 1) : remoteHead;
+    if (candidate) return candidate;
+  }
+  for (const candidate of ["main", "master"]) {
+    if ((await gitValue(["rev-parse", "--verify", "--quiet", `refs/heads/${candidate}`], cwd)) !== null) {
+      return candidate;
+    }
+  }
+  const configured = await gitValue(["config", "init.defaultBranch"], cwd);
+  if (configured) return configured;
+  return currentBranch || "main";
+}
+
 async function discoverGit(cwd: string, environment: PreflightEnvironment): Promise<GitFacts | ReturnType<typeof diagnostic>> {
   const injected = environment.git;
   const injectedTool = environment.tools?.git;
@@ -85,6 +110,7 @@ async function discoverGit(cwd: string, environment: PreflightEnvironment): Prom
   const rawHead = injected?.head !== undefined ? injected.head : await gitValue(["rev-parse", "--verify", "HEAD^{commit}"], cwd);
   const head = rawHead || null;
   const branch = injected?.branch ?? await gitValue(["branch", "--show-current"], cwd);
+  const defaultBranch = await discoverDefaultBranch(cwd, injected?.branch, branch);
   let remote: string | null;
   if (injected && "remote" in injected) remote = injected.remote ?? null;
   else {
@@ -102,6 +128,7 @@ async function discoverGit(cwd: string, environment: PreflightEnvironment): Prom
     version,
     head,
     branch: branch || null,
+    defaultBranch,
     remote,
     userName: userName || null,
     empty: state === "unborn" || (tracked === 0 && (listed ?? "").length === 0),
@@ -400,12 +427,34 @@ async function listKitFiles(root: string, relative = ""): Promise<string[]> {
   return files;
 }
 
+function customRunner(command: string, setup: string[]): RunnerFact {
+  const kind: RunnerKind = /\bvitest\b/i.test(command) ? "vitest"
+    : /\bjest\b/i.test(command) ? "jest"
+      : /\bnode\b[^\r\n]*--test\b/i.test(command) ? "node:test"
+        : /\bpytest\b/i.test(command) ? "pytest"
+          : /\bgo\s+test\b/i.test(command) ? "go"
+            : /\bctrf\b/i.test(command) ? "ctrf"
+              : "other";
+  const detectedReport = reportPath(command, kind);
+  const report = detectedReport.reports
+    ? runnerCommand(kind).report
+    : "none";
+  return {
+    kind,
+    command,
+    report,
+    report_from: kind === "go" && detectedReport.reports ? "stdout" : "file",
+    report_path: detectedReport.path,
+    package_manager_setup: setup,
+  };
+}
+
 export async function preflight(options: PreflightOptions = {}): Promise<PreflightResult> {
   const cwd = path.resolve(options.cwd ?? process.cwd());
   const environment = options.environment ?? {};
   const discovered = await discoverGit(cwd, environment);
   const emptyFacts = {
-    repository: { cwd, git: false, head: null, branch: null, remote: null, forge: "none" as const, empty: false },
+    repository: { cwd, git: false, head: null, branch: null, default_branch: null, remote: null, forge: "none" as const, empty: false },
     runner: null,
     ci: { jobs: [], selected: null },
     owners: [],
@@ -423,12 +472,13 @@ export async function preflight(options: PreflightOptions = {}): Promise<Preflig
   const setup = await packageManagerSetup(cwd);
   const ownCommand = typeof object(pkg.scripts).test === "string" ? String(object(pkg.scripts).test).trim() : null;
   const runnerBase = runnerKind ? runnerCommand(runnerKind) : null;
+  const customTestCommand = options.answers?.testCommand?.trim();
   const runner = runnerKind && runnerBase ? {
     kind: runnerKind,
     ...runnerBase,
     ...((runnerKind === "ctrf" || runnerKind === "other") && ownCommand ? { command: ownCommand } : {}),
     package_manager_setup: setup,
-  } : null;
+  } : customTestCommand ? customRunner(customTestCommand, setup) : null;
   const jobs = await inspectCi(cwd, runner, ownCommand);
   const selected = selectedCiJob(jobs);
   const forge = remoteForge(gitFacts.remote);
@@ -461,6 +511,9 @@ export async function preflight(options: PreflightOptions = {}): Promise<Preflig
   const kind = options.answers?.kind ?? (options.yes && isEmpty ? "other" : null);
   if (isEmpty && purpose === null) prompts.push({ key: "purpose", question: "What is this project for?" });
   if (isEmpty && kind === null) prompts.push({ key: "kind", question: "Project kind (service/library/data/infrastructure/ml/other) [other]:", options: kinds, default: "other" });
+  if (!isEmpty && runnerKind === null && !options.yes && options.answers?.testCommand === undefined) {
+    prompts.push({ key: "testCommand", question: "What command runs your tests? (blank to skip)", default: "" });
+  }
   if (forge === "github" && selected && !selected.reports && !selected.reusable && reporterAccepted === undefined && !options.yes) {
     prompts.push({
       key: "reporterEdit",
@@ -561,6 +614,7 @@ export async function preflight(options: PreflightOptions = {}): Promise<Preflig
         git: true,
         head: gitFacts.head,
         branch: gitFacts.branch,
+        default_branch: gitFacts.defaultBranch,
         remote: gitFacts.remote,
         forge,
         empty: isEmpty,

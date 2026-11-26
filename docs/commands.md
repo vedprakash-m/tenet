@@ -26,6 +26,7 @@ The GitHub Actions workflows configure and run these commands for you.
 
 | Command | Behavior |
 |---|---|
+| `tenet verify --local` | Runs configured checks on the working tree against the default branch's merge base, builds the bundle without network calls, and prints a local preview proof card. |
 | `tenet verify --run-checks` | Runs configured checks and creates an evidence bundle. |
 | `tenet verify --bundle` | Collects evidence from existing CI reports. |
 | `tenet verify --record` | Posts or updates the GitHub check and keeps a proof record. |

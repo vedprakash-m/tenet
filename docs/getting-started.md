@@ -22,7 +22,90 @@ tenet init
 tenet onboard --inventory-only
 ~~~
 
-Read the setup plan and answer the prompts before confirming. Tenet may ask about adding a report to existing CI or changing local agent settings. Use the local settings option only if you want to authorize those writes. The inventory and assignment are written to `.tenet/onboard/`. Read the inventory before giving source material to your agent.
+Read the setup plan and answer the prompts before confirming. If no test runner is detected, Tenet asks `What command runs your tests? (blank to skip)` (with `--yes`, no test check is written). Tenet may ask about adding a report to existing CI or changing local agent settings. Use the local settings option only if you want to authorize those writes. The inventory and assignment are written to `.tenet/onboard/`. Read the inventory before giving source material to your agent.
+
+## Configure your tests
+
+Set or fix your test command in `tenet.yaml` during the setup pull request. CI always loads `checks` from the target (base) branch so an unmerged pull request cannot weaken what tests run; if a later pull request changes a check's `run` command, the proof card notes that the change takes effect after merge. Use `tenet verify --local` to run working-tree checks and preview the proof card locally before merging.
+
+Each entry under `checks` (typically `checks.test`) uses:
+
+| Field | Required | Meaning |
+|---|---|---|
+| `run` | yes | Shell command that executes the suite from the repository root |
+| `report` | yes | Report parser format: `junit`, `ctrf`, `go-test-json`, `jest-json`, or `none` |
+| `report_from` | no | Where Tenet reads the report: `file` (default) or `stdout` |
+| `report_path` | no | File path for the report (defaults to `.tenet/reports/<name>.xml` or `.json`) |
+| `setup` | no | Commands run before `run` (for example `npm ci` or `pip install -r requirements.txt`) |
+
+One example per built-in preset:
+
+```yaml
+# Vitest (junit)
+checks:
+  test:
+    setup: ["npm ci"]
+    run: "npx vitest run --reporter=default --reporter=junit --outputFile.junit=.tenet/reports/test.xml"
+    report: junit
+    report_from: file
+    report_path: .tenet/reports/test.xml
+```
+
+```yaml
+# Jest (jest-json)
+checks:
+  test:
+    setup: ["npm ci"]
+    run: "npx jest --ci --json --outputFile=.tenet/reports/test.json"
+    report: jest-json
+    report_from: file
+    report_path: .tenet/reports/test.json
+```
+
+```yaml
+# Node test runner (`node:test`, junit)
+checks:
+  test:
+    setup: ["npm ci"]
+    run: "node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=.tenet/reports/test.xml"
+    report: junit
+    report_from: file
+    report_path: .tenet/reports/test.xml
+```
+
+```yaml
+# Pytest (junit)
+checks:
+  test:
+    setup: ["pip install -r requirements.txt"]
+    run: "python -m pytest --junitxml=.tenet/reports/test.xml"
+    report: junit
+    report_from: file
+    report_path: .tenet/reports/test.xml
+```
+
+```yaml
+# Go (go-test-json)
+checks:
+  test:
+    setup: ["go mod download"]
+    run: "go test -json ./..."
+    report: go-test-json
+    report_from: stdout
+```
+
+```yaml
+# CTRF (ctrf)
+checks:
+  test:
+    setup: ["npm ci"]
+    run: "npm test"
+    report: ctrf
+    report_from: file
+    report_path: .tenet/reports/test.json
+```
+
+Use `report: none` when a check exits 0 or non-zero without producing a machine-readable report.
 
 ## Start a new project
 

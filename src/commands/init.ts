@@ -91,7 +91,7 @@ function preflightText(result: Awaited<ReturnType<typeof runPreflight>>): string
   return lines.join("\n");
 }
 
-function successText(value: InitResult): string {
+function successText(value: InitResult, hasTestCheck: boolean): string {
   if (value.cancelled) return "Cancelled. No files were changed.";
   const count = value.wrote.created.length + value.wrote.blocks.length +
     value.wrote.keys.length + value.wrote.local_keys.length;
@@ -101,6 +101,7 @@ function successText(value: InitResult): string {
   return [
     `Set up Tenet${count === 0 ? " (already current)" : ""}.`,
     findings,
+    ...(!hasTestCheck ? ["No test check configured. Add checks.test in tenet.yaml (see docs/getting-started.md#configure-your-tests)."] : []),
     "Next: tenet onboard drafts your specifications.",
   ].join("\n");
 }
@@ -174,9 +175,17 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
               );
             }
           }
+          const testCommandPrompt = prepared.prompts.find(({ key }) => key === "testCommand");
+          if (testCommandPrompt) {
+            const answer = await ask(promptLabel(testCommandPrompt));
+            if (answer === null) return { findings: [noTty()] };
+            answers.testCommand = answer;
+            prepared = await inspect({ ...options, answers });
+            if (prepared.diagnostics.length > 0) return { findings: prepared.diagnostics };
+          }
           context.stdout.write(`${preflightText(prepared)}\n`);
           for (const prompt of prepared.prompts.filter(({ key }) =>
-            key !== "reporterEdit" && key !== "localHosts")) {
+            key !== "reporterEdit" && key !== "localHosts" && key !== "testCommand")) {
             const answer = await ask(promptLabel(prompt));
             if (answer === null) return { findings: [noTty()] };
             if (prompt.key === "purpose") {
@@ -205,7 +214,7 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
         for (const finding of value.findings) {
           if (finding.kind === "local-integrity") context.stderr.write(`Warning: ${finding.message}\n`);
         }
-        if (!context.json) context.stdout.write(`${successText(value)}\n`);
+        if (!context.json) context.stdout.write(`${successText(value, prepared.facts.runner !== null)}\n`);
         return { result: context.json ? value : null, findings: [] };
       } catch (error) {
         return { findings: [handled(error)] };

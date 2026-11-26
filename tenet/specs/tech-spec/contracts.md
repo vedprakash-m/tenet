@@ -105,7 +105,7 @@ Moved to [ci.md](ci.md) under the rollover rule: the test job and recorder, runn
 | `board` | alpha.0 | — | `--all`; `--open`, `--since`, `--fetch` from alpha.1 |
 | `upgrade`, `remove`, `doctor`, `mcp` | alpha.0 | lock, block, keys; nothing for `doctor`, `mcp` | |
 | `level`, `rules` | alpha.1 | `tenet.yaml` | |
-| `verify --run-checks`, `verify --bundle`, `verify --record` | alpha.0 | `tenet-bundle/`; the check run; the records ref | CI only (ci.md), except `--run-checks --local` (0.1.0), which writes a local advisory card for the runner; `--record` signs from `verify` |
+| `verify --local`, `verify --run-checks`, `verify --bundle`, `verify --record` | alpha.0 (`--local` in 0.1.1) | `tenet-bundle/` (except `--local`, which cleans up its temporary bundle); the check run; the records ref | `--local` runs configured checks on the working tree against the default branch's merge base with no CI event file and no network, printing a local preview proof card (`{card, markdown, conclusion, bundle}` under `--json`); the other modes are CI only (ci.md); `--record` signs from `verify` |
 | `new`, `move`, `status`, `task done`, `close`, `resume`, `decide`, `resolve`, `escalate`, `lease`, `release`, `assign`, `result`, `inspect`, `record`, `agent check`, `skill list`, `build --target agents-md` | 0.1.0 | packets and events | |
 | `tenet-runner start`, `status`, `stop`, `doctor` | 0.1.0 | worktrees under `.tenet/runs/`; run events | separate package (agents.md §6) |
 | `import` | 0.1.x | packets | |

@@ -1,19 +1,21 @@
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { git } from "../core/git.js";
 import { message } from "../core/messages.js";
 import { version } from "../core/output.js";
-import { loadPolicy, verifyLock } from "../policy/index.js";
+import { loadPolicy, verifyLock, type Policy } from "../policy/index.js";
 import { check } from "../specs/check.js";
 import { deltas } from "../specs/deltas.js";
 import { parseDoc } from "../specs/parse.js";
 import { sectionDigest } from "../specs/sections.js";
 import { touched } from "../specs/touched.js";
-import type { Finding } from "../types/generated.js";
-import type { VerifyDeps } from "../verify/bundle.js";
-import { renderCheckSummary } from "../verify/card.js";
-import { GitHubForge, githubRequest, workflowRun } from "../verify/forge.js";
+import type { Finding, ProofCard } from "../types/generated.js";
+import { decodeBundle, type BundleData, type VerifyDeps } from "../verify/bundle.js";
+import { renderCard, renderCheckSummary } from "../verify/card.js";
+import { GitHubForge, githubRequest, workflowRun, type ForgeAdapter } from "../verify/forge.js";
 import { record, type VerifyEvent } from "../verify/record.js";
-import { GitRecords } from "../verify/records.js";
+import { GitRecords, type RecordsStore } from "../verify/records.js";
 import { bundleExisting, runChecks, type RunChecksOptions } from "../verify/run-checks.js";
 
 const deps: VerifyDeps = { check, touched, deltas, parseDoc, sectionDigest };
@@ -81,14 +83,161 @@ type VerifyCommandContext = {
   args: string[];
   options: Record<string, string | boolean | string[]>;
   cwd: string;
+  json: boolean;
   now: () => Date;
 };
 
+async function gitOptional(args: string[], cwd: string): Promise<string | null> {
+  try {
+    return (await git(args, { cwd })).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+async function localDefaultBranch(cwd: string): Promise<string> {
+  const remoteHead = await gitOptional(["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"], cwd);
+  if (remoteHead) {
+    const slash = remoteHead.indexOf("/");
+    const branch = slash >= 0 ? remoteHead.slice(slash + 1) : remoteHead;
+    if (branch && await gitOptional(["rev-parse", "--verify", "--quiet", branch], cwd)) return branch;
+    if (await gitOptional(["rev-parse", "--verify", "--quiet", remoteHead], cwd)) return remoteHead;
+  }
+  for (const candidate of ["main", "master", "origin/main", "origin/master"]) {
+    if (await gitOptional(["rev-parse", "--verify", "--quiet", candidate], cwd)) return candidate;
+  }
+  return await gitOptional(["branch", "--show-current"], cwd) ?? "HEAD";
+}
+
+async function workingTreePreviewCommit(cwd: string, head: string, now: () => Date): Promise<string> {
+  const scratch = await mkdtemp(path.join(tmpdir(), "tenet-local-index-"));
+  const env: NodeJS.ProcessEnv = {
+    GIT_INDEX_FILE: path.join(scratch, "index"),
+    GIT_AUTHOR_NAME: "Tenet Local Preview",
+    GIT_AUTHOR_EMAIL: "local@tenet.invalid",
+    GIT_COMMITTER_NAME: "Tenet Local Preview",
+    GIT_COMMITTER_EMAIL: "local@tenet.invalid",
+    GIT_AUTHOR_DATE: now().toISOString(),
+    GIT_COMMITTER_DATE: now().toISOString(),
+  };
+  try {
+    await git(["read-tree", head], { cwd, env });
+    await git(["add", "-A"], { cwd, env });
+    const tree = (await git(["write-tree"], { cwd, env })).trim();
+    const headTree = (await git(["rev-parse", `${head}^{tree}`], { cwd })).trim();
+    if (tree === headTree) return head;
+    return (await git(["commit-tree", tree, "-p", head, "-m", "tenet local preview"], { cwd, env })).trim();
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+}
+
+function checkFindings(bundle: BundleData["bundle"], policy: Policy, proposed?: Policy["checks"]): Finding[] {
+  const findings: Finding[] = [];
+  for (const entry of bundle.checks) {
+    const configured = policy.checks?.[entry.name] ?? proposed?.[entry.name];
+    const file = configured?.report_path ?? `.tenet/reports/${entry.name}.${configured?.report === "junit" ? "xml" : "json"}`;
+    if (entry.outcome === "report-missing" || entry.outcome === "report-malformed") {
+      const code = entry.outcome === "report-missing" ? "TN-REPORT-MISSING" : "TN-REPORT-MALFORMED";
+      findings.push({ code, severity: "warning", rule: null, file, line: null, ...message(code, { path: file, kind: configured?.report ?? "" }) });
+    }
+  }
+  return findings;
+}
+
+function localForge(decoded: BundleData): ForgeAdapter {
+  const emptyPr = { number: 0, base: decoded.bundle.tested.base, head: decoded.bundle.tested.head, body: "" };
+  return {
+    getPullRequest: async () => emptyPr,
+    findPullRequests: async () => [],
+    latestRun: async () => null,
+    downloadBundles: async () => ({ total: 1, missing: 0, bundles: [decoded] }),
+    upsertCheckRun: async () => {},
+  };
+}
+
+function memoryRecords(): RecordsStore {
+  return {
+    read: async () => ({ tip: null, files: {} }),
+    write: async () => true,
+  };
+}
+
+async function runLocalVerify(context: VerifyCommandContext) {
+  const cwd = context.cwd;
+  const head = await gitOptional(["rev-parse", "--verify", "HEAD^{commit}"], cwd);
+  if (!head) {
+    const words = message("TN-ENV-NO-COMMIT");
+    return { findings: [{ code: "TN-ENV-NO-COMMIT", severity: "error" as const, rule: null, file: null, line: null, ...words }], exitCode: 3 };
+  }
+  const branch = await localDefaultBranch(cwd);
+  const base = await gitOptional(["merge-base", head, branch], cwd)
+    ?? await gitOptional(["rev-parse", "--verify", `${branch}^{commit}`], cwd)
+    ?? head;
+  const previewCommit = await workingTreePreviewCommit(cwd, head, context.now);
+  const workingPolicy = await loadPolicy({ cwd });
+  await verifyLock({ cwd });
+  const basePolicy = await loadPolicy({ cwd, ref: base }).catch(() => null);
+  const bundleDir = `.tenet/runs/local-preview-${process.pid}`;
+  try {
+    const bundleData = await runChecks(workingPolicy, {
+      cwd,
+      repository: "local/preview",
+      ci: false,
+      directory: bundleDir,
+      tested: { commit: previewCommit, kind: "head", head: previewCommit, base },
+      run: { id: "1", attempt: 1, workflow: workingPolicy.ci?.test_workflow ?? "Tenet tests", job: "local", index: 0 },
+    }, deps);
+    const decoded = decodeBundle(bundleData.files);
+    const localDeps: VerifyDeps = {
+      ...deps,
+      policy: async (ref) => ref === base && basePolicy ? basePolicy : workingPolicy,
+      verifyLock: async () => {},
+    };
+    const evaluated = await record({
+      kind: "workflow_run",
+      repository: "local/preview",
+      base,
+      run: {
+        id: "1",
+        attempt: 1,
+        workflow: workingPolicy.ci?.test_workflow ?? "Tenet tests",
+        head: previewCommit,
+        repository: "local/preview",
+        startedAt: context.now().toISOString(),
+      },
+      pulls: [],
+    }, localDeps, {
+      cwd,
+      version,
+      now: context.now,
+      render: renderCheckSummary,
+      checkout: async () => ({ cwd, stale: false, close: async () => {} }),
+      policyBlob: async (ref, dir) => basePolicy
+        ? (await git(["rev-parse", `${ref}:tenet.yaml`], { cwd: dir })).trim()
+        : (await git(["hash-object", "tenet.yaml"], { cwd: dir })).trim(),
+      forge: localForge(decoded),
+      records: memoryRecords(),
+    });
+    const card = { ...evaluated.card, "x-local-preview": true } as ProofCard;
+    const cardText = renderCard(card);
+    const findings = checkFindings(bundleData.bundle, workingPolicy);
+    const exitCode = bundleData.bundle.checks.some((entry) => entry.outcome !== "success") ? 1 : 0;
+    if (context.json) {
+      return { result: { card, markdown: cardText, conclusion: evaluated.conclusion, bundle: bundleData.bundle }, findings, exitCode };
+    }
+    return { value: cardText.trimEnd(), findings, exitCode };
+  } finally {
+    await rm(path.join(cwd, ...bundleDir.split("/")), { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 async function verify(context: VerifyCommandContext) {
-  const modes = ["run-checks", "bundle", "record"].filter(
+  const modes = ["run-checks", "bundle", "record", "local"].filter(
     (flag) => context.options[`--${flag}`] === true,
   );
-  if (modes.length !== 1 || context.args.length) return usage("choose exactly one of --run-checks, --bundle, or --record");
+  if (modes.length !== 1 || context.args.length) return usage("choose exactly one of --run-checks, --bundle, --record, or --local");
+  if (modes[0] === "local") return runLocalVerify(context);
   let event: Record<string, unknown>;
   try {
     event = object(JSON.parse(await readFile(required(process.env.GITHUB_EVENT_PATH), "utf8")));
@@ -120,19 +269,13 @@ async function verify(context: VerifyCommandContext) {
     if (proposal?.checks) options.proposed = proposal.checks;
   }
   const result = await (modes[0] === "run-checks" ? runChecks : bundleExisting)(policy, options, deps);
-  const findings: Finding[] = [];
-  for (const check of result.bundle.checks) {
-    const configured = policy.checks?.[check.name] ?? options.proposed?.[check.name];
-    const file = configured?.report_path ?? `.tenet/reports/${check.name}.${configured?.report === "junit" ? "xml" : "json"}`;
-    if (check.outcome === "report-missing" || check.outcome === "report-malformed") {
-      const code = check.outcome === "report-missing" ? "TN-REPORT-MISSING" : "TN-REPORT-MALFORMED";
-      findings.push({ code, severity: "warning", rule: null, file, line: null, ...message(code, { path: file, kind: configured?.report ?? "" }) });
-    }
-  }
+  const findings = checkFindings(result.bundle, policy, options.proposed);
   return { value: result.bundle, findings, exitCode: result.bundle.checks.some((check) => check.outcome !== "success") ? 1 : 0 };
 }
 
 export const verifyCommand = {
   name: "verify", description: "Run checks, collect a bundle, or record CI proof.",
-  options: ["--run-checks", "--bundle", "--record"], network: true, handler: verify,
+  options: ["--run-checks", "--bundle", "--record", "--local"],
+  network: (options: Record<string, string | boolean | string[]>) => options["--local"] !== true,
+  handler: verify,
 };
