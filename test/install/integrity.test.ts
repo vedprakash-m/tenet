@@ -1,11 +1,17 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import test from "node:test";
-import { releaseIntegrity } from "../../dist/install/integrity.js";
+import { releaseIntegrity, runNpmView } from "../../dist/install/integrity.js";
 
 import { packageVersion } from "../helpers/packageVersion.ts";
 
 const prereleaseVersion = `${packageVersion}-rc.1`;
+
+test("[AB-D5] [F-07] Windows npm runner executes npm CLI without shell", async () => {
+  const result = await runNpmView(["--version"], { cwd: process.cwd() });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /^\d+\.\d+\.\d+/);
+});
 
 test("published prereleases query the registry", async () => {
   const integrity = `sha512-${"A".repeat(86)}==`;

@@ -1,6 +1,7 @@
 import { message, onboardText } from "../core/messages.js";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { fail, type Finding } from "../core/output.js";
 import { onboardingCard, onboardingCardText } from "../onboard/card.js";
 import { prepareOnboard } from "../onboard/assignment.js";
@@ -46,20 +47,16 @@ function archiveHint(value: Awaited<ReturnType<typeof prepareOnboard>>["value"])
 }
 
 async function draftingPrompt(cwd: string): Promise<string> {
-  const candidates = [
-    path.join(cwd, "kit", "skills", "draft-specs", "SKILL.md"),
-    path.join(cwd, ".agents", "skills", "tenet-draft-specs", "SKILL.md"),
-  ];
-  for (const candidate of candidates) {
-    try {
-      const text = await readFile(candidate, "utf8");
-      const name = /^name:\s*(.+)$/m.exec(text)?.[1]?.trim();
-      if (name) return `Next: Use the \`${name}\` skill to draft this project's specifications from \`.tenet/onboard/assignment.json\`.`;
-    } catch {
-      // Try the installed skill when the kit copy is not present.
-    }
+  const packageRoot = path.resolve(fileURLToPath(new URL("../../", import.meta.url)));
+  const shippedSkill = path.join(packageRoot, "kit", "skills", "draft-specs", "SKILL.md");
+  try {
+    const text = await readFile(shippedSkill, "utf8");
+    const name = /^name:\s*(.+)$/m.exec(text)?.[1]?.trim();
+    if (name) return `Next: Use the \`${name}\` skill to draft this project's specifications from \`.tenet/onboard/assignment.json\`.`;
+  } catch {
+    // The installed skill path is used when the package metadata cannot be read.
   }
-  return "Next: Follow the drafted specifications skill to draft this project's specifications from `.tenet/onboard/assignment.json`.";
+  return "Next: Use the skill at `.agents/skills/tenet-draft-specs/SKILL.md` to draft this project's specifications from `.tenet/onboard/assignment.json`.";
 }
 
 export function makeOnboardCommand(deps: OnboardDeps) {
