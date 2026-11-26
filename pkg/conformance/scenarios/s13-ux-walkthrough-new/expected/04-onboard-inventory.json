@@ -17,19 +17,19 @@
           {
             "path": ".agents/skills/tenet-draft-specs/SKILL.md",
             "kind": "config",
-            "sha256": "2e9ce5b69a7792ef5ed51cc2754450cdde80f24250f2b5994f98d2c021093ff9",
+            "sha256": "46a53dd2b0a90992221a7ea543f99781be76399aca98cccb67a572b5d6c9d725",
             "lines": 38
           },
           {
             "path": ".agents/skills/tenet-review-with-findings/SKILL.md",
             "kind": "config",
-            "sha256": "7c0f38e6652c0c199994dcb540c2d33490bd7534bc3779d0068eef01c54773be",
+            "sha256": "d08cf8fe9a0154428e61ef8998dba29b19386dc87c110ea058c93171499e1647",
             "lines": 22
           },
           {
             "path": ".agents/skills/tenet-work-a-change/SKILL.md",
             "kind": "config",
-            "sha256": "d57058ba233bd9cdfe5f1a581e72d126599563fd9f4f4a83328231fac9398fc5",
+            "sha256": "aac61a360469eab5cce564fd4c58bdd928d7cc5dd245d1eacdaa717d130f816c",
             "lines": 30
           },
           {
