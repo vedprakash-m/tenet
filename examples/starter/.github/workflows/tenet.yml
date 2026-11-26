@@ -1,4 +1,4 @@
-# Tenet package pin: 0.1.0
+# Tenet package pin: 0.1.1
 name: Tenet recorder
 on:
   workflow_run: {workflows: [Tenet tests], types: [completed]}

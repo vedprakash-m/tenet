@@ -1,4 +1,4 @@
-<!-- tenet:begin v0.1.0 -->
+<!-- tenet:begin v0.1.1 -->
 ## Working with Tenet
 
 This repository's intent lives in specifications: tenet/intent.md (L1).
