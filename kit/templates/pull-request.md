@@ -1,21 +1,23 @@
 <!-- Summary of what changed and why. -->
 
 <!-- tenet:begin v{version} -->
+<!--
 ## Acceptance
-Implements: R-1
+Implements: <requirement IDs>
 - [AB-1] <what must hold>
+-->
 <!-- tenet:end -->
 
 ## Spec change
 <!-- Optional: if code showed a specification is wrong or incomplete, explain why you edited that specification file in this pull request. Never edit blessing fields or {records}/blessed/. -->
 
 <!--
-Worked example (contracts.md §2):
+Worked example:
 
 ## Acceptance
-Implements: R-12, R-14
-- [AB-1] one retry after a timeout
-- [ ] [AB-2] no retry on explicit gateway decline
+Implements: <R-n>, <R-n>
+- [AB-1] <one observable result>
+- [AB-2] <another observable result>
 
 Completeness checklist:
 - [ ] `Implements:` lists blessed requirement IDs touched by this pull request (if any)
