@@ -192,7 +192,7 @@ test("board adds clean blessed sections only with all", async () => {
 		assert.deepEqual(all.specs, normal.specs);
 		assert.match(
 			renderSpecsBoard(all),
-			/Blessed \(1\)\n {2}Requirements · blessed\n$/,
+			/Blessed \(1\)\ntenet\/intent\.md\n {2}Requirements · blessed\n$/,
 		);
 	} finally {
 		await repository.cleanup();
@@ -252,7 +252,7 @@ test("board reports edited text and changed cited sources separately", async () 
 		assert.match(renderSpecsBoard(result), /Sources changed \(1\)/);
 		assert.match(
 			renderSpecsBoard(result),
-			/Edited \(1\)\n {2}Limits · edited since blessing; the blessed text still applies/,
+			/Edited \(1\)\ntenet\/intent\.md\n[\s\S]*\n {2}Limits · edited since blessing; the blessed text still applies/,
 		);
 		assert.equal(
 			result.pending_blessings.filter((item) => item.section === "requirements")
@@ -296,7 +296,8 @@ test("board detects every independent spec-debt kind", async () => {
 					slug: "future",
 					heading: "Future",
 					state: "draft",
-					body: "- R-3 Try a different queue. {origin: asked}",
+					body: "- R-3 Try a different queue. {origin: asked}\n\n" +
+            "A local queue stores each receipt. ".repeat(8),
 				},
 			]),
 		);
@@ -543,7 +544,7 @@ test("board counts LF and CRLF documents with the same token budget", async () =
 				body: "One.\n\nTwo.\n\nThree.\n",
 			},
 		]);
-		const budget = Math.ceil(lf.length / 4);
+		const budget = Math.ceil((lf.split("\n---\n")[1]?.length ?? 0) / 4);
 		await repository.write(
 			"tenet.yaml",
 			policy([{ path: "intent.md", level: "L1", budget }]),
@@ -676,10 +677,11 @@ test("board renders the UX Part 2 example deterministically", async () => {
 			rendered,
 			[
 				`${repositoryName} · main ${commit} · level observe`,
-				"Waiting for your blessing (1)",
-				"  Experience · undecided since onboarding",
-				"Sources changed (1)",
+				"Waiting for your blessing (1) · Sources changed (1)",
+				"tenet/specs/prd.md",
 				"  Requirements › C-4 · src/retry.ts changed after you blessed it; the blessed text still applies",
+				"tenet/specs/ux-spec.md",
+				"  Experience · undecided since onboarding",
 				"Spec debt (1)",
 				"  Design cites src/legacy/queue.ts, which no longer exists",
 				"",
@@ -688,4 +690,37 @@ test("board renders the UX Part 2 example deterministically", async () => {
 	} finally {
 		await repository.cleanup();
 	}
+});
+
+test("[AB-A11] [F-37] board groups duplicate headings by file and reports the two revisions", async (t) => {
+	const repo = await tmpRepo("receipt-board");
+	t.after(repo.cleanup);
+	await repo.write("tenet.yaml", policy([
+		{ path: "specs/prd.md", level: "L1" },
+		{ path: "specs/ux-spec.md", level: "L2" },
+	]));
+	await repo.write("tenet/specs/prd.md", document("prd", "L1", [{
+		slug: "completeness-checklist", heading: "Completeness checklist", body: "Choose a format.",
+	}]) + "\n## Conflicts\n- [ ] CF-1 (section: completeness-checklist) Pick one format.\n" +
+		"## Open questions\n- [ ] Q-1 (section: Completeness checklist) Which format?\n");
+	await repo.write("tenet/specs/ux-spec.md", document("ux-spec", "L2", [{
+		slug: "completeness-checklist", heading: "Completeness checklist", body: "Review the receipt.",
+	}]));
+	repo.git(["add", "."]);
+	repo.git(["commit", "-m", "receipt draft"]);
+	repo.git(["branch", "-M", "main"]);
+	const main = repo.git(["rev-parse", "HEAD"]).trim();
+	repo.git(["switch", "-c", "receipt-review"]);
+	repo.git(["commit", "--allow-empty", "-m", "review draft"]);
+	const head = repo.git(["rev-parse", "HEAD"]).trim();
+	const result = await board({ cwd: repo.path });
+	assert.equal(result.read.main, main);
+	const output = renderSpecsBoard(result);
+	assert.match(output, new RegExp(`receipt-review ${head.slice(0, 7)}`));
+	assert.match(output, /tenet\/specs\/prd\.md\n {2}Completeness checklist · draft\n {4}Open conflicts: CF-1\n {4}Open questions: Q-1/);
+	assert.match(output, /tenet\/specs\/ux-spec\.md\n {2}Completeness checklist · draft/);
+
+	repo.git(["update-ref", "refs/remotes/origin/trunk", head]);
+	repo.git(["symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/trunk"]);
+	assert.equal((await board({ cwd: repo.path })).read.main, head);
 });
