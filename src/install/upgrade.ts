@@ -3,6 +3,7 @@ import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { confine, writeAtomic } from "../core/fs.js";
 import { git } from "../core/git.js";
+import { sha256 } from "../core/hash.js";
 import { message } from "../core/messages.js";
 import { fail, version } from "../core/output.js";
 import { loadPolicy } from "../policy/index.js";
@@ -26,18 +27,19 @@ import { localProfileRoots } from "./environment.js";
 
 type ChangeIndex = Map<string, UpgradeChanged["action"]>;
 
-async function sourceAt(
+async function historicalSource(
   cwd: string,
-  revision: string | null,
+  revision: string,
   filename: string,
 ): Promise<string | null> {
-  if (revision !== null) {
-    try {
-      return await git(["show", `${revision}:${filename}`], { cwd });
-    } catch {
-      // Shallow clones can lack the blessing commit; current source is the fallback.
-    }
+  try {
+    return await git(["show", `${revision}:${filename}`], { cwd });
+  } catch {
+    return null;
   }
+}
+
+async function currentSource(cwd: string, filename: string): Promise<string | null> {
   try {
     const resolved = await confine(filename, cwd);
     return await readFile(resolved, "utf8");
@@ -45,6 +47,12 @@ async function sourceAt(
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
     throw error;
   }
+}
+
+function anchorTextHash(text: string): string {
+  const normalized = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
+  if (normalized.at(-1) === "") normalized.pop();
+  return `sha256:${sha256(normalized.map((line) => line.replace(/[ \t]+$/, "")).join("\n"))}`;
 }
 
 async function migratedAnchor(
@@ -57,13 +65,21 @@ async function migratedAnchor(
   let start: number | null = parsed?.kind === "path" ? parsed.start : null;
   let end: number | null = parsed?.kind === "path" ? parsed.end : null;
   if (parsed) {
-    const source = await sourceAt(cwd, revision, parsed.path);
-    if (source !== null) {
-      const block = anchorBlock(citation, (filename) => filename === parsed.path ? source : null);
-      if (block) {
-        start = block.start;
-        end = block.end;
-        hash = block.hash;
+    const historical = revision === null ? null : await historicalSource(cwd, revision, parsed.path);
+    const historicalBlock = historical === null
+      ? null
+      : anchorBlock(citation, (filename) => filename === parsed.path ? historical : null);
+    if (historicalBlock?.hash === hash) {
+      start = historicalBlock.start;
+      end = historicalBlock.end;
+    } else {
+      const current = await currentSource(cwd, parsed.path);
+      const currentBlock = current === null
+        ? null
+        : anchorBlock(citation, (filename) => filename === parsed.path ? current : null);
+      if (currentBlock?.hash === hash) {
+        start = currentBlock.start;
+        end = currentBlock.end;
       }
     }
   }
@@ -101,10 +117,16 @@ async function migrateLegacyAnchors(cwd: string): Promise<string[]> {
       const records: Record<string, AnchorRecord> = {};
       const citations = new Set([...Object.keys(section.anchors), ...Object.keys(old)]);
       for (const citation of citations) {
+        const storedHash = section.anchors[citation] ?? "";
+        const legacyText = old[citation];
+        if (typeof legacyText === "string" && anchorTextHash(legacyText) !== storedHash) {
+          const words = message("TN-SPEC-BLESSED-COPY", { slug: section.slug });
+          throw { ...fail("TN-SPEC-BLESSED-COPY", words.message, words.fix), file: documentPath };
+        }
         records[citation] = await migratedAnchor(
           cwd,
           citation,
-          section.anchors[citation] ?? "",
+          storedHash,
           section.blessed_at_rev,
         );
       }
