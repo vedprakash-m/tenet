@@ -1,7 +1,6 @@
 {
   "schema": 1,
   "scenario": "s15-context-paths-ranking",
-  "pending": "CP-0066 group B (AB-B1, AB-B2, AB-B3)",
   "spec_refs": [
     "tenet/packets/CP-0066-dogfood-0.1.1/definition.md#b--agents-get-the-right-context-and-can-find-the-skills-track-3"
   ],
