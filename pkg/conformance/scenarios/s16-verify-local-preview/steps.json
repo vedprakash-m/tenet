@@ -1,7 +1,6 @@
 {
   "schema": 1,
   "scenario": "s16-verify-local-preview",
-  "pending": "CP-0066 Group C has not merged",
   "spec_refs": [
     "tenet/packets/CP-0066-dogfood-0.1.1/definition.md#c--the-test-check-works-from-day-one-and-locally-track-2"
   ],

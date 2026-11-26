@@ -198,6 +198,18 @@ function scenarioTty(step: CliStep) {
   return { ...tty, stdin };
 }
 
+async function withoutNodeTestContext<T>(runStep: () => Promise<T>): Promise<T> {
+  const previous = process.env.NODE_TEST_CONTEXT;
+  // A child Node test runner skips its tests if it inherits the parent runner's context.
+  delete process.env.NODE_TEST_CONTEXT;
+  try {
+    return await runStep();
+  } finally {
+    if (previous === undefined) delete process.env.NODE_TEST_CONTEXT;
+    else process.env.NODE_TEST_CONTEXT = previous;
+  }
+}
+
 async function cliStep(step: CliStep, cwd: string) {
   const tty = scenarioTty(step);
   const priorRegistryIntegrity = process.env.TENET_TEST_REGISTRY_INTEGRITY;
@@ -205,7 +217,8 @@ async function cliStep(step: CliStep, cwd: string) {
   if (priorRegistryIntegrity === undefined) process.env.TENET_TEST_REGISTRY_INTEGRITY = "not-found";
   if (step.withoutCiEvent) delete process.env.GITHUB_EVENT_PATH;
   try {
-    const exit = await run(step.args, { ...tty, cwd, now, checkEnvironment: false });
+    const execute = () => run(step.args, { ...tty, cwd, now, checkEnvironment: false });
+    const exit = step.args[0] === "verify" ? await withoutNodeTestContext(execute) : await execute();
     const stdout = tty.stdout.text;
     const json = step.args.includes("--json") && stdout.trim() ? JSON.parse(stdout) : undefined;
     return { exit, json, stdout, stderr: tty.stderr.text };
@@ -543,7 +556,7 @@ for (const name of names) {
             break;
           }
           case "verify":
-            await checkVerification(step, expected, expectedCard, cwd, bundles, records);
+            await withoutNodeTestContext(() => checkVerification(step, expected, expectedCard, cwd, bundles, records));
             break;
           default: assert.fail(`Unknown scenario step: ${JSON.stringify(step)}`);
         }
