@@ -25,7 +25,7 @@ export const onboardingCardText = {
   title: (revision: string) => `### Tenet onboarding · drafted from ${revision} · nothing is in force until you bless it`,
   read: (items: string, skipped: string) => `Read: ${items} · Skipped: ${skipped}`,
   nothing: "none",
-  citations: (count: number) => `✓ ${count} citations resolve (file and lines exist)`,
+  citations: (count: number) => `✓ ${count} ${count === 1 ? "citation resolves" : "citations resolve"} (file and lines exist)`,
   broken: (count: number, total: number) => `! ${count} of ${total} citations need attention`,
   finding: (file: string, line: number | null, words: string) => `  ! ${file}${line === null ? "" : `:${line}`} · ${words}`,
   conflicts: "Conflicts (settle these first)",

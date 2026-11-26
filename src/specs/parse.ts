@@ -424,6 +424,23 @@ function makeSection(
   return section;
 }
 
+function skipStandaloneComments(lines: string[], start: number): number {
+  let index = start;
+  while (lines[index]?.trimStart().startsWith("<!--")) {
+    let closingLine = index;
+    let close = -1;
+    for (; closingLine < lines.length; closingLine += 1) {
+      const source = lines[closingLine] ?? "";
+      close = source.indexOf("-->");
+      if (close !== -1) break;
+    }
+    if (closingLine === lines.length) return closingLine;
+    if (lines[closingLine]?.slice(close + 3).trim()) break;
+    index = closingLine + 1;
+  }
+  return index;
+}
+
 function isTableSeparator(line: string): boolean {
   const cells = tableCells(line);
   return cells.length > 0 && cells.every((cell) => /^:?-{3,}:?$/.test(cell.trim()));
@@ -539,6 +556,11 @@ function parseStatements(
       fence = nextFence;
       continue;
     }
+    const nextContent = skipStandaloneComments(lines, index);
+    if (nextContent !== index) {
+      index = nextContent - 1;
+      continue;
+    }
     if (special) {
       parseSpecial(
         section,
@@ -554,13 +576,14 @@ function parseStatements(
     }
     if (source.includes("|") && index + 1 < lines.length) {
       const headers = tableCells(source);
+      const separator = skipStandaloneComments(lines, index + 1);
       if (
-        headers.length > 0 &&
         headers[0]?.toLowerCase().replace(/\s+/g, "") === "id" &&
-        isTableSeparator(lines[index + 1] ?? "")
+        isTableSeparator(lines[separator] ?? "")
       ) {
-        index += 2;
+        index = separator + 1;
         for (; index < lines.length; index += 1) {
+          index = skipStandaloneComments(lines, index);
           const candidate = lines[index] ?? "";
           if (!candidate.trim() || !candidate.includes("|")) break;
           const row = rowRecord(headers, candidate);
@@ -631,6 +654,12 @@ export function parseDoc(path: string, text: string, opts: ParseOptions = {}): P
     if (nextFence) {
       fence = nextFence;
       active?.bodyLines.push(source);
+      continue;
+    }
+    const nextContent = skipStandaloneComments(lines, index);
+    if (nextContent !== index) {
+      for (; index < nextContent; index += 1) active?.bodyLines.push(lines[index] ?? "");
+      index -= 1;
       continue;
     }
     const heading = /^## (.*)$/.exec(source);
