@@ -44,7 +44,7 @@ sections:
     digest: sha256:0dbd08e5ad469fb93440fa5489aae662f07dd294fd2dc68cbf202b6df6527bae         # current text (ALG-02); null until `tenet fix` computes it
     blessed_digest: sha256:0dbd08e5ad469fb93440fa5489aae662f07dd294fd2dc68cbf202b6df6527bae # text last blessed; null until blessed
     blessed_at_rev: 9f3c2e1         # HEAD when blessed; null until blessed; information only, never required to exist
-    anchors: {"src/retry.ts:40-48": "sha256:cb3a0834537f84c19727dce128035f7a9f16972c94a9253d457c0812e3e70328"}   # one per citation, set when blessed; the cited text is kept beside the blessed copy (ALG-03)
+    anchors: {"src/retry.ts:40-48": "sha256:cb3a0834537f84c19727dce128035f7a9f16972c94a9253d457c0812e3e70328"}   # one per citation, set when blessed
     applies_to: ["src/checkout/**"] # optional; prose sections reach context through it (ALG-10)
     blessed_copy: tenet/blessed/<doc>/<slug>.md   # text in force (ALG-03)
     flags: []                       # edited | sources-changed
@@ -53,6 +53,8 @@ sections:
     blessed_by: ved
     blessed_at: 2026-11-23T10:00:00Z
 ```
+
+**Proposal (CP-0066 AB-E2):** `<blessed copy>.anchors.json` contains one record per citation: `{hash, start, end, blessed_at_rev}`. `hash` is the existing `sha256:…` value, `start` and `end` are nullable 1-based inclusive line numbers when a historical range cannot be recovered, and `blessed_at_rev` is the blessing commit. The sidecar never contains cited source text.
 
 **Requirement line** (in a list item or a table's Requirement cell):
 

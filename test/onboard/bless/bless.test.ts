@@ -198,6 +198,14 @@ test("confirm uses the anchor sidecar after a squash and preserves a separate te
   const blessed = await speak(seed, "1\nbless\n");
   assert.deepEqual(blessed.findings, []);
   const oldCopy = await raw(seed, copy);
+  const sidecar = JSON.parse(await raw(seed, `${copy}.anchors.json`));
+  assert.deepEqual(sidecar["src/retry.ts:1"], {
+    hash: "sha256:fd0f63a7afc28f164530786b92041b209669ba5fc08311ddcfbd5b59e04e53a8",
+    start: 1,
+    end: 1,
+    blessed_at_rev: oldHead,
+  });
+  assert.doesNotMatch(JSON.stringify(sidecar), /const times = 1/);
   await seed.write(filename, (await raw(seed)).replace("Retry once.", "Retry twice."));
   await seed.write("src/retry.ts", "const times = 2;\n");
   commit(seed, "update source and propose a draft");
@@ -213,7 +221,7 @@ test("confirm uses the anchor sidecar after a squash and preserves a separate te
   const result = await runBless({ cwd: cloned }, { ...tty, now: at });
   assert.deepEqual(result.findings, []);
   assert.equal(result.result?.confirmed, 1);
-  assert.match(tty.stdout.text, /Old src\/retry\.ts:1:\nconst times = 1;/);
+  assert.match(tty.stdout.text, /Old src\/retry\.ts:1:\nsrc\/retry\.ts:1-1/);
   assert.match(tty.stdout.text, /New src\/retry\.ts:1:\nconst times = 2;/);
   assert.equal(await readFile(path.join(cloned, copy), "utf8"), oldCopy);
   const live = parseDoc(filename, await readFile(path.join(cloned, filename), "utf8"));
@@ -221,6 +229,20 @@ test("confirm uses the anchor sidecar after a squash and preserves a separate te
   assert.equal(live.sections[0]?.blessed_at_rev, squashed);
   const last = JSON.parse((await readFile(path.join(cloned, log), "utf8")).trim().split("\n").at(-1));
   assert.equal(last.statements.drafted, null);
+});
+
+test("[AB-E2] [F-47] confirm reads old anchor text from the blessed commit", async (t) => {
+  const repo = await setup(t, `## Requirements\n${requirement}`);
+  const revision = repo.git(["rev-parse", "HEAD"]).trim();
+  assert.equal((await speak(repo, "1\nbless\n")).result?.blessed, 1);
+  await repo.write("src/retry.ts", "const times = 2;\n");
+  const tty = fakeTty("1\nconfirm\ny\n");
+  const result = await runBless({ cwd: repo.path }, { ...tty, now: at });
+  assert.deepEqual(result.findings, []);
+  assert.match(tty.stdout.text, /Old src\/retry\.ts:1:\nconst times = 1;/);
+  assert.match(tty.stdout.text, /New src\/retry\.ts:1:\nconst times = 2;/);
+  const sidecar = JSON.parse(await raw(repo, `${copy}.anchors.json`));
+  assert.equal(sidecar["src/retry.ts:1"]?.blessed_at_rev, revision);
 });
 
 test("a failed log write does not leave the section blessed or publish a new sidecar", async (t) => {
@@ -416,7 +438,14 @@ test("confirm reports a missing anchor source and preserves both prior files", a
   await speak(repo, "1\nbless\n");
   const before = await raw(repo, copy);
   const sidecar = await raw(repo, `${copy}.anchors.json`);
-  assert.deepEqual(JSON.parse(sidecar), { "src/retry.ts:1": "const times = 1;" });
+  assert.deepEqual(JSON.parse(sidecar), {
+    "src/retry.ts:1": {
+      hash: "sha256:fd0f63a7afc28f164530786b92041b209669ba5fc08311ddcfbd5b59e04e53a8",
+      start: 1,
+      end: 1,
+      blessed_at_rev: repo.git(["rev-parse", "HEAD"]).trim(),
+    },
+  });
   await unlink(path.join(repo.path, "src/retry.ts"));
   const result = await speak(repo, "1\nconfirm\ny\n");
   assert.match(result.text, /New src\/retry.ts:1:\n\(unavailable\)/);

@@ -9,7 +9,7 @@ import { git } from "../core/git.js";
 import { readYaml } from "../core/yaml.js";
 import { loadPolicy, ownersFor } from "../policy/index.js";
 import type { TenetYaml } from "../types/generated.js";
-import { anchorBlock, anchorsFor } from "../specs/anchors.js";
+import { anchorBlock, anchorRecordsFor, citationParts } from "../specs/anchors.js";
 import { resolveCitations } from "../specs/citations.js";
 import { flags } from "../specs/flags.js";
 import { parseDoc, sectionLocation } from "../specs/parse.js";
@@ -596,7 +596,7 @@ async function writeAction(ws: Workspace, entry: SectionState, action: Completed
       const relevant = { ...checked.doc, sections: [subject] };
       const errors = resolveCitations(relevant, read);
       if (errors.length) return errors;
-      const newAnchors = anchorsFor(subject, read);
+      const newAnchors = anchorRecordsFor(subject, read, ws.head);
       const copyPath = await blessedCopyPath(ws, checked.doc.path, section.slug);
       const digest = sectionDigest(subject.text);
       if (action === "bless" && section.blessed_digest && section.blessed_digest !== digest) {
@@ -612,7 +612,7 @@ async function writeAction(ws: Workspace, entry: SectionState, action: Completed
       set("anchors", newAnchors.anchors);
       set("blessed_copy", copyPath);
       set("flags", section.digest === digest ? [] : ["edited"]);
-      patches.push({ path: copyPath, text: normalize(subject.text) }, { path: `${copyPath}.anchors.json`, text: `${JSON.stringify(newAnchors.texts, null, 2)}\n` });
+      patches.push({ path: copyPath, text: normalize(subject.text) }, { path: `${copyPath}.anchors.json`, text: `${JSON.stringify(newAnchors.records, null, 2)}\n` });
       measured = subject;
     } else if (section.blessed_digest) {
       if (restore) {
@@ -640,18 +640,61 @@ async function writeAction(ws: Workspace, entry: SectionState, action: Completed
   } catch (error) { return [findingFrom(error)]; }
 }
 
-function anchorsToShow(entry: SectionState, read: ReturnType<typeof reader>): string[] {
+async function historicalRange(
+  cwd: string,
+  citation: string,
+  start: number | null,
+  end: number | null,
+  revision: string | null,
+): Promise<string | null> {
+  const parsed = citationParts(citation);
+  if (!parsed || start === null || end === null || revision === null) return null;
+  try {
+    const source = await git(["show", `${revision}:${parsed.path}`], { cwd });
+    const lines = source.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
+    if (lines.at(-1) === "") lines.pop();
+    return lines.slice(start - 1, end).join("\n");
+  } catch {
+    return null;
+  }
+}
+
+async function anchorsToShow(
+  cwd: string,
+  entry: SectionState,
+  read: ReturnType<typeof reader>,
+): Promise<string[]> {
   const copy = entry.section.blessed_copy;
-  let old: Record<string, string> = {};
+  let old: Record<string, unknown> = {};
   try {
     const raw = copy ? read(`${copy}.anchors.json`) : null;
     if (raw) old = JSON.parse(raw);
   } catch { /* Missing historical text is displayed as unavailable. */ }
-  const changes = Object.entries(entry.section.anchors).flatMap(([citation, digest]) => {
+  const changes: string[] = [];
+  for (const [citation, digest] of Object.entries(entry.section.anchors)) {
     const next = anchorBlock(citation, read);
-    if (next?.hash === digest) return [];
-    return [blessText.before(citation, old?.[citation] ?? blessText.noLines), blessText.after(citation, next?.text ?? blessText.noLines)];
-  });
+    if (next?.hash === digest) continue;
+    const stored = old[citation];
+    let before = typeof stored === "string" ? stored : blessText.noLines;
+    if (stored && typeof stored === "object" && !Array.isArray(stored)) {
+      const record = stored as {
+        start?: unknown;
+        end?: unknown;
+        blessed_at_rev?: unknown;
+      };
+      const start = typeof record.start === "number" ? record.start : null;
+      const end = typeof record.end === "number" ? record.end : null;
+      const revision = typeof record.blessed_at_rev === "string" ? record.blessed_at_rev : null;
+      before = await historicalRange(cwd, citation, start, end, revision) ??
+        (start !== null && end !== null
+          ? `${citationParts(citation)?.path ?? citation}:${start}-${end}`
+          : blessText.noLines);
+    }
+    changes.push(
+      blessText.before(citation, before),
+      blessText.after(citation, next?.text ?? blessText.noLines),
+    );
+  }
   const blessed = copy ? read(copy) : null;
   return blessed === null ? changes : [blessText.textInForce, blessed.trimEnd(), ...changes];
 }
@@ -723,7 +766,7 @@ export async function runBless(options: BlessOptions = {}, io: BlessIO = {}): Pr
       },
       commit: (entry, action, by, restore, adopt, minutes) => writeAction(ws, entry, action, by, restore, adopt, minutes),
       flags: (entry) => flags(entry.section, read),
-      showAnchors: async (entry) => anchorsToShow(entry, read),
+      showAnchors: async (entry) => anchorsToShow(cwd, entry, read),
     }, io);
   } catch (error) {
     return { result: null, findings: [findingFrom(error)] };

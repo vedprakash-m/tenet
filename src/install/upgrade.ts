@@ -1,9 +1,13 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
-import { confine } from "../core/fs.js";
+import { confine, writeAtomic } from "../core/fs.js";
+import { git } from "../core/git.js";
 import { message } from "../core/messages.js";
-import { fail } from "../core/output.js";
+import { fail, version } from "../core/output.js";
+import { loadPolicy } from "../policy/index.js";
+import { anchorBlock, citationParts, type AnchorRecord } from "../specs/anchors.js";
+import { parseDoc } from "../specs/parse.js";
 import { preflight } from "./preflight.js";
 import { decodeJson, pointerValue, sha256Bytes } from "./manifest.js";
 import { applyPlan, planWriteSet, readPendingPlan, resumePendingPlan } from "./writes.js";
@@ -21,6 +25,95 @@ import type {
 import { localProfileRoots } from "./environment.js";
 
 type ChangeIndex = Map<string, UpgradeChanged["action"]>;
+
+async function sourceAt(
+  cwd: string,
+  revision: string | null,
+  filename: string,
+): Promise<string | null> {
+  if (revision !== null) {
+    try {
+      return await git(["show", `${revision}:${filename}`], { cwd });
+    } catch {
+      // Shallow clones can lack the blessing commit; current source is the fallback.
+    }
+  }
+  try {
+    const resolved = await confine(filename, cwd);
+    return await readFile(resolved, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+async function migratedAnchor(
+  cwd: string,
+  citation: string,
+  hash: string,
+  revision: string | null,
+): Promise<AnchorRecord> {
+  const parsed = citationParts(citation);
+  let start: number | null = parsed?.kind === "path" ? parsed.start : null;
+  let end: number | null = parsed?.kind === "path" ? parsed.end : null;
+  if (parsed) {
+    const source = await sourceAt(cwd, revision, parsed.path);
+    if (source !== null) {
+      const block = anchorBlock(citation, (filename) => filename === parsed.path ? source : null);
+      if (block) {
+        start = block.start;
+        end = block.end;
+        hash = block.hash;
+      }
+    }
+  }
+  return { hash, start, end, blessed_at_rev: revision };
+}
+
+async function migrateLegacyAnchors(cwd: string): Promise<string[]> {
+  const policy = await loadPolicy({ cwd });
+  const changed: string[] = [];
+  const documentPaths = [...new Set([
+    ...policy.specs.documents.map((document) =>
+      `${policy.paths.records}/${document.path.replaceAll("\\", "/")}`),
+    `${policy.paths.records}/intent.md`,
+  ])];
+  for (const documentPath of documentPaths) {
+    const filename = await confine(documentPath, cwd);
+    const text = await readFile(filename, "utf8").catch((error: NodeJS.ErrnoException) => {
+      if (error.code === "ENOENT") return null;
+      throw error;
+    });
+    if (text === null) continue;
+    const parsed = parseDoc(documentPath, text, { prefix: policy.specs.id_prefix });
+    for (const section of parsed.sections) {
+      if (!section.blessed_copy) continue;
+      const sidecarPath = `${section.blessed_copy}.anchors.json`;
+      const sidecarFile = await confine(sidecarPath, cwd);
+      const raw = await readFile(sidecarFile, "utf8").catch((error: NodeJS.ErrnoException) => {
+        if (error.code === "ENOENT") return null;
+        throw error;
+      });
+      if (raw === null) continue;
+      const old = JSON.parse(raw) as Record<string, unknown>;
+      const needsMigration = Object.values(old).some((value) => typeof value === "string");
+      if (!needsMigration) continue;
+      const records: Record<string, AnchorRecord> = {};
+      const citations = new Set([...Object.keys(section.anchors), ...Object.keys(old)]);
+      for (const citation of citations) {
+        records[citation] = await migratedAnchor(
+          cwd,
+          citation,
+          section.anchors[citation] ?? "",
+          section.blessed_at_rev,
+        );
+      }
+      await writeAtomic(sidecarFile, `${JSON.stringify(records, null, 2)}\n`);
+      changed.push(sidecarPath);
+    }
+  }
+  return changed.sort();
+}
 
 async function currentManifest(cwd: string): Promise<InstallManifest | null> {
   try {
@@ -181,6 +274,17 @@ function sortChanged(index: ChangeIndex): UpgradeChanged[] {
 }
 
 export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResult> {
+  const cwd = path.resolve(options.cwd ?? process.cwd());
+  const prior = await currentManifest(cwd);
+  const pending = await readPendingPlan(cwd, options.environment?.localProfileRoot);
+  const installedVersion = options.environment?.installedVersion ?? version;
+  if (prior && prior.version === installedVersion && pending === null) {
+    const changed = (await migrateLegacyAnchors(cwd))
+      .map((path) => ({ path, action: "replaced" as const }));
+    const check = options.check ?? (await import("../specs/check.js")).check;
+    await check({ cwd, installedVersion });
+    return { from: prior.version, to: installedVersion, changed };
+  }
   const preflightOptions = { ...options };
   const result = await preflight(preflightOptions);
   if (!result.plan || result.diagnostics.length > 0) {
@@ -189,8 +293,6 @@ export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResu
       { finding: result.diagnostics[0] },
     );
   }
-  const cwd = path.resolve(options.cwd ?? process.cwd());
-  const prior = await currentManifest(cwd);
   const local = await currentLocalManifest(cwd);
   const profileRoots = {
     ...localProfileRoots(options.environment),
@@ -205,7 +307,6 @@ export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResu
     result.plan.created = [...new Set([...result.plan.created, ".tenet/manifest.local.json"])];
     result.plan.created.sort();
   }
-  const pending = await readPendingPlan(cwd, options.environment?.localProfileRoot);
   if (pending) {
     const original = pending.upgrade;
     if (!original) {
