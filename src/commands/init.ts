@@ -1,4 +1,6 @@
 import { createInterface } from "node:readline";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import type { CommandContext, CommandSpec } from "../core/commands.js";
 import { message } from "../core/messages.js";
 import { errorFinding, fail, version, type Finding } from "../core/output.js";
@@ -106,16 +108,27 @@ function preflightText(result: Awaited<ReturnType<typeof runPreflight>>): string
   for (const { host, path: itemPath, pointer } of plan.local_keys) {
     addHostFile(`${host}: ${itemPath}${pointer}`, `registers the Tenet MCP server locally for ${host}`);
   }
+  const create = new Set<string>();
+  const edit = new Set<string>();
+  const plannedPaths = [
+    ...plan.created,
+    ...plan.blocks.map(({ path: filename }) => filename),
+    ...plan.keys.map(({ path: filename }) => filename),
+  ];
+  for (const filename of plannedPaths) {
+    if (existsSync(path.resolve(result.facts.repository.cwd, filename))) edit.add(filename);
+    else create.add(filename);
+  }
   const lines = [
     `Found: ${host} · ${runner} · ${plan.hosts.map(({ id, capability }) => `${id} (${capability})`).join(", ")}`,
     ...(plan.hosts.every(({ id }) => id === "agents")
       ? ["No agent host found; skills are in .agents/skills/. Rerun with `--host claude` to set up Claude Code."]
       : []),
-    `Will create: ${plan.created.join(", ")}`,
-    `Will edit: ${[
-      ...plan.blocks.map(({ path }) => path),
-      ...plan.keys.map(({ path, pointer }) => `${path}${pointer}`),
-    ].join(", ")}`,
+    `Will create: ${[...create].join(", ")}`,
+    `Will edit: ${[...edit].map((filename) => {
+      const key = plan.keys.find(({ path: keyPath }) => keyPath === filename);
+      return key ? `${filename}${key.pointer}` : filename;
+    }).join(", ")}`,
     ...(plan.local_keys.length > 0 ? [
       `Will edit locally (outside repository): ${plan.local_keys
         .map(({ host, path, pointer }) => `${host}: ${path}${pointer}`)
@@ -130,13 +143,25 @@ function preflightText(result: Awaited<ReturnType<typeof runPreflight>>): string
   return lines.join("\n");
 }
 
-function successText(value: InitResult, hasTestCheck: boolean): string {
+function successText(value: InitResult, offline: boolean, hasTestCheck: boolean): string {
   if (value.cancelled) return "Cancelled. No files were changed.";
   const count = value.wrote.created.length + value.wrote.blocks.length +
     value.wrote.keys.length + value.wrote.local_keys.length;
   const findings = value.findings.length
     ? `First findings: ${value.findings.map(({ message }) => message).join(" · ")}`
     : "First findings: none";
+  if (offline && value.findings.some(({ kind }) => kind === "local-integrity")) {
+    const otherFindings = value.findings.filter(({ kind }) => kind !== "local-integrity");
+    return [
+      `Set up Tenet${count === 0 ? " (already current)" : ""}.`,
+      "Recorded local package integrity (offline). Run `tenet upgrade` once you're online so CI can verify it.",
+      ...(otherFindings.length > 0
+        ? [`First findings: ${otherFindings.map(({ message }) => message).join(" · ")}`]
+        : []),
+      ...(!hasTestCheck ? ["No test check configured. Add checks.test in tenet.yaml (see docs/getting-started.md#configure-your-tests)."] : []),
+      "Next: tenet onboard drafts your specifications.",
+    ].join("\n");
+  }
   return [
     `Set up Tenet${count === 0 ? " (already current)" : ""}.`,
     findings,
@@ -268,10 +293,14 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
         }
 
         const value = await install({ ...options, answers });
-        for (const finding of value.findings) {
-          if (finding.kind === "local-integrity") context.stderr.write(`Warning: ${finding.message}\n`);
+        if (!context.offline) {
+          for (const finding of value.findings) {
+            if (finding.kind === "local-integrity") context.stderr.write(`Warning: ${finding.message}\n`);
+          }
         }
-        if (!context.json) context.stdout.write(`${successText(value, prepared.facts.runner !== null)}\n`);
+        if (!context.json) {
+          context.stdout.write(`${successText(value, context.offline, prepared.facts.runner !== null)}\n`);
+        }
         return { result: context.json ? value : null, findings: [] };
       } catch (error) {
         return { findings: [handled(error)] };
