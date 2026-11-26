@@ -431,12 +431,23 @@ async function evaluate(event: VerifyEvent, pr: PullRequest | undefined, deps: V
   if (!loaded) { unavailable = true; host.push("not checked: target policy or kit unavailable"); }
   if (loaded) {
     const { policy } = loaded;
+    const read = deps.policy ?? ((ref, project) => loadPolicy({ ref, cwd: project }));
+    const headPolicy = await read(tested.commit, cwd).catch(() => undefined);
+    const changedChecks = Object.entries(policy.checks ?? {}).flatMap(([name, baseCheck]) => {
+      const headCheck = headPolicy?.checks?.[name];
+      if (!headCheck || headCheck.run === baseCheck.run) return [];
+      const failed = data.some(({ bundle }) =>
+        bundle.checks.some((entry) => entry.name === name && entry.outcome !== "success"));
+      return failed ? [name] : [];
+    });
+    if (changedChecks.length) {
+      host.push(`check command changed for ${changedChecks.join(", ")}; runs base policy (takes effect after merge)`);
+    }
     if (data.length) {
       try {
         const hasProposed = data.some(({ bundle }) => bundle.checks.some(proposedCheck));
-        const read = deps.policy ?? ((ref, project) => loadPolicy({ ref, cwd: project }));
         const proposal = hasProposed && (policy.level === "observe" || policy.level === "protect")
-          ? await read(tested.commit, cwd).catch(() => undefined) : undefined;
+          ? headPolicy : undefined;
         evidence = await readEvidence(data, policy, proposal?.checks);
       }
       catch (error) {

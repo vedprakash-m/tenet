@@ -32,10 +32,16 @@ export function executeCommand(
 ): Promise<CommandRun> {
   const bash = options.ci || process.platform !== "win32" || spawnSync("bash", ["--version"], { stdio: "ignore" }).status === 0;
   const program = bash ? "bash" : process.env.ComSpec ?? "cmd.exe";
-  const args = bash ? ["-eo", "pipefail", "-c", command] : ["/d", "/s", "/c", command];
+  const args = bash ? ["-eo", "pipefail", "-c", command] : ["/d", "/s", "/c", `"${command}"`];
   return new Promise((resolve, reject) => {
     const detached = process.platform !== "win32";
-    const child = spawn(program, args, { cwd: options.cwd, detached, stdio: ["ignore", "pipe", "inherit"], windowsHide: true });
+    const child = spawn(program, args, {
+      cwd: options.cwd,
+      detached,
+      stdio: ["ignore", "pipe", "inherit"],
+      windowsHide: true,
+      ...(bash ? {} : { windowsVerbatimArguments: true }),
+    });
     const chunks: Buffer[] = [];
     let size = 0;
     let timedOut = false;

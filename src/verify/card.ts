@@ -36,8 +36,9 @@ function itemLine(item: ProofCard["items"][number], omitPassingNames: boolean): 
 }
 
 function markdown(model: ProofCard, omitPassingNames: boolean): string {
+  const localPreview = (model as ProofCard & { "x-local-preview"?: boolean })["x-local-preview"] === true;
   const lines = [
-    `### Tenet proof · ${model.tested.commit.slice(0, 6).toLowerCase()} (${model.tested.kind === "merge-candidate" ? "merge candidate" : "head"}) · ${badgeLabel[model.badge]}`,
+    `### Tenet proof · ${model.tested.commit.slice(0, 6).toLowerCase()} (${model.tested.kind === "merge-candidate" ? "merge candidate" : "head"})${localPreview ? " · local preview" : ""} · ${badgeLabel[model.badge]}`,
   ];
   if (model.requirements.length) {
     lines.push("Your intent this change touches");

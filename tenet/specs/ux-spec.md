@@ -47,7 +47,7 @@ First findings: docs/architecture.md links 2 missing files · 3 skipped tests
 → next: tenet onboard drafts your specifications (about 15 minutes of agent time)
 ```
 
-Every file is listed before it is written, and recorded so `tenet remove` can undo exactly this (Part 4).
+Every file is listed before it is written, and recorded so `tenet remove` can undo exactly this (Part 4). When no test runner is detected, `init` asks *"What command runs your tests? (blank to skip)"* interactively, or writes no test check under `--yes` and tells you how to add one in `tenet.yaml`.
 
 **Step 2 · Your agent: draft your specifications.** `tenet onboard` builds an inventory of your project (modules, interfaces, configuration, tests, docs and their age, owners) and hands it to your agent with the `draft-specs` skill. Before drafting, your agent asks you what code can't tell it: what the project is for, who it serves, what it must never do, what matters most. It then drafts five views of your project (vision, requirements, design, experience, plan), one part of the codebase at a time, as one `tenet/intent.md` for a small project or separate documents for a larger one, and opens one onboarding pull request with the setup files. Nothing in it is in force yet.
 
@@ -172,7 +172,7 @@ Would have blocked: AB-2 has no test
 | `Would have blocked` | What a rule would stop if you turned it on |
 | `advisory` | CI produced this without signing it (verified work signs it) |
 
-Editing the description makes the card re-check without rerunning tests. Pull requests from forks get the same card. A tagged test counts only if this pull request added the tag, so an old test can't stand in for a new item.
+Editing the description makes the card re-check without rerunning tests. Pull requests from forks get the same card. A tagged test counts only if this pull request added the tag, so an old test can't stand in for a new item. Run `tenet verify --local` to preview the same proof card against your working tree before pushing.
 
 **Review and merge.** Your forge's normal approve button. Working alone, you accept your own changes; the board shows them as `self-accepted` (alpha.1).
 

@@ -55,7 +55,7 @@ export type CommandSpec = {
   description?: string;
   usage?: string;
   options?: CommandOption[] | string[];
-  network?: boolean;
+  network?: boolean | ((options: CommandContext["options"]) => boolean);
   checkEnvironment?: boolean;
   run?: (context: CommandContext) => unknown | Promise<unknown>;
   handler?: (context: CommandContext) => unknown | Promise<unknown>;
@@ -371,7 +371,10 @@ export async function run(argv: readonly string[], input: CliIo = {}): Promise<0
     }
 
     if (!spec || !commandArgs) throw fail("TN-USAGE-COMMAND", "No command was selected", "Run tenet --help.");
-    if (parsed.offline && spec.network) {
+    const needsNetwork = typeof spec.network === "function"
+      ? spec.network(commandArgs.options)
+      : spec.network === true;
+    if (parsed.offline && needsNetwork) {
       const finding = fail("TN-ENV-OFFLINE", `${command} needs the network`, "Run without --offline.");
       if (parsed.json) emitJson(io.stdout, command, null, [finding]);
       else emitHuman(io, null, [finding], false);

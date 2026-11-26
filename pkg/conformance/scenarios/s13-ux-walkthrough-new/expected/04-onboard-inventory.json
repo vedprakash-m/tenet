@@ -23,8 +23,8 @@
           {
             "path": ".agents/skills/tenet-review-with-findings/SKILL.md",
             "kind": "config",
-            "sha256": "cea7b0c9d11b1731c8610e20c6294b5712868fd3b105ae0b3028afe693c7f64e",
-            "lines": 21
+            "sha256": "7c0f38e6652c0c199994dcb540c2d33490bd7534bc3779d0068eef01c54773be",
+            "lines": 22
           },
           {
             "path": ".agents/skills/tenet-work-a-change/SKILL.md",
@@ -71,8 +71,8 @@
           {
             "path": "tenet.yaml",
             "kind": "config",
-            "sha256": "6d708a35a6eaf362472484a55d9bc7b3d78bdc5e1eea52bad268bfd26beeb863",
-            "lines": 27
+            "sha256": "704e0b48e8005eab6ad82fee674e55909cd6049fc404567f35a20a16c3fd2cf4",
+            "lines": 21
           },
           {
             "path": "tenet/intent.md",

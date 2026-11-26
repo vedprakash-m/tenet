@@ -610,15 +610,17 @@ function buildPolicy(preflight: PreflightResult, setup: string[], reportPath: st
       id_prefix: "R",
     },
     ...(preflight.facts.owners.length > 0 ? { owners: preflight.facts.owners } : {}),
-    checks: {
-      test: {
-        setup,
-        run: preflight.facts.runner?.command ?? "npm test",
-        report: preflight.facts.runner?.report ?? "none",
-        report_from: preflight.facts.runner?.report_from ?? "file",
-        ...(reportPath ? { report_path: reportPath } : {}),
+    ...(preflight.facts.runner ? {
+      checks: {
+        test: {
+          setup,
+          run: preflight.facts.runner.command,
+          report: preflight.facts.runner.report,
+          report_from: preflight.facts.runner.report_from,
+          ...(reportPath ? { report_path: reportPath } : {}),
+        },
       },
-    },
+    } : {}),
     ...(preflight.plan?.ci_mode === "none" ? {} : {
       ci: {
         mode: preflight.plan?.ci_mode === "existing-ci" ? "existing-job" : "tenet-workflow",
@@ -762,7 +764,7 @@ export async function planWriteSet(
   const workflowBindings = {
     locked: releaseInfo.version,
     version: releaseInfo.version,
-    "default branch": preflight.facts.repository.branch ?? "main",
+    "default branch": preflight.facts.repository.default_branch ?? "main",
   };
   if (preflight.facts.repository.forge === "github") {
     let testWorkflowName = "Tenet tests";
