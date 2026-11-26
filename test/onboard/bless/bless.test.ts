@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import { run } from "../../../dist/cli.js";
 import { runBless } from "../../../dist/onboard/bless.js";
-import { onboardingCard } from "../../../dist/onboard/card.js";
+import { onboardingCard, onboardingCardText } from "../../../dist/onboard/card.js";
 import { parseDoc } from "../../../dist/specs/parse.js";
 import { writeAtomic } from "../../../dist/core/fs.js";
 import { validate } from "../../../dist/core/schema.js";
@@ -261,7 +261,7 @@ test("onboard --card counts sources and origins, records the draft commit, and r
   assert.equal(card.card, [
     `### Tenet onboarding · drafted from ${inventoryRef.slice(0, 7)} · nothing is in force until you bless it`,
     "Read: 1 source file, 0 test files, 0 instruction files · Skipped: none",
-    "✓ 1 citations resolve (file and lines exist)",
+    "✓ 1 citation resolves (file and lines exist)",
     "Conflicts (settle these first)",
     "  ! CF-1 Sources disagree.",
     "Sections (about 1 minute)",
@@ -445,7 +445,7 @@ test("onboarding card ignores citations in special sections and omits resolved c
   await repo.write(filename, spec(`## Requirements\n${requirement}\n## Open questions\n- R-2 Legacy. {origin: observed; cites: missing.ts:1}\n## Conflicts\n- [x] CF-1 Settled. | Resolution: retry once`));
   const stamp = commit(repo, "draft");
   const first = await onboardingCard({ cwd: repo.path, format: "result" });
-  assert.match(first.card, /1 citations resolve \(file and lines exist\)/);
+  assert.match(first.card, /1 citation resolves \(file and lines exist\)/);
   assert.doesNotMatch(first.card, /missing\.ts|Conflicts \(settle/);
   commit(repo, "record stamp");
   assert.equal((await onboardingCard({ cwd: repo.path, format: "result" })).drafted_at_rev, stamp);
@@ -598,6 +598,14 @@ test("[AB-A9] [F-29] [F-34] the card describes stamps and gives the next step fo
   assert.match(shell.stdout.text.trimEnd().split("\n").at(-1), /^→ gh pr checkout 12/);
 });
 
+test("[CP-0066-R2] the card uses the singular only for one resolved citation", () => {
+  assert.deepEqual([0, 1, 2].map(onboardingCardText.citations), [
+    "✓ 0 citations resolve (file and lines exist)",
+    "✓ 1 citation resolves (file and lines exist)",
+    "✓ 2 citations resolve (file and lines exist)",
+  ]);
+});
+
 test("[AB-A10] [F-32] the card reports that a Markdown citation resolves", async (t) => {
   const repo = await setup(t, "## Receipts\n- R-1 Keep a receipt. {origin: documented; cites: README.md:1}");
   await repo.write("README.md", "# Receipt formats\n");
@@ -606,6 +614,6 @@ test("[AB-A10] [F-32] the card reports that a Markdown citation resolves", async
     cwd: repo.path, ...fakeTty(), checkEnvironment: false,
   }), 0);
   const card = await onboardingCard({ cwd: repo.path });
-  assert.match(card, /^✓ 1 citations resolve \(file and lines exist\)$/m);
+  assert.match(card, /^✓ 1 citation resolves \(file and lines exist\)$/m);
   assert.doesNotMatch(card, /checked against the code/);
 });
