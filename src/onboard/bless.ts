@@ -94,6 +94,10 @@ function sourceLine(text: string, line: number | null): string {
   return line === null ? "" : text.replaceAll("\r\n", "\n").split("\n")[line - 1] ?? "";
 }
 
+export function parseBlessDocument(file: string, text: string, prefix: string): ParsedDoc {
+  return parseDoc(file, text, { prefix });
+}
+
 function choices(text: string): string[] {
   return [...text.matchAll(/\|\s*\d+:\s*([^|]+?)(?=\s*\||$)/g)].map((entry) => entry[1]?.trim() ?? "").filter(Boolean);
 }
@@ -673,7 +677,7 @@ export async function runBless(options: BlessOptions = {}, io: BlessIO = {}): Pr
         if (error.code === "ENOENT") return null;
         throw error;
       });
-      return text === null ? null : { filename, text, doc: parseDoc(relative, text, { prefix }) };
+      return text === null ? null : { filename, text, doc: parseBlessDocument(relative, text, prefix) };
     };
     const raw = await readYaml(await confine("tenet.yaml", cwd)) as TenetYaml;
     const intent = raw.specs?.documents?.length ? null : await load(`${records}/intent.md`);
