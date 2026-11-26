@@ -53,10 +53,11 @@ test("the minimal pack carries the alpha.0 pack fields (tech spec §6.2)", async
   assert.ok(!rules.includes("acceptance-proven"));
 });
 
-test("skills exist and stay within their 2,000-token budget", async () => {
+test("[AB-B4] [F-12] skills use installed names and stay within their 2,000-token budget", async () => {
   for (const name of ["draft-specs", "work-a-change", "review-with-findings"]) {
     const text = await read("skills", name, "SKILL.md");
     assert.ok(tokens(text) <= 2000, `${name}: ${tokens(text)} tokens`);
+    assert.equal(frontMatter(text) && (frontMatter(text) as Record<string, unknown>).name, `tenet-${name}`);
   }
 });
 

@@ -52,7 +52,7 @@ tenet onboard    # takes stock of your project and prepares a drafting assignmen
 
 Then ask your coding agent:
 
-> Use the `tenet-draft-specs` skill to draft this project's specifications from `.tenet/onboard/assignment.json`.
+> Use the `tenet-draft-specs` skill to draft this project's specifications from `.tenet/onboard/assignment.json`. If the skill is not loaded automatically, read `.agents/skills/tenet-draft-specs/SKILL.md` and follow it.
 
 Your agent drafts your vision, requirements, design and plan, citing the file and line behind every statement and listing any conflicts it found. Commit the draft, then read and approve it:
 

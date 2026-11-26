@@ -37,6 +37,7 @@ export type ContextDraft = {
   state: "draft" | "deferred";
   text: string;
   integrity_failed?: boolean;
+  over_budget?: boolean;
 };
 
 export type ContextResult = {
@@ -68,6 +69,10 @@ type Candidate = {
   scope: string | null;
   appliesTo: string[];
   prose: boolean;
+  authority: "blessed" | "draft";
+  path: string | null;
+  state: "draft" | "deferred" | null;
+  integrityFailed: boolean;
 };
 
 type Collected = {
@@ -174,6 +179,18 @@ function tokenCount(text: string): number {
   return Math.ceil(text.replaceAll("\r\n", "\n").replaceAll("\r", "\n").length / 4);
 }
 
+function appliesToScore(candidate: Candidate, paths: string[]): number {
+  let score = Number.NEGATIVE_INFINITY;
+  for (const pattern of candidate.appliesTo) {
+    if (!paths.some((selected) => match(pattern, selected))) continue;
+    const literal = pattern.replaceAll(/[^A-Za-z0-9_.-]/g, "").length;
+    const wildcards = pattern.length - literal;
+    const exact = Number(!pattern.includes("*") && !pattern.includes("?"));
+    score = Math.max(score, exact * 100_000 + literal * 100 - wildcards);
+  }
+  return score;
+}
+
 function requirementCandidates(
   copy: ParsedDoc,
   current: SpecSection,
@@ -197,7 +214,58 @@ function requirementCandidates(
     scope: item.scope,
     appliesTo: [],
     prose: false,
+    authority: "blessed",
+    path: null,
+    state: null,
+    integrityFailed: false,
   }));
+}
+
+function draftCandidates(
+  section: SpecSection,
+  sourcePath: string,
+  documentId: string,
+  level: SpecificationState["level"],
+): Candidate[] {
+  const state = section.state === "deferred" ? "deferred" : "draft";
+  const items: Candidate[] = [
+    ...section.requirements,
+    ...section.vision_items,
+  ].map((item) => ({
+    id: item.id,
+    section: section.slug,
+    heading: section.heading,
+    level,
+    text: item.text,
+    flags: [],
+    owner: "",
+    cites: item.cites,
+    scope: item.scope,
+    appliesTo: [],
+    prose: false,
+    authority: "draft",
+    path: sourcePath,
+    state,
+    integrityFailed: false,
+  }));
+  items.push({
+    id: `${documentId}#${section.slug}`,
+    section: section.slug,
+    heading: section.heading,
+    level,
+    text: section.text.replace(/\n$/, ""),
+    flags: [],
+    owner: "",
+    cites: [],
+    scope: null,
+    appliesTo: [...section.applies_to],
+    prose: true,
+    authority: "draft",
+    path: sourcePath,
+    state,
+    integrityFailed: false,
+  });
+  return items;
 }
 
 function hasProse(copy: string, idPrefix: string): boolean {
@@ -280,7 +348,7 @@ async function collect(
 
   const policy = await loadPolicy({ cwd });
   const candidates: Candidate[] = [];
-  const allDrafts: ContextDraft[] = [];
+  const integrityDrafts: ContextDraft[] = [];
   const findings: Finding[] = [];
   let validBlessedSections = 0;
 
@@ -294,7 +362,7 @@ async function collect(
       const sectionLevel = section.level as SpecificationState["level"];
       if (section.state !== "blessed") {
         if (input.include_drafts && (section.state === "draft" || section.state === "deferred")) {
-          allDrafts.push(optionalDraft(section, sourcePath));
+          candidates.push(...draftCandidates(section, sourcePath, docId, sectionLevel));
         }
         continue;
       }
@@ -306,7 +374,7 @@ async function collect(
         sectionDigest(copy) === section.blessed_digest;
       if (!intact || copy === null) {
         findings.push(integrityFinding(sourcePath, section.slug));
-        allDrafts.push(optionalDraft(section, sourcePath, true));
+        integrityDrafts.push(optionalDraft(section, sourcePath, true));
         continue;
       }
       validBlessedSections += 1;
@@ -334,6 +402,10 @@ async function collect(
           scope: null,
           appliesTo: [...section.applies_to],
           prose: true,
+          authority: "blessed",
+          path: null,
+          state: null,
+          integrityFailed: false,
         });
       }
     }
@@ -347,7 +419,7 @@ async function collect(
     candidates: Candidate[];
   }> = [
     { reason: "global", candidates: candidates.filter((item) => !item.prose && item.scope === "global") },
-    { reason: "id", candidates: candidates.filter((item) => !item.prose && ids.has(item.id)) },
+    { reason: "id", candidates: candidates.filter((item) => ids.has(item.id)) },
     {
       reason: "path",
       candidates: candidates.filter((item) =>
@@ -378,33 +450,63 @@ async function collect(
   const admitted = new Set<string>();
   const omitted: string[] = [];
   const blessed: ContextItem[] = [];
+  const drafts: ContextDraft[] = [];
   let used = 0;
   for (const group of groups) {
-    for (const candidate of [...group.candidates].sort(compareCandidates)) {
+    const ordered = [...group.candidates].sort((left, right) => {
+      if (group.reason === "applies_to") {
+        const specificity = appliesToScore(right, paths) - appliesToScore(left, paths);
+        if (specificity !== 0) return specificity;
+      }
+      return compareCandidates(left, right);
+    });
+    for (const candidate of ordered) {
       if (admitted.has(candidate.id) || omitted.includes(candidate.id)) continue;
       const tokens = tokenCount(candidate.text);
       const explicit = ids.has(candidate.id);
       if (explicit) {
-        blessed.push({
-          id: candidate.id,
-          section: candidate.section,
-          text: candidate.text,
-          flags: candidate.flags,
-          owner: candidate.owner,
-          reason: group.reason,
-          ...(tokens > budget ? { over_budget: true } : {}),
-        });
+        if (candidate.authority === "blessed") {
+          blessed.push({
+            id: candidate.id,
+            section: candidate.section,
+            text: candidate.text,
+            flags: candidate.flags,
+            owner: candidate.owner,
+            reason: group.reason,
+            ...(tokens > budget ? { over_budget: true } : {}),
+          });
+        } else {
+          drafts.push({
+            id: candidate.id,
+            section: candidate.section,
+            path: candidate.path ?? "",
+            state: candidate.state ?? "draft",
+            text: candidate.text,
+            ...(candidate.integrityFailed ? { integrity_failed: true } : {}),
+            ...(tokens > budget ? { over_budget: true } : {}),
+          });
+        }
         admitted.add(candidate.id);
         used = Math.min(budget, used + tokens);
       } else if (used + tokens <= budget) {
-        blessed.push({
-          id: candidate.id,
-          section: candidate.section,
-          text: candidate.text,
-          flags: candidate.flags,
-          owner: candidate.owner,
-          reason: group.reason,
-        });
+        if (candidate.authority === "blessed") {
+          blessed.push({
+            id: candidate.id,
+            section: candidate.section,
+            text: candidate.text,
+            flags: candidate.flags,
+            owner: candidate.owner,
+            reason: group.reason,
+          });
+        } else {
+          drafts.push({
+            id: candidate.id,
+            section: candidate.section,
+            path: candidate.path ?? "",
+            state: candidate.state ?? "draft",
+            text: candidate.text,
+          });
+        }
         admitted.add(candidate.id);
         used += tokens;
       } else {
@@ -418,11 +520,17 @@ async function collect(
   const indexed = new Set<string>();
   let indexUsed = 0;
   const remaining = candidates
-    .filter((item) => !item.prose && !admitted.has(item.id) && !omitted.includes(item.id))
+    .filter((item) =>
+      item.authority === "blessed" &&
+      !admitted.has(item.id) &&
+      (!omitted.includes(item.id) || item.prose)
+    )
     .sort(compareCandidates);
   for (const candidate of remaining) {
     if (indexed.has(candidate.id)) continue;
-    const title = candidate.text.slice(0, 80);
+    const titleBudget = indexBudget * 4 - candidate.id.length - 1;
+    if (titleBudget < 0) continue;
+    const title = candidate.text.slice(0, Math.min(80, titleBudget));
     const tokens = tokenCount(`${candidate.id} ${title}`);
     if (indexUsed + tokens <= indexBudget) {
       index.push({ id: candidate.id, title });
@@ -431,9 +539,8 @@ async function collect(
     }
   }
 
-  const drafts: ContextDraft[] = [];
   const draftKeys = new Set<string>();
-  for (const draft of allDrafts) {
+  for (const draft of integrityDrafts) {
     const key = `${draft.path}\0${draft.section}\0${draft.integrity_failed === true ? "integrity" : "working"}`;
     if (!draftKeys.has(key)) {
       draftKeys.add(key);
@@ -481,7 +588,14 @@ export function contextSummary(
   }
   lines.push("", `## Drafts (${result.drafts.length})`);
   for (const item of result.drafts) {
-    lines.push(`- ${item.id ?? item.section} — ${item.state}${item.integrity_failed ? "; integrity failed" : ""}`);
+    const notes = [
+      item.state,
+      ...(item.integrity_failed ? ["integrity failed"] : []),
+      ...(item.over_budget ? ["over_budget"] : []),
+    ];
+    lines.push(
+      `- ${item.id ?? item.section} — ${item.path}#${item.section} — ${item.text} (${notes.join("; ")})`,
+    );
   }
   lines.push(
     "",

@@ -4,7 +4,14 @@ import { message } from "../core/messages.js";
 import { errorFinding, fail, version, type Finding } from "../core/output.js";
 import { init as runInit } from "../install/init.js";
 import { preflight as runPreflight } from "../install/preflight.js";
-import type { InitOptions, InitResult, PreflightAnswers, PreflightPrompt, ProjectKind } from "../install/types.js";
+import type {
+  InitOptions,
+  InitResult,
+  PreflightAnswers,
+  PreflightPrompt,
+  ProjectKind,
+  SelectableHost,
+} from "../install/types.js";
 
 type InitDependencies = {
   init?: typeof runInit;
@@ -73,8 +80,37 @@ function preflightText(result: Awaited<ReturnType<typeof runPreflight>>): string
       : "local repository";
   const host = facts.repository.forge === "github" ? forge : facts.repository.forge;
   const runner = facts.runner ? `${facts.runner.kind} (${facts.runner.command})` : "no test runner";
+  const hostFiles: Array<{ path: string; reason: string }> = [];
+  const addHostFile = (itemPath: string, reason: string): void => {
+    if (!hostFiles.some((item) => item.path === itemPath)) hostFiles.push({ path: itemPath, reason });
+  };
+  for (const itemPath of plan.created) {
+    if (itemPath.startsWith(".claude/skills/")) addHostFile(itemPath, "Claude Code skill");
+    else if (itemPath.startsWith(".agents/skills/")) addHostFile(itemPath, "portable agent skill");
+  }
+  for (const { path: itemPath } of plan.blocks) {
+    if (itemPath === "AGENTS.md") addHostFile(itemPath, "gives all agents the Tenet workflow");
+    else if (itemPath === "CLAUDE.md") addHostFile(itemPath, "points Claude Code to AGENTS.md");
+    else if (itemPath === ".github/copilot-instructions.md") {
+      addHostFile(itemPath, "points GitHub Copilot to AGENTS.md");
+    }
+  }
+  for (const { path: itemPath, pointer } of plan.keys) {
+    addHostFile(
+      `${itemPath}${pointer}`,
+      itemPath === ".mcp.json"
+        ? "registers the Tenet MCP server for Claude Code"
+        : "registers the Tenet MCP server",
+    );
+  }
+  for (const { host, path: itemPath, pointer } of plan.local_keys) {
+    addHostFile(`${host}: ${itemPath}${pointer}`, `registers the Tenet MCP server locally for ${host}`);
+  }
   const lines = [
     `Found: ${host} · ${runner} · ${plan.hosts.map(({ id, capability }) => `${id} (${capability})`).join(", ")}`,
+    ...(plan.hosts.every(({ id }) => id === "agents")
+      ? ["No agent host found; skills are in .agents/skills/. Rerun with `--host claude` to set up Claude Code."]
+      : []),
     `Will create: ${plan.created.join(", ")}`,
     `Will edit: ${[
       ...plan.blocks.map(({ path }) => path),
@@ -86,6 +122,9 @@ function preflightText(result: Awaited<ReturnType<typeof runPreflight>>): string
         .join(", ")}`,
     ] : []),
     `Level: observe (nothing blocks) · CI: ${plan.ci_mode} (${plan.ci_reason})`,
+    ...(hostFiles.length > 0
+      ? ["Host files:", ...hostFiles.map(({ path: itemPath, reason }) => `- ${itemPath} — ${reason}`)]
+      : []),
     "Will never read: .env*, credentials, vendor/",
   ];
   return lines.join("\n");
@@ -112,8 +151,8 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
   return {
     name: "init",
     description: "Install Tenet in the current repository",
-    usage: "tenet init [--yes] [--local-hosts] [--vendor] [--force]",
-    options: ["--yes", "--local-hosts", "--vendor", "--force"],
+    usage: "tenet init [--yes] [--host <name>] [--local-hosts] [--vendor] [--force]",
+    options: ["--yes", "--host <name>", "--local-hosts", "--vendor", "--force"],
     async run(context) {
       if (context.args.length > 0) {
         return {
@@ -126,9 +165,27 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
       }
 
       try {
+        const rawHosts = context.options["--host"];
+        const selectedHosts = rawHosts === undefined
+          ? []
+          : (Array.isArray(rawHosts) ? rawHosts : [rawHosts]);
+        const allowedHosts: SelectableHost[] = ["claude", "cursor", "copilot", "vscode"];
+        const invalidHost = selectedHosts.find((host) =>
+          typeof host !== "string" || !allowedHosts.includes(host as SelectableHost)
+        );
+        if (invalidHost !== undefined) {
+          return {
+            findings: [diagnostic(
+              "init",
+              `unknown host: ${String(invalidHost)} (choose claude, cursor, copilot or vscode)`,
+            )],
+          };
+        }
+        const hosts = [...new Set(selectedHosts as SelectableHost[])];
         const options: InitOptions = {
           cwd: context.cwd,
           yes,
+          ...(hosts.length > 0 ? { hosts } : {}),
           localHosts: context.options["--local-hosts"] === true,
           offline: context.offline,
           vendor: context.options["--vendor"] === true,
@@ -155,26 +212,6 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
             prepared = await inspect({ ...options, answers });
             if (prepared.diagnostics.length > 0) return { findings: prepared.diagnostics };
           }
-          const localPrompt = prepared.prompts.find(({ key }) => key === "localHosts");
-          if (localPrompt) {
-            const available = localPrompt.local_keys ?? [];
-            if (available.length > 0) {
-              context.stdout.write(`Will edit locally (outside repository): ${available
-                .map(({ host, path, pointer }) => `${host}: ${path}${pointer}`)
-                .join(", ")}\n`);
-            }
-            const answer = await ask(promptLabel(localPrompt));
-            if (answer === null) return { findings: [noTty()] };
-            answers.allowLocalHosts = answerBoolean(answer, false);
-            prepared = await inspect({ ...options, answers });
-            if (prepared.diagnostics.length > 0) return { findings: prepared.diagnostics };
-            if (!answers.allowLocalHosts) {
-              context.stdout.write(
-                `No local host settings changed. To add one manually, install the Tenet MCP entry with command ` +
-                `"cmd /c npx -y @vedprakash-m/tenet@${version} mcp".\n`,
-              );
-            }
-          }
           const testCommandPrompt = prepared.prompts.find(({ key }) => key === "testCommand");
           if (testCommandPrompt) {
             const answer = await ask(promptLabel(testCommandPrompt));
@@ -199,6 +236,26 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
               answers.kind = kind;
             } else {
               answers.allowReporterEdit = answerBoolean(answer, false);
+            }
+          }
+          const localPrompt = prepared.prompts.find(({ key }) => key === "localHosts");
+          if (localPrompt) {
+            const available = localPrompt.local_keys ?? [];
+            if (available.length > 0) {
+              context.stdout.write(`Will edit locally (outside repository): ${available
+                .map(({ host, path, pointer }) => `${host}: ${path}${pointer}`)
+                .join(", ")}\n`);
+            }
+            const answer = await ask(promptLabel(localPrompt));
+            if (answer === null) return { findings: [noTty()] };
+            answers.allowLocalHosts = answerBoolean(answer, false);
+            prepared = await inspect({ ...options, answers });
+            if (prepared.diagnostics.length > 0) return { findings: prepared.diagnostics };
+            if (!answers.allowLocalHosts) {
+              context.stdout.write(
+                `No local host settings changed. To add one manually, install the Tenet MCP entry with command ` +
+                `"cmd /c npx -y @vedprakash-m/tenet@${version} mcp".\n`,
+              );
             }
           }
           const answer = await ask("Continue? [Y/n] ");

@@ -10,15 +10,15 @@
   "created": [
     {
       "path": ".agents/skills/tenet-draft-specs/SKILL.md",
-      "sha256": "2e9ce5b69a7792ef5ed51cc2754450cdde80f24250f2b5994f98d2c021093ff9"
+      "sha256": "46a53dd2b0a90992221a7ea543f99781be76399aca98cccb67a572b5d6c9d725"
     },
     {
       "path": ".agents/skills/tenet-review-with-findings/SKILL.md",
-      "sha256": "cea7b0c9d11b1731c8610e20c6294b5712868fd3b105ae0b3028afe693c7f64e"
+      "sha256": "317c98e7ca3e9ef4d0ecdce1581099002f362163537642a330ed758331ee5414"
     },
     {
       "path": ".agents/skills/tenet-work-a-change/SKILL.md",
-      "sha256": "d57058ba233bd9cdfe5f1a581e72d126599563fd9f4f4a83328231fac9398fc5"
+      "sha256": "aac61a360469eab5cce564fd4c58bdd928d7cc5dd245d1eacdaa717d130f816c"
     },
     {
       "path": ".gitattributes",

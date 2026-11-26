@@ -78,7 +78,7 @@ The **last blessed text stays in force** (the blessed copy):
 - the `AGENTS.md` block (agents.md §1)
 - on GitHub remotes, the recorder workflow, and either Tenet's test workflow or the existing-CI step (`ci_mode: "existing-ci"|"tenet-workflow"`); on non-GitHub remotes, workflows and `.github/pull_request_template.md` are omitted (`ci_mode: "none"`, `ci_reason: "non-GitHub remote: local checks and specifications are enabled; CI proof cards require GitHub in alpha.0"`)
 - the pull-request template block (GitHub) and the `.gitignore` and `.gitattributes` blocks
-- the detected hosts' skills and MCP entries (below)
+- the host skills and MCP entries selected below; the plan lists each host path with its reason
 
 `.tenet/manifest.json`: `{schema_version, version, created: [{path, sha256}], blocks: [{path, kind: markdown|yaml, marker, previous_block?, prefix_sep?}], keys: [{path, pointer, previous, installed, previous_raw?}]}` (repo-relative paths only); outside-repo Windows local host edits go only in git-ignored `.tenet/manifest.local.json` (`{schema_version: 1, profile_roots, keys: [{host, path, pointer, previous, installed, previous_raw?}]}`). `.tenet/manifest.pending.json` holds the full plan before the first write (ALG-12). Markdown blocks: `<!-- tenet:begin v<version> -->` … `<!-- tenet:end -->`; YAML: `# tenet:begin` … `# tenet:end`. JSON files are owned by key (`/mcpServers/tenet`, `/servers/tenet` in `.vscode/mcp.json`), with the previous value (and optional `previous_raw` bytes) kept.
 
@@ -88,7 +88,11 @@ The **last blessed text stays in force** (the blessed copy):
 | `.cursor/` | `.cursor/mcp.json` key |
 | `.github/copilot-instructions.md` | a marked block pointing to `AGENTS.md` |
 | `.vscode/` | `.vscode/mcp.json` key |
-| always | the `AGENTS.md` block ([agents.md](agents.md) §1); skills in `.agents/skills/tenet-*/SKILL.md`; a `.gitignore` block (`.tenet/*`, `!.tenet/manifest.json`, `!.tenet/kit/`); an `## Acceptance` block in `.github/pull_request_template.md`; a `.gitattributes` block marking every file Tenet writes `text eol=lf` (on Windows with `core.autocrlf=true` and `core.safecrlf=true`, `git add` otherwise refuses LF files, as Spike B hit) |
+| always, for agent-neutral use | the `AGENTS.md` block ([agents.md](agents.md) §1); skills in `.agents/skills/tenet-*/SKILL.md`; a `.gitignore` block (`.tenet/*`, `!.tenet/manifest.json`, `!.tenet/kit/`); an `## Acceptance` block in `.github/pull_request_template.md`; a `.gitattributes` block marking every file Tenet writes `text eol=lf` (on Windows with `core.autocrlf=true` and `core.safecrlf=true`, `git add` otherwise refuses LF files, as Spike B hit) |
+
+**Proposal (CP-0066 AB-B4):** `init --host <name>` is repeatable and accepts `claude`, `cursor`, `copilot` or `vscode`. A named host contributes the same writes as its marker without requiring the marker to exist. A repository with no detected or selected host stays agent-neutral: it keeps the portable `.agents/skills/` files and the plan says to rerun with `--host claude` for Claude Code.
+
+Host files above are repository writes covered by the normal `init` preflight. External local profile files still require the separate local-host consent described below; `--yes` alone does not grant that consent.
 
 MCP entries run `npx -y @vedprakash-m/tenet@<locked version> mcp` in the committed file; where a Windows host needs `cmd /c`, `init` writes that form only into allowlisted per-host local settings (`~/.claude.json`, `%APPDATA%/Cursor/User/mcp.json`, `%APPDATA%/Code/User/mcp.json`) when explicitly consented (`[y/N]` prompt interactively, or `--local-hosts` under `--yes` — never by `--yes` alone; fixture tests isolate with `localProfileRoot`), listed separately in preflight as `Will edit locally (outside repository): …` / `local_keys`, never into shared repo files (CP-0045 tests both). `upgrade` rewrites the pinned version in every repo entry and any already-recorded `manifest.local.json` entry.
 

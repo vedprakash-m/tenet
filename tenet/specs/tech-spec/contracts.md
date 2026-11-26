@@ -121,6 +121,8 @@ In [mcp.md §1](mcp.md#1-mcp), moved under the rollover rule.
 
 In [onboarding.md §2](onboarding.md#2-install-and-upgrade), moved under the rollover rule.
 
+**Proposal (CP-0066 AB-B4):** `tenet init` accepts repeatable `--host <name>` values from `claude`, `cursor`, `copilot`, and `vscode`. Each selection plans that host's repository writes exactly as if its marker existed; an omitted, undetected host contributes no writes. Unknown names are `TN-USAGE-INIT` (exit 2).
+
 ## 11. Determinism
 
 Normalize CRLF to LF before hashing text; store paths with forward slashes; call git with `-c core.quotepath=false`; serialize JSON for hashing with RFC 8785 (keys in UTF-16 code-unit order; `NaN`, `Infinity` and `undefined` refused); timestamps UTC RFC 3339 with seconds; the clock is injected, never read inside algorithms.

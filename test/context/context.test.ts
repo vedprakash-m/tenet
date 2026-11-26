@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
-import { context, contextWithFindings } from "../../dist/context/index.js";
+import { context, contextSummary, contextWithFindings } from "../../dist/context/index.js";
 import { sectionDigest } from "../../dist/specs/sections.js";
 
 async function repo(): Promise<{ cwd: string; write(filename: string, text: string): Promise<void> }> {
@@ -269,6 +269,157 @@ test("keeps mixed-section prose independently selectable by path and heading", a
     assert.ok(headingResult.blessed.some((item) =>
       item.id === "intent#requirements" && item.reason === "query"
     ));
+  } finally {
+    await rm(target.cwd, { recursive: true, force: true });
+  }
+});
+
+test("[AB-B1] [F-53] ranks specific applies_to prose before a broad fallback", async () => {
+  const target = await repo();
+  try {
+    await policy(target);
+    const global = "- R-9 Keep secrets out of specifications. {origin: asked; scope: global}\n";
+    const broad = `${"General project guidance. ".repeat(18).trim()}\n`;
+    const specific = `${"Resolve configuration from the application settings. ".repeat(4).trim()}\n`;
+    const records = {
+      broad: {
+        state: "blessed",
+        digest: sectionDigest(broad),
+        blessed_digest: sectionDigest(broad),
+        blessed_copy: "tenet/blessed/intent/broad.md",
+        applies_to: ["**"],
+        flags: [],
+        anchors: {},
+      },
+      specific: {
+        state: "blessed",
+        digest: sectionDigest(specific),
+        blessed_digest: sectionDigest(specific),
+        blessed_copy: "tenet/blessed/intent/specific.md",
+        applies_to: ["app/**"],
+        flags: [],
+        anchors: {},
+      },
+      global: {
+        state: "blessed",
+        digest: sectionDigest(global),
+        blessed_digest: sectionDigest(global),
+        blessed_copy: "tenet/blessed/intent/global.md",
+        flags: [],
+        anchors: {},
+      },
+    };
+    await target.write("tenet/intent.md", [
+      "---",
+      "tenet: {spec: 1, doc: intent, level: L1, owner: payments}",
+      `sections: ${JSON.stringify(records)}`,
+      "---",
+      "## Broad",
+      broad,
+      "## Specific",
+      specific,
+      "## Global",
+      global,
+    ].join("\n"));
+    await target.write("tenet/blessed/intent/broad.md", broad);
+    await target.write("tenet/blessed/intent/specific.md", specific);
+    await target.write("tenet/blessed/intent/global.md", global);
+
+    const result = await context({
+      cwd: target.cwd,
+      paths: ["app/config/resolve.py"],
+      budget_tokens: 70,
+    });
+    assert.deepEqual(result.blessed.map(({ id }) => id), ["R-9", "intent#specific"]);
+    assert.deepEqual(result.omitted, ["intent#broad"]);
+    assert.equal(result.index.some(({ id }) => id === "intent#broad"), true);
+  } finally {
+    await rm(target.cwd, { recursive: true, force: true });
+  }
+});
+
+test("[AB-B2] [F-38] selects and budgets draft statements by paths, IDs and query", async () => {
+  const target = await repo();
+  try {
+    await policy(target);
+    await target.write("tenet/intent.md", [
+      "---",
+      "tenet: {spec: 1, doc: intent, level: L1, owner: payments}",
+      `sections: ${JSON.stringify({
+        drafts: {
+          state: "draft",
+          flags: [],
+          applies_to: ["app/**"],
+        },
+        unrelated: {
+          state: "draft",
+          flags: [],
+          applies_to: ["docs/**"],
+        },
+      })}`,
+      "---",
+      "## Drafts",
+      "- R-10 Resolve configuration from the app settings. {origin: asked; cites: app/config.py:1}",
+      "- R-11 Retry the external service once. {origin: asked}",
+      "## Unrelated",
+      "Keep the documentation index current.",
+    ].join("\n"));
+
+    const byPath = await context({
+      cwd: target.cwd,
+      paths: ["app/config.py"],
+      include_drafts: true,
+      budget_tokens: 100,
+    });
+    assert.deepEqual(byPath.drafts.map(({ id }) => id), ["R-10", "intent#drafts"]);
+    const section = byPath.drafts.find(({ id }) => id === "intent#drafts");
+    assert.match(section?.text ?? "", /R-10/);
+    assert.match(section?.text ?? "", /R-11/);
+
+    const byId = await context({
+      cwd: target.cwd,
+      ids: ["R-11"],
+      include_drafts: true,
+      budget_tokens: 1,
+    });
+    assert.deepEqual(byId.drafts.map(({ id }) => id), ["R-11"]);
+    assert.equal(byId.drafts[0]?.text, "Retry the external service once.");
+
+    const byQuery = await context({
+      cwd: target.cwd,
+      query: "CONFIGURATION",
+      include_drafts: true,
+      budget_tokens: 20,
+    });
+    assert.equal(byQuery.drafts.some(({ id, text }) =>
+      id === "R-10" && text === "Resolve configuration from the app settings."
+    ), true);
+    assert.equal(byQuery.drafts.some(({ section }) => section === "unrelated"), false);
+
+    assert.match(contextSummary(byPath), /tenet\/intent\.md#drafts/);
+    assert.match(contextSummary(byPath), /Resolve configuration from the app settings/);
+  } finally {
+    await rm(target.cwd, { recursive: true, force: true });
+  }
+});
+
+test("[AB-B3] [F-52] context accepts comma, repeated and variadic --paths values", async () => {
+  const target = await repo();
+  try {
+    await policy(target);
+    const cli = path.join(process.cwd(), "dist", "cli.js");
+    for (const values of [
+      ["--paths", "src/a.ts,src/b.ts"],
+      ["--paths", "src/a.ts", "--paths", "src/b.ts"],
+      ["--paths", "src/a.ts", "src/b.ts"],
+    ]) {
+      const child = spawnSync(
+        process.execPath,
+        [cli, "--json", "--cwd", target.cwd, "context", ...values],
+        { encoding: "utf8" },
+      );
+      assert.equal(child.status, 0, child.stderr);
+    }
   } finally {
     await rm(target.cwd, { recursive: true, force: true });
   }

@@ -24,17 +24,17 @@ Newline-delimited JSON-RPC 2.0 over stdio; logs on stderr only; no network. Prot
 
 **Context selection.**
 - **Inputs:** `paths`, `ids`, `query`, `include_drafts`, `budget_tokens` (default 4,000).
-- **Candidates:** blessed sections, using their blessed copies.
+- **Candidates:** blessed sections, using their blessed copies; when `include_drafts` is true, draft/deferred requirements and sections from the working specification.
 - **Groups, in order:**
   1. **global**: requirements marked `scope: global`, within a reserved 25% of the budget
   2. requirements whose ID is named
   3. requirements citing a path equal to, inside or containing an input path
   4. **`applies_to`**: prose sections whose `applies_to` matches an input path (`id: "<doc>#<slug>"`)
   5. **`query`**: requirements (`text`) or sections (`heading`) containing the query, case-insensitive
-- **Ordering:** within a group, by level (L0, L1, L2) then numeric/ASCII ID; duplicates are dropped.
-- **Budget:** `tokens(s) = Math.ceil(s.length / 4)` (`budget_tokens <= 0` refuses with `TN-USAGE-BUDGET`). Walk candidates in group order: add whole items while `used + tokens(item.text) <= budget_tokens` (global rules beyond their 25% share still precede Groups 2–5); if a non-explicit item doesn't fit, push its `id` to `omitted`, set `truncated = true`, and keep scanning smaller items. An item named in `ids` always comes back whole (never `omitted`), clamping `used` at `budget_tokens` and setting `over_budget: true` if `tokens(item.text) > budget_tokens` (`truncated` is `omitted.length > 0`). Then build `index` from remaining blessed requirements not in `blessed` or `omitted` (`title: item.text.slice(0, 80)`, cost `tokens(id + " " + title)`) up to `Math.floor(budget_tokens * 0.20)`.
+- **Ordering:** `applies_to` candidates with a more specific matching glob come first; within the same specificity, order by level (L0, L1, L2) then numeric/ASCII ID. Duplicates are dropped. A literal beats `app/**`, and `app/**` beats `"**"`.
+- **Budget:** `tokens(s) = Math.ceil(s.length / 4)` (`budget_tokens <= 0` refuses with `TN-USAGE-BUDGET`). Walk candidates in group order: add whole items while `used + tokens(item.text) <= budget_tokens` (global rules beyond their 25% share still precede Groups 2–5); if a non-explicit item doesn't fit, push its `id` to `omitted`, set `truncated = true`, and keep scanning smaller items. An item named in `ids` always comes back whole (never `omitted`), clamping `used` at `budget_tokens` and setting `over_budget: true` if `tokens(item.text) > budget_tokens` (`truncated` is `omitted.length > 0`). Then build `index` from remaining blessed requirements and prose sections (`title` is at most 80 characters and is shortened further to fit, cost `tokens(id + " " + title)`) up to `Math.floor(budget_tokens * 0.20)`. An omitted large prose section can therefore retain a small title index.
 - **Each item carries** its `flags`, single-string `owner` (joining multiple CODEOWNERS with `", "`) and `reason` (`global|id|path|applies_to|query`).
-- **Drafts:** `include_drafts` populates `drafts` with `draft`/`deferred` sections (never `rejected`); a blessed copy failing `ALG-03` integrity is excluded from `blessed` and served in `drafts` (`integrity_failed: true`).
+- **Drafts:** `include_drafts` applies the same path, ID, query, ordering and budget rules to `draft`/`deferred` requirements and sections (never `rejected`). Draft results carry their state, source path and text. `--ids` can return one named draft statement. A blessed copy failing `ALG-03` integrity is excluded from `blessed` and served in `drafts` (`integrity_failed: true`).
 - **No inputs:** group 1 plus the index.
 
 Fixtures: a global rule survives a budget filled by one long local requirement; the omitted IDs match between CLI and MCP.

@@ -1,8 +1,8 @@
 ---
-name: review-with-findings
+name: tenet-review-with-findings
 description: Review a pull request against Tenet's proof card and touched blessed requirements, reporting structured findings without approving self-authored work.
 ---
-# Review with Findings (`review-with-findings`)
+# Review with Findings (`tenet-review-with-findings`)
 
 Use this skill when reviewing a pull request in a Tenet repository:
 

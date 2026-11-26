@@ -293,7 +293,7 @@ test("interactive purpose seed keeps the Vision row in the table", async (t) => 
   t.after(repo.cleanup);
   repo.git(["config", "user.name", "Fixture Owner"]);
   repo.git(["config", "user.email", "fixture@example.invalid"]);
-  const io = fakeTty("Recover checked-out work safely.\n\n\n");
+  const io = fakeTty("Recover checked-out work safely.\n\n\n\n");
   const priorRegistry = process.env.TENET_TEST_REGISTRY_INTEGRITY;
   process.env.TENET_TEST_REGISTRY_INTEGRITY = "not-found";
   try {

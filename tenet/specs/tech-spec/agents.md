@@ -71,7 +71,7 @@ These depend on the agent following them; the ones that can be checked are catal
 
 Each skill is a `SKILL.md` in the open agent-skills format, under 2,000 tokens, with these steps.
 
-**`draft-specs`** (onboarding):
+**`tenet-draft-specs`** (onboarding):
 1. Run `tenet onboard` and read `.tenet/onboard/assignment.json`.
 2. Ask the Owner the interview questions for the project's kind (at most 10, grouped). Record the answers in `.tenet/onboard/interview.json`.
 3. For each drafting unit in the assignment, in order:
@@ -87,7 +87,7 @@ Each skill is a `SKILL.md` in the open agent-skills format, under 2,000 tokens, 
 5. Self-check: list each statement its citation does not support, then correct it or mark it `inferred`. This is labelled a self-check; an independent review is a separate `spec-reviewer` assignment.
 6. Commit the draft, run `tenet onboard --card` (which records `drafted_at_rev`), and open one pull request, "Set up Tenet", with the card as its description. Never bless and never resolve a conflict.
 
-**`work-a-change`:**
+**`tenet-work-a-change`:**
 1. Get context (step 1 of the block).
 2. If the host can, open a draft pull request early; otherwise write the description at the end.
 3. Write `## Acceptance`.
@@ -96,7 +96,7 @@ Each skill is a `SKILL.md` in the open agent-skills format, under 2,000 tokens, 
 6. Where the specification is wrong, edit it in the same pull request and say why (the block's "Specifications").
 7. Follow the stop rules.
 
-**`review-with-findings`:**
+**`tenet-review-with-findings`:**
 - Read the proof card first.
 - Compare the touched requirements' blessed text with the change.
 - Report each finding as `introduced`, `exposed`, `inherited` or `uncertain`, with a location or a reproduction (evidence.md §1, `review`).
