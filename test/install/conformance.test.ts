@@ -881,7 +881,6 @@ test("[AB-E1] [F-56] same-version offline upgrade preserves the install manifest
 test("[AB-E2] [F-47] same-version upgrade migrates legacy anchor text to hashes and ranges", async (t) => {
   const setup = await makeCase("p02-node-vitest");
   t.after(() => dispose(setup));
-  await init(setup.options);
   const revision = setup.repo.git(["rev-parse", "HEAD"]).trim();
   const body = "- R-1 Retry once. {origin: observed; cites: src/retry.ts:1}\n";
   const copyPath = "tenet/blessed/intent/requirements.md";
@@ -895,6 +894,7 @@ test("[AB-E2] [F-47] same-version upgrade migrates legacy anchor text to hashes 
   ].join("\n"));
   await setup.repo.write(copyPath, body);
   await setup.repo.write(`${copyPath}.anchors.json`, '{"src/retry.ts:1":"export const attempts = 1;"}\n');
+  await init(setup.options);
   const result = await upgrade({
     ...setup.options,
     offline: true,

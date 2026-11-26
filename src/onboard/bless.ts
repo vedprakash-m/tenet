@@ -6,6 +6,7 @@ import { isMap, parseDocument } from "yaml";
 import { utcSeconds } from "../core/clock.js";
 import { confine, writeAtomic } from "../core/fs.js";
 import { git } from "../core/git.js";
+import { sha256 } from "../core/hash.js";
 import { readYaml } from "../core/yaml.js";
 import { loadPolicy, ownersFor } from "../policy/index.js";
 import type { TenetYaml } from "../types/generated.js";
@@ -646,6 +647,7 @@ async function historicalRange(
   start: number | null,
   end: number | null,
   revision: string | null,
+  hash: string | null,
 ): Promise<string | null> {
   const parsed = citationParts(citation);
   if (!parsed || start === null || end === null || revision === null) return null;
@@ -653,7 +655,9 @@ async function historicalRange(
     const source = await git(["show", `${revision}:${parsed.path}`], { cwd });
     const lines = source.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
     if (lines.at(-1) === "") lines.pop();
-    return lines.slice(start - 1, end).join("\n");
+    const text = lines.slice(start - 1, end).map((line) => line.replace(/[ \t]+$/, "")).join("\n");
+    if (hash !== null && `sha256:${sha256(text)}` !== hash) return null;
+    return text;
   } catch {
     return null;
   }
@@ -681,11 +685,13 @@ async function anchorsToShow(
         start?: unknown;
         end?: unknown;
         blessed_at_rev?: unknown;
+        hash?: unknown;
       };
       const start = typeof record.start === "number" ? record.start : null;
       const end = typeof record.end === "number" ? record.end : null;
       const revision = typeof record.blessed_at_rev === "string" ? record.blessed_at_rev : null;
-      before = await historicalRange(cwd, citation, start, end, revision) ??
+      const hash = typeof record.hash === "string" ? record.hash : null;
+      before = await historicalRange(cwd, citation, start, end, revision, hash) ??
         (start !== null && end !== null
           ? `${citationParts(citation)?.path ?? citation}:${start}-${end}`
           : blessText.noLines);

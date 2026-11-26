@@ -245,6 +245,19 @@ test("[AB-E2] [F-47] confirm reads old anchor text from the blessed commit", asy
   assert.equal(sidecar["src/retry.ts:1"]?.blessed_at_rev, revision);
 });
 
+test("[AB-E2] [F-47] confirm shows the range when the blessed commit has a different anchor", async (t) => {
+  const repo = await setup(t, `## Requirements\n${requirement}`);
+  await repo.write("src/retry.ts", "const times = 2;\n");
+  assert.equal((await speak(repo, "1\nbless\n")).result?.blessed, 1);
+  await repo.write("src/retry.ts", "const times = 3;\n");
+  const tty = fakeTty("1\nconfirm\ny\n");
+  const result = await runBless({ cwd: repo.path }, { ...tty, now: at });
+  assert.deepEqual(result.findings, []);
+  assert.match(tty.stdout.text, /Old src\/retry\.ts:1:\nsrc\/retry\.ts:1-1/);
+  assert.doesNotMatch(tty.stdout.text, /Old src\/retry\.ts:1:\nconst times = 1;/);
+  assert.match(tty.stdout.text, /New src\/retry\.ts:1:\nconst times = 3;/);
+});
+
 test("a failed log write does not leave the section blessed or publish a new sidecar", async (t) => {
   const repo = await setup(t, `## Requirements\n${requirement}`);
   await mkdir(path.join(repo.path, log), { recursive: true });

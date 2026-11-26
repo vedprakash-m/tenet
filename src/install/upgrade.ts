@@ -164,6 +164,15 @@ function replaceKey(
   if (replacement) manifest.keys.push(replacement);
 }
 
+function replaceBlock(
+  manifest: InstallManifest,
+  itemPath: string,
+  replacement: InstallManifest["blocks"][number] | undefined,
+): void {
+  manifest.blocks = manifest.blocks.filter((item) => item.path !== itemPath);
+  if (replacement) manifest.blocks.push(replacement);
+}
+
 function actionFor(before: string | null, after: string): UpgradeChanged["action"] {
   if (before === null) return "created";
   return before === after ? "kept" : "replaced";
@@ -278,13 +287,6 @@ export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResu
   const prior = await currentManifest(cwd);
   const pending = await readPendingPlan(cwd, options.environment?.localProfileRoot);
   const installedVersion = options.environment?.installedVersion ?? version;
-  if (prior && prior.version === installedVersion && pending === null) {
-    const changed = (await migrateLegacyAnchors(cwd))
-      .map((path) => ({ path, action: "replaced" as const }));
-    const check = options.check ?? (await import("../specs/check.js")).check;
-    await check({ cwd, installedVersion });
-    return { from: prior.version, to: installedVersion, changed };
-  }
   const preflightOptions = { ...options };
   const result = await preflight(preflightOptions);
   if (!result.plan || result.diagnostics.length > 0) {
@@ -343,30 +345,59 @@ export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResu
       ? { localProfileRoot: options.environment.localProfileRoot }
       : {}),
   });
-  const planned = await planWriteSet(result, { ...options, force: true, command: "upgrade" });
+  const sameVersion = prior.version === installedVersion;
+  const anchorChanges = sameVersion ? await migrateLegacyAnchors(cwd) : [];
+  const planned = await planWriteSet(result, {
+    ...options,
+    ...(sameVersion ? { offline: true } : {}),
+    force: true,
+    command: "upgrade",
+  });
   const targetVersion = planned.version;
   const packageName = options.environment?.registry?.package ?? "@vedprakash-m/tenet";
   const previousVersion = prior?.version ?? targetVersion;
   const changes: ChangeIndex = new Map();
-  changes.set("tenet.yaml", "kept");
+  if (!sameVersion) changes.set("tenet.yaml", "kept");
+  for (const itemPath of anchorChanges) changes.set(itemPath, "replaced");
 
   const writes: PendingWrite[] = [];
-  const manifest = structuredClone(planned.manifest);
+  const manifest = structuredClone(sameVersion ? prior : planned.manifest);
   for (const write of planned.writes) {
+    if (sameVersion && (
+      (write.kind === "file" && !prior.created.some((item) => item.path === write.path)) ||
+      (write.kind === "block" && !prior.blocks.some((item) => item.path === write.path)) ||
+      (write.kind === "key" && !prior.keys.some((item) =>
+        item.path === write.path && item.pointer === write.pointer)) ||
+      (write.kind === "local_key" && !local?.keys.some((item) =>
+        item.path === write.path && item.pointer === write.pointer))
+    )) continue;
     if (write.path === "tenet.yaml" && write.kind === "file") {
-      replaceCreated(manifest, write.path, prior?.created.find((item) => item.path === write.path));
+      if (!sameVersion) replaceCreated(manifest, write.path, prior.created.find((item) => item.path === write.path));
+      continue;
+    }
+    if (sameVersion && write.path === "tenet.lock" && write.kind === "file") {
       continue;
     }
     let decision: { apply: boolean; action: UpgradeChanged["action"] };
     if (write.kind === "file") {
       decision = await shouldApplyCreated(cwd, prior, write);
-      if (!decision.apply) {
+      if (sameVersion && decision.apply) {
+        replaceCreated(manifest, write.path, planned.manifest.created.find((item) => item.path === write.path));
+      } else if (!decision.apply && !sameVersion) {
         const old = prior?.created.find((item) => item.path === write.path);
         replaceCreated(manifest, write.path, old);
       }
     } else if (write.kind === "key") {
       decision = await shouldApplyKey(cwd, prior, write);
-      if (!decision.apply) {
+      if (sameVersion && decision.apply) {
+        replaceKey(
+          manifest,
+          write.path,
+          write.pointer ?? "",
+          planned.manifest.keys.find((item) =>
+            item.path === write.path && item.pointer === write.pointer),
+        );
+      } else if (!decision.apply && !sameVersion) {
         const old = prior?.keys.find((item) =>
           item.path === write.path && item.pointer === write.pointer);
         replaceKey(manifest, write.path, write.pointer ?? "", old);
@@ -379,9 +410,13 @@ export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResu
         write,
       );
     } else {
-      decision = { apply: true, action: actionFor(write.before_sha256, write.after_sha256) };
+      const action = actionFor(write.before_sha256, write.after_sha256);
+      decision = { apply: action !== "kept", action };
+      if (sameVersion && decision.apply && write.kind === "block") {
+        replaceBlock(manifest, write.path, planned.manifest.blocks.find((item) => item.path === write.path));
+      }
     }
-    changes.set(write.path, decision.action);
+    if (!sameVersion || decision.apply) changes.set(write.path, decision.action);
     if (decision.apply) writes.push(write);
   }
   for (const block of prior?.blocks ?? []) {
@@ -421,12 +456,14 @@ export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResu
       changed,
     },
   };
-  await applyPlan(plan, {
-    ...(options.fault ? { fault: options.fault } : {}),
-    ...(options.environment?.localProfileRoot
-      ? { localProfileRoot: options.environment.localProfileRoot }
-      : {}),
-  });
+  if (writes.length > 0) {
+    await applyPlan(plan, {
+      ...(options.fault ? { fault: options.fault } : {}),
+      ...(options.environment?.localProfileRoot
+        ? { localProfileRoot: options.environment.localProfileRoot }
+        : {}),
+    });
+  }
   const check = options.check ?? (await import("../specs/check.js")).check;
   await check({ cwd, installedVersion: targetVersion });
   return {
