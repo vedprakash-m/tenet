@@ -789,6 +789,32 @@ test("--paths command option scopes check and commands keep canonical usage find
   }
 });
 
+test("[AB-D10] [F-17] path-scoped check renders human text without JSON", async () => {
+  const repo = await tmpRepo("check-human-output");
+  try {
+    await seed(repo);
+    await repo.write("tenet.yaml", JSON.stringify(policy, null, 2));
+    const context = {
+      args: ["tenet.yaml"],
+      options: {},
+      cwd: repo.path,
+      stdin: process.stdin,
+      stdout: process.stdout,
+      stderr: process.stderr,
+      now: () => new Date(),
+      json: false,
+      quiet: false,
+      verbose: false,
+      offline: false,
+    };
+    const outcome = await checkCommand.run?.(context);
+    assert.ok(outcome);
+    assert.match(String((outcome as { value?: unknown }).value), /^Check: \d+ errors · \d+ warnings · \d+ advises$/);
+  } finally {
+    await repo.cleanup();
+  }
+});
+
 test("direct check keeps citation diagnostics as errors", async () => {
   const repo = await tmpRepo("check-citation-mode");
   try {

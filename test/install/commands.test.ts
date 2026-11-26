@@ -8,6 +8,7 @@ import { makeInitCommand } from "../../dist/commands/init.js";
 import { makeRemoveCommand } from "../../dist/commands/remove.js";
 import { makeUpgradeCommand } from "../../dist/commands/upgrade.js";
 import { packageVersion } from "../helpers/packageVersion.ts";
+import { tmpRepo } from "../helpers/tmpRepo.ts";
 
 function writer() {
   let text = "";
@@ -155,6 +156,45 @@ test("init preflight text lists local host keys exactly", async () => {
   await command.run?.(request);
   assert.match(request.captures.stdout.text(),
     /Will edit locally \(outside repository\): vscode: C:\/Users\/fixture\/AppData\/Roaming\/Code\/User\/mcp\.json\/servers\/tenet/);
+});
+
+test("[AB-D10] [F-09] init plan decides create or edit from the working tree", async (t) => {
+  const repo = await tmpRepo("init-create-edit");
+  t.after(repo.cleanup);
+  await repo.write("tenet.yaml", "standard: 0.1.0-alpha.0\n");
+  await repo.write("AGENTS.md", "# Existing\n");
+  const setupPlan = {
+    ...plan,
+    created: ["tenet.yaml", ".github/workflows/tenet.yml"],
+    blocks: [{ path: "AGENTS.md", kind: "markdown" as const }],
+  };
+  const command = makeInitCommand({
+    terminal: true,
+    preflight: async () => ({
+      plan: setupPlan,
+      findings: [],
+      diagnostics: [],
+      prompts: [],
+      facts: {
+        repository: { cwd: repo.path, git: true, head: "abc", branch: "main", remote: null, forge: "github" as const, empty: false },
+        runner: null,
+        ci: { jobs: [], selected: null },
+        owners: [],
+        purpose: null,
+        kind: null,
+      },
+    }),
+    init: async () => ({
+      plan: setupPlan,
+      wrote: { created: [], blocks: [], keys: [], local_keys: [] },
+      findings: [],
+    }),
+  });
+  const request = context({ cwd: repo.path, options: { "--yes": true }, json: false });
+  await command.run?.(request);
+  const text = request.captures.stdout.text();
+  assert.match(text, /Will create: \.github\/workflows\/tenet\.yml/);
+  assert.match(text, /Will edit: tenet\.yaml, AGENTS\.md/);
 });
 
 test("init command asks before authorizing local host edits", async () => {

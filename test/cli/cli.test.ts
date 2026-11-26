@@ -18,6 +18,23 @@ test("version and help use the public CLI entry points", async () => {
   assert.match(help.stdout.text, /Usage: tenet/);
 });
 
+test("[AB-D2] [F-04] global help explains offline registry behavior", async () => {
+  const help = fakeTty();
+  assert.equal(await run(["--help"], { ...help, checkEnvironment: false }), 0);
+  assert.match(
+    help.stdout.text,
+    /Work without the network: skip registry lookups, or refuse commands that need it/,
+  );
+});
+
+test("[AB-D7] [F-15] onboard, bless, and remove print their own command help", async () => {
+  for (const command of ["onboard", "bless", "remove"]) {
+    const help = fakeTty();
+    assert.equal(await run([command, "--help"], { ...help, checkEnvironment: false }), 0);
+    assert.match(help.stdout.text, new RegExp(`Usage: tenet ${command}`));
+  }
+});
+
 test("the CLI starts when invoked through a filesystem link", async (t) => {
   const scratch = await mkdtemp(path.join(os.tmpdir(), "tenet-cli-link-"));
   t.after(() => rm(scratch, { recursive: true, force: true }));
@@ -233,6 +250,30 @@ test("human findings include location, rule, why and fix", async () => {
   assert.match(terminal.stderr.text, /missing title at tenet\/example\.md:12/);
   assert.match(terminal.stderr.text, /why: schema-valid/);
   assert.match(terminal.stderr.text, /→ add a title/);
+});
+
+test("[AB-D4] [F-06] verbose output alone includes npm registry detail", async () => {
+  registerCommand({
+    name: "registry-detail-test",
+    run: () => ({
+      findings: [{
+        code: "TN-ENV-REGISTRY",
+        severity: "error",
+        rule: null,
+        file: null,
+        line: null,
+        message: "Could not reach the npm registry: the TLS or proxy handshake failed.",
+        fix: "Check your network or proxy.",
+        detail: "ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE",
+      }],
+    }),
+  });
+  const plain = fakeTty();
+  assert.equal(await run(["registry-detail-test"], { ...plain, checkEnvironment: false }), 3);
+  assert.doesNotMatch(plain.stderr.text, /ERR_SSL_SSL\/TLS_ALERT_HANDSHAKE_FAILURE/);
+  const verbose = fakeTty();
+  assert.equal(await run(["--verbose", "registry-detail-test"], { ...verbose, checkEnvironment: false }), 3);
+  assert.match(verbose.stderr.text, /detail: ERR_SSL_SSL\/TLS_ALERT_HANDSHAKE_FAILURE/);
 });
 
 test("unexpected exceptions are complete internal failures, not usage errors", async () => {
