@@ -177,16 +177,18 @@ async function runLocalVerify(context: VerifyCommandContext) {
   const previewCommit = await workingTreePreviewCommit(cwd, head, context.now);
   const workingPolicy = await loadPolicy({ cwd });
   await verifyLock({ cwd });
-  const basePolicy = await loadPolicy({ cwd, ref: base }).catch(() => null);
+  const hasBasePolicy = await git(["cat-file", "-e", `${base}:tenet.yaml`], { cwd }).then(() => true, () => false);
+  const basePolicy = hasBasePolicy ? await loadPolicy({ cwd, ref: base }) : null;
+  const checksPolicy = basePolicy ?? workingPolicy;
   const bundleDir = `.tenet/runs/local-preview-${process.pid}`;
   try {
-    const bundleData = await runChecks(workingPolicy, {
+    const bundleData = await runChecks(checksPolicy, {
       cwd,
       repository: "local/preview",
       ci: false,
       directory: bundleDir,
       tested: { commit: previewCommit, kind: "head", head: previewCommit, base },
-      run: { id: "1", attempt: 1, workflow: workingPolicy.ci?.test_workflow ?? "Tenet tests", job: "local", index: 0 },
+      run: { id: "1", attempt: 1, workflow: checksPolicy.ci?.test_workflow ?? "Tenet tests", job: "local", index: 0 },
     }, deps);
     const decoded = decodeBundle(bundleData.files);
     const localDeps: VerifyDeps = {
@@ -201,7 +203,7 @@ async function runLocalVerify(context: VerifyCommandContext) {
       run: {
         id: "1",
         attempt: 1,
-        workflow: workingPolicy.ci?.test_workflow ?? "Tenet tests",
+        workflow: checksPolicy.ci?.test_workflow ?? "Tenet tests",
         head: previewCommit,
         repository: "local/preview",
         startedAt: context.now().toISOString(),
@@ -221,7 +223,7 @@ async function runLocalVerify(context: VerifyCommandContext) {
     });
     const card = { ...evaluated.card, "x-local-preview": true } as ProofCard;
     const cardText = renderCard(card);
-    const findings = checkFindings(bundleData.bundle, workingPolicy);
+    const findings = checkFindings(bundleData.bundle, checksPolicy);
     const exitCode = bundleData.bundle.checks.some((entry) => entry.outcome !== "success") ? 1 : 0;
     if (context.json) {
       return { result: { card, markdown: cardText, conclusion: evaluated.conclusion, bundle: bundleData.bundle }, findings, exitCode };

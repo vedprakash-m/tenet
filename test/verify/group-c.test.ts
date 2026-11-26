@@ -89,7 +89,8 @@ test("[AB-C2] [F-54] verify --local runs working-tree checks against default bra
   t.after(repo.cleanup);
   repo.git(["config", "user.name", "Fixture Owner"]);
   repo.git(["config", "user.email", "fixture@example.invalid"]);
-  const checkCmd = `node -e "console.log('ok')"`;
+  const checkCmd = "node check.mjs";
+  await repo.write("check.mjs", "console.log('ok');\n");
   await repo.write("tenet.yaml", JSON.stringify({
     standard: "~0.1",
     kit_path: "kit",
@@ -138,18 +139,8 @@ test("[AB-C2] [F-54] verify --local runs working-tree checks against default bra
   assert.equal(envelope.result.bundle.checks[0]?.outcome, "success");
   assert.match(envelope.result.markdown, /local preview/);
 
-  // Failing check exits 1 while still printing the preview card.
-  await repo.write("tenet.yaml", JSON.stringify({
-    standard: "~0.1",
-    kit_path: "kit",
-    paths: { records: "tenet" },
-    level: "observe",
-    specs: { id_prefix: "R", documents: [{ path: "intent.md", level: "L1" }] },
-    owners: [{ id: "owner", name: "Owner", roles: ["owner"] }],
-    checks: {
-      unit: { run: `node -e "process.exit(2)"`, report: "none", report_from: "file" },
-    },
-  }, null, 2));
+  // Failing working-tree check exits 1 while still printing the preview card.
+  await repo.write("check.mjs", "process.exit(2);\n");
   const failing = runCli(repo.path, ["--offline", "verify", "--local"], envWithoutGithub);
   assert.equal(failing.status, 1);
   assert.match(failing.stdout, /local preview/);
@@ -264,6 +255,111 @@ test("[AB-C3] [F-55] card notes when head changes a failing base check command a
 
   const gettingStarted = await readFile("docs/getting-started.md", "utf8");
   assert.match(gettingStarted, /setup pull request/i);
+});
+
+test("[AB-C2] [AB-C3] verify --local runs base check command on working tree when base has tenet.yaml and falls back only when absent", async (t) => {
+  // 1. Failing base command + head override -> runs base's command and notes takes effect after merge.
+  const failingBaseRepo = await tmpRepo("c2-c3-base-fail");
+  t.after(failingBaseRepo.cleanup);
+  failingBaseRepo.git(["config", "user.name", "Fixture Owner"]);
+  failingBaseRepo.git(["config", "user.email", "fixture@example.invalid"]);
+  await failingBaseRepo.write("kit/TENET.md", "# Kit\n");
+  await failingBaseRepo.write("tenet/intent.md", "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"owner\"}\nsections:\n  vision: {\"state\":\"draft\",\"digest\":null,\"flags\":[]}\n---\n## Vision\n- V-1 Preview runs base checks. {origin: asked}\n");
+  await failingBaseRepo.write("tenet.yaml", JSON.stringify({
+    standard: "~0.1",
+    kit_path: "kit",
+    paths: { records: "tenet" },
+    level: "observe",
+    specs: { id_prefix: "R", documents: [{ path: "intent.md", level: "L1" }] },
+    owners: [{ id: "owner", name: "Owner", roles: ["owner"] }],
+    checks: {
+      unit: { run: `node -e "require('node:fs').writeFileSync('ran.txt','base');process.exit(127)"`, report: "none", report_from: "file" },
+    },
+  }, null, 2));
+  failingBaseRepo.git(["add", "-A"]);
+  failingBaseRepo.git(["commit", "-qm", "base"]);
+  failingBaseRepo.git(["branch", "-M", "main"]);
+
+  failingBaseRepo.git(["checkout", "-b", "fix/check-cmd"]);
+  await failingBaseRepo.write("tenet.yaml", JSON.stringify({
+    standard: "~0.1",
+    kit_path: "kit",
+    paths: { records: "tenet" },
+    level: "observe",
+    specs: { id_prefix: "R", documents: [{ path: "intent.md", level: "L1" }] },
+    owners: [{ id: "owner", name: "Owner", roles: ["owner"] }],
+    checks: {
+      unit: { run: `node -e "require('node:fs').writeFileSync('ran.txt','head')"`, report: "none", report_from: "file" },
+    },
+  }, null, 2));
+  const localFail = runCli(failingBaseRepo.path, ["--offline", "verify", "--local"]);
+  assert.equal(localFail.status, 1);
+  assert.equal(await readFile(path.join(failingBaseRepo.path, "ran.txt"), "utf8"), "base");
+  assert.match(localFail.stdout, /check command changed for unit; runs base policy \(takes effect after merge\)/);
+
+  // 2. Passing base command + head override -> base's command is still the one executed and recorded.
+  const passingBaseRepo = await tmpRepo("c2-c3-base-pass");
+  t.after(passingBaseRepo.cleanup);
+  passingBaseRepo.git(["config", "user.name", "Fixture Owner"]);
+  passingBaseRepo.git(["config", "user.email", "fixture@example.invalid"]);
+  await passingBaseRepo.write("kit/TENET.md", "# Kit\n");
+  await passingBaseRepo.write("tenet/intent.md", "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"owner\"}\nsections:\n  vision: {\"state\":\"draft\",\"digest\":null,\"flags\":[]}\n---\n## Vision\n- V-1 Preview runs base checks. {origin: asked}\n");
+  await passingBaseRepo.write("tenet.yaml", JSON.stringify({
+    standard: "~0.1",
+    kit_path: "kit",
+    paths: { records: "tenet" },
+    level: "observe",
+    specs: { id_prefix: "R", documents: [{ path: "intent.md", level: "L1" }] },
+    owners: [{ id: "owner", name: "Owner", roles: ["owner"] }],
+    checks: {
+      unit: { run: `node -e "require('node:fs').writeFileSync('ran.txt','base-pass')"`, report: "none", report_from: "file" },
+    },
+  }, null, 2));
+  passingBaseRepo.git(["add", "-A"]);
+  passingBaseRepo.git(["commit", "-qm", "base"]);
+  passingBaseRepo.git(["branch", "-M", "main"]);
+  passingBaseRepo.git(["checkout", "-b", "chore/edit-check"]);
+  await passingBaseRepo.write("tenet.yaml", JSON.stringify({
+    standard: "~0.1",
+    kit_path: "kit",
+    paths: { records: "tenet" },
+    level: "observe",
+    specs: { id_prefix: "R", documents: [{ path: "intent.md", level: "L1" }] },
+    owners: [{ id: "owner", name: "Owner", roles: ["owner"] }],
+    checks: {
+      unit: { run: `node -e "require('node:fs').writeFileSync('ran.txt','head-override')"`, report: "none", report_from: "file" },
+    },
+  }, null, 2));
+  const localPass = runCli(passingBaseRepo.path, ["--offline", "verify", "--local"]);
+  assert.equal(localPass.status, 0, localPass.stderr);
+  assert.equal(await readFile(path.join(passingBaseRepo.path, "ran.txt"), "utf8"), "base-pass");
+
+  // 3. Base without tenet.yaml -> falls back to the working tree's policy.
+  const noBaseRepo = await tmpRepo("c2-c3-no-base-policy");
+  t.after(noBaseRepo.cleanup);
+  noBaseRepo.git(["config", "user.name", "Fixture Owner"]);
+  noBaseRepo.git(["config", "user.email", "fixture@example.invalid"]);
+  await noBaseRepo.write("README.md", "# Setup\n");
+  noBaseRepo.git(["add", "-A"]);
+  noBaseRepo.git(["commit", "-qm", "base"]);
+  noBaseRepo.git(["branch", "-M", "main"]);
+  noBaseRepo.git(["checkout", "-b", "setup/tenet"]);
+  await noBaseRepo.write("kit/TENET.md", "# Kit\n");
+  await noBaseRepo.write("tenet/intent.md", "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"owner\"}\nsections:\n  vision: {\"state\":\"draft\",\"digest\":null,\"flags\":[]}\n---\n## Vision\n- V-1 Setup fallback works. {origin: asked}\n");
+  await noBaseRepo.write("tenet.yaml", JSON.stringify({
+    standard: "~0.1",
+    kit_path: "kit",
+    paths: { records: "tenet" },
+    level: "observe",
+    specs: { id_prefix: "R", documents: [{ path: "intent.md", level: "L1" }] },
+    owners: [{ id: "owner", name: "Owner", roles: ["owner"] }],
+    checks: {
+      unit: { run: `node -e "require('node:fs').writeFileSync('ran.txt','working')"`, report: "none", report_from: "file" },
+    },
+  }, null, 2));
+  const localFallback = runCli(noBaseRepo.path, ["--offline", "verify", "--local"]);
+  assert.equal(localFallback.status, 0, localFallback.stderr);
+  assert.equal(await readFile(path.join(noBaseRepo.path, "ran.txt"), "utf8"), "working");
 });
 
 test("[AB-C4] [F-36] [F-42] init uses default branch instead of setup branch and upgrade rewrites generated workflows", async (t) => {
