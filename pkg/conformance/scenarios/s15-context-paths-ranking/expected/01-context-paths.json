@@ -1,0 +1,27 @@
+{
+  "ok": true,
+  "command": "context",
+  "result": {
+    "blessed": {
+      "$assert": "all",
+      "checks": [
+        {
+          "$assert": "rankedBefore",
+          "first": {
+            "text": {
+              "$assert": "includes",
+              "value": "Core module must validate config before running."
+            }
+          },
+          "second": {
+            "section": "repo-conventions"
+          }
+        },
+        {
+          "$assert": "maxLength",
+          "value": 10
+        }
+      ]
+    }
+  }
+}

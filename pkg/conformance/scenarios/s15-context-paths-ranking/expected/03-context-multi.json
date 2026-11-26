@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "command": "context",
+  "result": {
+    "blessed": {
+      "$assert": "contains",
+      "value": [
+        {
+          "text": {
+            "$assert": "includes",
+            "value": "Always validate inputs before execution."
+          }
+        },
+        {
+          "text": {
+            "$assert": "includes",
+            "value": "Core module must validate config before running."
+          }
+        },
+        {
+          "text": {
+            "$assert": "includes",
+            "value": "Secondary module must stay stateless."
+          }
+        }
+      ]
+    }
+  }
+}

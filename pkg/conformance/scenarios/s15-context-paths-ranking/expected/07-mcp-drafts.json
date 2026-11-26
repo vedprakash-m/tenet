@@ -1,0 +1,50 @@
+[
+  {
+    "jsonrpc": "2.0",
+    "id": 1
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "result": {
+      "isError": false,
+      "content": [
+        {
+          "type": "text",
+          "text": {
+            "$assert": "all",
+            "checks": [
+              {
+                "$assert": "includes",
+                "value": "draft"
+              },
+              {
+                "$assert": "includes",
+                "value": "tenet/specs/prd.md"
+              },
+              {
+                "$assert": "includes",
+                "value": "Upcoming feature must emit structured events."
+              }
+            ]
+          }
+        }
+      ],
+      "structuredContent": {
+        "drafts": {
+          "$assert": "contains",
+          "value": [
+            {
+              "path": "tenet/specs/prd.md",
+              "state": "draft",
+              "text": {
+                "$assert": "includes",
+                "value": "Upcoming feature must emit structured events."
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+]
