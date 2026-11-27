@@ -79,7 +79,7 @@ Conflict resolutions use `resolution:` on `CF` items (`Resolution:` accepted on 
 - the `AGENTS.md` block (agents.md §1)
 - on GitHub remotes, the recorder workflow, and either Tenet's test workflow or the existing-CI step (`ci_mode: "existing-ci"|"tenet-workflow"`); on non-GitHub remotes, workflows and `.github/pull_request_template.md` are omitted (`ci_mode: "none"`, `ci_reason: "non-GitHub remote: local checks and specifications are enabled; CI proof cards require GitHub in alpha.0"`)
 - the pull-request template block (GitHub) and the `.gitignore` and `.gitattributes` blocks
-- the host skills and MCP entries selected below; the plan lists each host path with its reason
+- the host skills and MCP entries selected below; the plan lists every created or edited path with its short purpose
 
 `.tenet/manifest.json`: `{schema_version, version, created: [{path, sha256}], blocks: [{path, kind: markdown|yaml, marker, previous_block?, prefix_sep?}], keys: [{path, pointer, previous, installed, previous_raw?}]}` (repo-relative paths only); outside-repo Windows local host edits go only in git-ignored `.tenet/manifest.local.json` (`{schema_version: 1, profile_roots, keys: [{host, path, pointer, previous, installed, previous_raw?}]}`). `.tenet/manifest.pending.json` holds the full plan before the first write (ALG-12). Markdown blocks: `<!-- tenet:begin v<version> -->` … `<!-- tenet:end -->`; YAML: `# tenet:begin` … `# tenet:end`. JSON files are owned by key (`/mcpServers/tenet`, `/servers/tenet` in `.vscode/mcp.json`), with the previous value (and optional `previous_raw` bytes) kept.
 

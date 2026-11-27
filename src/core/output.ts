@@ -79,7 +79,11 @@ export function result<T>(command: string, value: T, findings: Finding[] = []): 
 
 export function exitCodeFor(findings: Finding[]): 0 | 1 | 2 | 3 | 4 {
   const codes = findings.filter((finding) => finding.severity === "error").map((finding) => finding.code);
-  if (codes.some((code) => code.startsWith("TN-USAGE-") || code === "TN-BLESS-NO-TTY")) return 2;
+  if (codes.some((code) =>
+    code.startsWith("TN-USAGE-") ||
+    code === "TN-BLESS-NO-TTY" ||
+    code === "TN-INIT-NO-TTY",
+  )) return 2;
   if (
     codes.some((code) =>
       [

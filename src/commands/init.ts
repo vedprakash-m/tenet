@@ -55,8 +55,8 @@ function isTty(context: CommandContext, injected: boolean | undefined): boolean 
 }
 
 function noTty(): Finding {
-  const words = message("TN-BLESS-NO-TTY");
-  return fail("TN-BLESS-NO-TTY", words.message, words.fix);
+  const words = message("TN-INIT-NO-TTY");
+  return fail("TN-INIT-NO-TTY", words.message, words.fix);
 }
 
 function answerBoolean(answer: string, fallback: boolean): boolean {
@@ -71,6 +71,42 @@ function promptLabel(prompt: PreflightPrompt): string {
   return `${prompt.question} `;
 }
 
+function pathPurpose(itemPath: string, pointer?: string): string {
+  if (itemPath === "tenet.yaml") return "project policy and checks";
+  if (itemPath === "tenet.lock") return "pinned Tenet version and kit integrity";
+  if (itemPath === ".tenet/manifest.json") return "record of managed setup";
+  if (itemPath === ".tenet/manifest.local.json") return "record of managed local host settings";
+  if (itemPath === "tenet/intent.md") return "starter specification draft";
+  if (itemPath === "AGENTS.md") return "Tenet workflow and review rules for agents";
+  if (itemPath === "CLAUDE.md") return "points Claude Code to AGENTS.md";
+  if (itemPath === ".github/copilot-instructions.md") return "points GitHub Copilot to AGENTS.md";
+  if (itemPath === ".gitignore") return "ignores Tenet's local generated state";
+  if (itemPath === ".gitattributes") return "keeps Tenet-managed text files stable";
+  if (itemPath.toLowerCase() === ".github/pull_request_template.md") {
+    return "adds the Tenet acceptance template";
+  }
+  if (itemPath === ".github/workflows/tenet.yml") return "records Tenet proof from the default branch";
+  if (itemPath === ".github/workflows/tenet-tests.yml") return "runs the configured tests for Tenet";
+  if (itemPath.startsWith(".github/workflows/")) return "adds the Tenet step to the existing test workflow";
+  if (itemPath.startsWith(".claude/skills/")) return "Claude Code skill";
+  if (itemPath.startsWith(".agents/skills/")) return "portable agent skill";
+  if (itemPath.startsWith(".tenet/kit/")) return "vendors the pinned Tenet kit";
+  if (itemPath === ".mcp.json" || itemPath.endsWith("/mcp.json")) {
+    return `registers the Tenet MCP server${pointer ? ` at ${pointer}` : ""}`;
+  }
+  return "Tenet-managed setup file";
+}
+
+function planRows(
+  paths: Array<{ path: string; pointer?: string }>,
+): string[] {
+  const unique = new Map(paths.map((item) => {
+    const displayed = `${item.path}${item.pointer ?? ""}`;
+    return [displayed, `- ${displayed} — ${pathPurpose(item.path, item.pointer)}`];
+  }));
+  return [...unique.values()];
+}
+
 function preflightText(result: Awaited<ReturnType<typeof runPreflight>>): string {
   const plan = result.plan;
   const facts = result.facts;
@@ -82,62 +118,34 @@ function preflightText(result: Awaited<ReturnType<typeof runPreflight>>): string
       : "local repository";
   const host = facts.repository.forge === "github" ? forge : facts.repository.forge;
   const runner = facts.runner ? `${facts.runner.kind} (${facts.runner.command})` : "no test runner";
-  const hostFiles: Array<{ path: string; reason: string }> = [];
-  const addHostFile = (itemPath: string, reason: string): void => {
-    if (!hostFiles.some((item) => item.path === itemPath)) hostFiles.push({ path: itemPath, reason });
-  };
-  for (const itemPath of plan.created) {
-    if (itemPath.startsWith(".claude/skills/")) addHostFile(itemPath, "Claude Code skill");
-    else if (itemPath.startsWith(".agents/skills/")) addHostFile(itemPath, "portable agent skill");
-  }
-  for (const { path: itemPath } of plan.blocks) {
-    if (itemPath === "AGENTS.md") addHostFile(itemPath, "gives all agents the Tenet workflow");
-    else if (itemPath === "CLAUDE.md") addHostFile(itemPath, "points Claude Code to AGENTS.md");
-    else if (itemPath === ".github/copilot-instructions.md") {
-      addHostFile(itemPath, "points GitHub Copilot to AGENTS.md");
-    }
-  }
-  for (const { path: itemPath, pointer } of plan.keys) {
-    addHostFile(
-      `${itemPath}${pointer}`,
-      itemPath === ".mcp.json"
-        ? "registers the Tenet MCP server for Claude Code"
-        : "registers the Tenet MCP server",
-    );
-  }
-  for (const { host, path: itemPath, pointer } of plan.local_keys) {
-    addHostFile(`${host}: ${itemPath}${pointer}`, `registers the Tenet MCP server locally for ${host}`);
-  }
-  const create = new Set<string>();
-  const edit = new Set<string>();
+  const create: Array<{ path: string }> = [];
+  const edit: Array<{ path: string; pointer?: string }> = [];
   const plannedPaths = [
-    ...plan.created,
-    ...plan.blocks.map(({ path: filename }) => filename),
-    ...plan.keys.map(({ path: filename }) => filename),
+    ...plan.created.map((itemPath) => ({ path: itemPath })),
+    ...plan.blocks.map((block) => ({ path: block.path })),
+    ...plan.keys,
   ];
-  for (const filename of plannedPaths) {
-    if (existsSync(path.resolve(result.facts.repository.cwd, filename))) edit.add(filename);
-    else create.add(filename);
+  for (const item of plannedPaths) {
+    if (existsSync(path.resolve(result.facts.repository.cwd, item.path))) edit.push(item);
+    else create.push(item);
   }
+  const createRows = planRows(create);
+  const editRows = planRows(edit);
   const lines = [
     `Found: ${host} · ${runner} · ${plan.hosts.map(({ id, capability }) => `${id} (${capability})`).join(", ")}`,
     ...(plan.hosts.every(({ id }) => id === "agents")
       ? ["No agent host found; skills are in .agents/skills/. Rerun with `--host claude` to set up Claude Code."]
       : []),
-    `Will create: ${[...create].join(", ")}`,
-    `Will edit: ${[...edit].map((filename) => {
-      const key = plan.keys.find(({ path: keyPath }) => keyPath === filename);
-      return key ? `${filename}${key.pointer}` : filename;
-    }).join(", ")}`,
+    "Will create:",
+    ...(createRows.length > 0 ? createRows : ["- none"]),
+    "Will edit:",
+    ...(editRows.length > 0 ? editRows : ["- none"]),
     ...(plan.local_keys.length > 0 ? [
-      `Will edit locally (outside repository): ${plan.local_keys
-        .map(({ host, path, pointer }) => `${host}: ${path}${pointer}`)
-        .join(", ")}`,
+      "Will edit locally (outside repository):",
+      ...plan.local_keys.map(({ host, path: itemPath, pointer }) =>
+        `- ${host}: ${itemPath}${pointer} — registers the Tenet MCP server locally for ${host}`),
     ] : []),
     `Level: observe (nothing blocks) · CI: ${plan.ci_mode} (${plan.ci_reason})`,
-    ...(hostFiles.length > 0
-      ? ["Host files:", ...hostFiles.map(({ path: itemPath, reason }) => `- ${itemPath} — ${reason}`)]
-      : []),
     "Will never read: .env*, credentials, vendor/",
   ];
   return lines.join("\n");

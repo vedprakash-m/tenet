@@ -112,14 +112,24 @@ test("init command prompts, collects answers and returns the exact install resul
   });
   assert.equal(preflightCalls, 2);
   assert.match(request.captures.stdout.text(),
-    /Add a test reporter[\s\S]*Will edit: \.github\/workflows\/ci\.yml, tenet\.yaml/);
+    /Add a test reporter[\s\S]*Will edit:\s+- \.github\/workflows\/ci\.yml — adds the Tenet step to the existing test workflow\s+- tenet\.yaml — project policy and checks/);
   assert.match(request.captures.stdout.text(), /Continue\? \[Y\/n\]/);
 });
 
-test("init command requires --yes when no terminal is available", async () => {
+test("[AC-C3] [R2-05] init without a terminal names init and its recovery step", async () => {
   const command = makeInitCommand({ terminal: false });
-  const outcome = await command.run?.(context()) as { findings: Array<{ code: string }> };
-  assert.equal(outcome.findings[0]?.code, "TN-BLESS-NO-TTY");
+  const outcome = await command.run?.(context()) as {
+    findings: Array<{ code: string; message: string; fix: string }>;
+  };
+  assert.deepEqual(outcome.findings[0], {
+    code: "TN-INIT-NO-TTY",
+    severity: "error",
+    rule: null,
+    file: null,
+    line: null,
+    message: "`tenet init` needs an interactive terminal to confirm its plan.",
+    fix: "Run it in a terminal, or pass `--yes` to accept the plan.",
+  });
 });
 
 test("init preflight text lists local host keys exactly", async () => {
@@ -155,10 +165,10 @@ test("init preflight text lists local host keys exactly", async () => {
   const request = context({ options: { "--yes": true } });
   await command.run?.(request);
   assert.match(request.captures.stdout.text(),
-    /Will edit locally \(outside repository\): vscode: C:\/Users\/fixture\/AppData\/Roaming\/Code\/User\/mcp\.json\/servers\/tenet/);
+    /Will edit locally \(outside repository\):\s+- vscode: C:\/Users\/fixture\/AppData\/Roaming\/Code\/User\/mcp\.json\/servers\/tenet — registers the Tenet MCP server locally for vscode/);
 });
 
-test("[AB-D10] [F-09] init plan decides create or edit from the working tree", async (t) => {
+test("[AC-C4] [R2-06] [AB-D10] [F-09] init plan decides create or edit and gives every path a purpose", async (t) => {
   const repo = await tmpRepo("init-create-edit");
   t.after(repo.cleanup);
   await repo.write("tenet.yaml", "standard: 0.1.0-alpha.0\n");
@@ -193,8 +203,8 @@ test("[AB-D10] [F-09] init plan decides create or edit from the working tree", a
   const request = context({ cwd: repo.path, options: { "--yes": true }, json: false });
   await command.run?.(request);
   const text = request.captures.stdout.text();
-  assert.match(text, /Will create: \.github\/workflows\/tenet\.yml/);
-  assert.match(text, /Will edit: tenet\.yaml, AGENTS\.md/);
+  assert.match(text, /Will create:\s+- \.github\/workflows\/tenet\.yml — records Tenet proof from the default branch/);
+  assert.match(text, /Will edit:\s+- tenet\.yaml — project policy and checks\s+- AGENTS\.md — Tenet workflow and review rules for agents/);
 });
 
 test("init command asks before authorizing local host edits", async () => {
