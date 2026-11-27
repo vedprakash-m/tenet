@@ -1,0 +1,25 @@
+id: CP-0068
+title: "0.2.0 fixes from the second dogfood: front matter, false blocks, upgrade and remove, docs"
+type: fix
+lane: standard
+priority: high
+due: null
+levels: [L3, L4]
+serves: [V-P5, V-M8]
+implements: [R-223]
+milestone: M1
+source: "second dogfood of 0.1.1 on a private existing project, 2026-11-26 (entries R2-01 to R2-21; L-0042)"
+stage: build
+status: ready
+blocked_by: []
+unblocks: []
+owner_role: null
+claimed_by: coordinator
+appetite: {agent_hours: 12, sessions: 8}
+spent: {agent_hours: 0, sessions: 0, owner_minutes: 5}
+candidate: "0.2.0"
+endpoint: null
+history:
+  - {at: 2026-11-26T22:00Z, to: intake, by: Ved, reason: "second dogfood of 0.1.1 logged 2 blockers and 6 major problems; scope proposed by the coordinator"}
+  - {at: 2026-11-26T22:00Z, from: intake, to: triage, by: Ved, reason: "Owner chose to ship these fixes in 0.2.0, not a 0.1.2 (L-0042)"}
+  - {at: 2026-11-26T23:00Z, from: triage, to: build, by: Ved, reason: "Owner approved the CP-0068 scope as proposed; AC-B1 stays a spec proposal and AC-D3 an open Owner decision"}
