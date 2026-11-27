@@ -1,0 +1,24 @@
+id: CP-0067
+title: "0.2.0 groundwork: readiness of the protect contracts, their independent cases, and spec budgets"
+type: spec
+lane: standard
+priority: standard
+due: null
+levels: [L2]
+serves: [V-P5, V-P2]
+implements: []
+milestone: M1
+source: "Owner request, 2026-11-26: prepare 0.2.0 (plan label alpha.1, L-0040) while the second dogfood runs"
+stage: build
+status: in_progress
+blocked_by: []
+unblocks: [CP-0049]
+owner_role: null
+claimed_by: coordinator
+appetite: {agent_hours: 10, sessions: 6}
+spent: {agent_hours: 0, sessions: 0, owner_minutes: 5}
+candidate: null
+endpoint: null
+history:
+  - {at: 2026-11-26T20:00Z, to: intake, by: Ved, reason: "Owner asked the coordinator to start the 0.2.0 groundwork"}
+  - {at: 2026-11-26T20:00Z, from: intake, to: build, by: Ved, reason: "reports and proposals only; no alpha.1 code is built until CP-0057 closes"}
