@@ -6,16 +6,55 @@
       "proof/pr-3/0123456789abcdef/100-1.json": {
         "schema_version": 1,
         "evaluation_id": "0123456789abcdef",
-        "conclusion": "success",
         "tested": {
           "commit": "1111111111111111111111111111111111111111",
-          "kind": "head"
-        }
+          "kind": "head",
+          "head": "1111111111111111111111111111111111111111",
+          "base": "0000000000000000000000000000000000000000"
+        },
+        "acceptance_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "requirements": [],
+        "items": [],
+        "tests": {
+          "report": "ok",
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "failing": []
+        },
+        "weakening": {
+          "found": false,
+          "by": [],
+          "not_checked": []
+        },
+        "workflow_changed": false,
+        "protected": [],
+        "blessings_changed": [],
+        "deltas": [],
+        "rules": [],
+        "badge": "advisory",
+        "why": [
+          {
+            "text": "check run command changed; base policy ran (takes effect after merge)",
+            "class": "not-tenet"
+          }
+        ],
+        "degraded": []
+      },
+      "proof/pr-3/latest": {
+        "id": "100",
+        "attempt": 1,
+        "startedAt": "2026-11-23T10:00:00Z",
+        "evaluation_id": "0123456789abcdef"
       },
       "rules/2026-11.jsonl": [
         {
           "evaluation_id": "0123456789abcdef",
-          "run": "100-1",
+          "run": {
+            "id": "100",
+            "attempt": 1
+          },
           "pr": 3,
           "rule": "acceptance-passed",
           "mode": "advise",

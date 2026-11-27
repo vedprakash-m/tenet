@@ -1,9 +1,17 @@
 {
-  "legacy_records_count": 2,
-  "decisions_count": 1,
-  "flow": {
-    "cost": {
-      "status": "unavailable"
+  "items": [
+    {
+      "id": "pr-3",
+      "cost": {
+        "amount": null,
+        "status": "unavailable"
+      }
     }
-  }
+  ],
+  "friction": [
+    {
+      "rule": "acceptance-passed",
+      "refusals": 0
+    }
+  ]
 }

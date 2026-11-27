@@ -3,15 +3,15 @@
   "records": [
     {
       "path": "proof/pr-5/0123456789abcdef/1001-1.json",
-      "content": "{\"schema_version\":1,\"evaluation_id\":\"0123456789abcdef\",\"conclusion\":\"success\",\"tested\":{\"commit\":\"1111111111111111111111111111111111111111\",\"kind\":\"head\"}}"
+      "content": "{\"acceptance_digest\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"badge\":\"advisory\",\"blessings_changed\":[],\"degraded\":[],\"deltas\":[],\"evaluation_id\":\"0123456789abcdef\",\"items\":[],\"protected\":[],\"requirements\":[],\"rules\":[],\"schema_version\":1,\"tested\":{\"base\":\"0000000000000000000000000000000000000000\",\"commit\":\"1111111111111111111111111111111111111111\",\"head\":\"1111111111111111111111111111111111111111\",\"kind\":\"head\"},\"tests\":{\"failed\":0,\"failing\":[],\"passed\":1,\"report\":\"ok\",\"skipped\":0,\"total\":1},\"weakening\":{\"by\":[],\"found\":false,\"not_checked\":[]},\"why\":[{\"class\":\"not-tenet\",\"text\":\"check run command changed; base policy ran (takes effect after merge)\"}],\"workflow_changed\":false}"
     },
     {
       "path": "proof/pr-5/latest",
-      "content": "{\"started_at\":\"2026-11-23T12:00:00Z\",\"path\":\"proof/pr-5/0123456789abcdef/1001-1.json\"}"
+      "content": "{\"attempt\":1,\"evaluation_id\":\"0123456789abcdef\",\"id\":\"1001\",\"startedAt\":\"2026-11-23T12:00:00Z\"}"
     },
     {
       "path": "rules/2026-11.jsonl",
-      "content": "{\"evaluation_id\":\"0123456789abcdef\",\"run\":\"1001-1\",\"pr\":5,\"rule\":\"acceptance-passed\",\"mode\":\"advise\",\"would_block\":false,\"at\":\"2026-11-23T12:00:00Z\"}\n"
+      "content": "{\"at\":\"2026-11-23T12:00:00Z\",\"evaluation_id\":\"0123456789abcdef\",\"mode\":\"advise\",\"pr\":5,\"rule\":\"acceptance-passed\",\"run\":{\"attempt\":1,\"id\":\"1001\"},\"would_block\":false}\n"
     }
   ]
 }
