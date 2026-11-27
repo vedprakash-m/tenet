@@ -76,10 +76,11 @@
       "expectedJsonMatch": "expected/schema-error.json"
     },
     {
-      "id": "12-board-still-sees-draft",
+      "id": "12-board-same-schema-error",
       "kind": "cli",
-      "args": ["board"],
-      "expectExitCode": 0,
+      "args": ["board", "--json"],
+      "expectExitCode": 1,
+      "expectedJsonMatch": "expected/schema-error.json",
       "expectedProjection": "expected/board-projection.json"
     }
   ]

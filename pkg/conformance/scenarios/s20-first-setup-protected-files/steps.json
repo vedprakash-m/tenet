@@ -85,7 +85,7 @@
       "id": "14-edit-tenet-yaml-later",
       "kind": "write",
       "files": {
-        "tenet.yaml": "standard: \"~0.1\"\npaths:\n  records: tenet\nlevel: observe\nspecs:\n  id_prefix: R\nowners:\n  - \"@owner\"\nchecks:\n  test:\n    setup: []\n    run: npm test\n    report: none\n    report_from: stdout\nci:\n  mode: tenet-workflow\n  test_workflow: .github/workflows/tenet-tests.yml\nstop:\n  failing_evaluations: 2\nagents:\n  working_rules: default\nprotect:\n  - .github/workflows/tenet.yml\n  - .github/workflows/tenet-tests.yml\n  - tenet.yaml\n  - tenet.lock\n  - CODEOWNERS\n"
+        "tenet.yaml": "standard: ~0.1\npaths:\n  records: tenet\nlevel: observe\nspecs:\n  id_prefix: R\nowners:\n  - id: scenario-owner\n    name: Scenario Owner\n    roles:\n      - owner\nchecks:\n  test:\n    setup: []\n    run: node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=.tenet/reports/test.xml\n    report: junit\n    report_from: file\n    report_path: .tenet/reports/test.xml\nstop:\n  failing_evaluations: 2\nagents:\n  working_rules: default\nprotect:\n  - .github/workflows/tenet.yml\n  - .github/workflows/tenet-tests.yml\n  - tenet.yaml\n  - tenet.lock\n  - CODEOWNERS\n"
       }
     },
     {
