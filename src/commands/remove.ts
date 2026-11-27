@@ -43,6 +43,15 @@ export function makeRemoveCommand(dependencies: RemoveDependencies = {}): Comman
         const value = await remove({ cwd: context.cwd });
         if (!context.json) {
           context.stdout.write(`Removed ${value.removed.length} Tenet-owned item(s); kept ${value.kept.length}.\n`);
+          for (const item of value.removed) {
+            context.stdout.write(`Removed: ${item.path} (${item.kind})\n`);
+          }
+          for (const item of value.kept) {
+            const reason = item.reason === "owner-answers"
+              ? "Owner interview answers"
+              : item.reason;
+            context.stdout.write(`Kept: ${item.path} — ${reason}\n`);
+          }
           if (value.reminder) context.stdout.write(`${value.reminder}\n`);
         }
         return { result: context.json ? value : null, findings: [] };

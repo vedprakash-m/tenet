@@ -49,9 +49,17 @@ Commands always name releases, never branches. Releases list `SHA256SUMS`; npm p
 $ tenet init
 Found: GitHub · vitest, run by your CI job "test" · CODEOWNERS (3 owners)
        README.md, docs/architecture.md (14 months old), 2 ADRs · Claude Code (skills, MCP)
-Will write: tenet.yaml (9 lines) · tenet.lock · .github/workflows/tenet.yml (posts the card)
-Will edit:  .github/workflows/ci.yml (one Tenet step) · AGENTS.md · .github/pull_request_template.md ·
-            .gitignore · .gitattributes · .mcp.json (marked blocks or one entry)
+Will create:
+- tenet.yaml — project policy and checks
+- tenet.lock — pinned Tenet version and kit integrity
+- .github/workflows/tenet.yml — records Tenet proof from the default branch
+Will edit:
+- .github/workflows/ci.yml — adds the Tenet step to the existing test workflow
+- AGENTS.md — Tenet workflow and review rules for agents
+- .github/pull_request_template.md — adds the Tenet acceptance template
+- .gitignore — ignores Tenet's local generated state
+- .gitattributes — keeps Tenet-managed text files stable
+- .mcp.json/mcpServers/tenet — registers the Tenet MCP server
 Will never read: .env*, credentials, vendor/
 Level: observe (nothing blocks). Continue? [Y/n]
 ✓ Set up

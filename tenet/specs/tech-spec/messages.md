@@ -29,6 +29,7 @@ sections:
 | `TN-ACC-UNPASSED` | Acceptance items not passing: {ids}. | Add passing tests tagged with [AB-n] or fix failing tests for {ids}. |
 | `TN-BLESS-INFERRED` | Section {slug} still contains inferred statements ({ids}). | Edit or adopt {ids}, then run `tenet bless`. |
 | `TN-BLESS-NO-TTY` | Interactive terminal required to bless specifications. | Run `tenet bless` in an interactive terminal session. |
+| `TN-INIT-NO-TTY` | `tenet init` needs an interactive terminal to confirm its plan. | Run it in a terminal, or pass `--yes` to accept the plan. |
 | `TN-BLESS-OPEN-CONFLICT` | Section {slug} has unresolved conflicts or open questions ({ids}). | Resolve {ids} in Conflicts or Open questions, then run `tenet bless`. |
 | `TN-BUDGET` | File {path} is over its token budget ({tokens} > {limit} tokens). | Trim {path} or run `tenet split` to extract a section into a part. |
 | `TN-BUDGET-WARN` | File {path} is at or over 90% of its token budget ({tokens} / {limit} tokens). | Trim {path} or run `tenet split` to extract a section into a part. |

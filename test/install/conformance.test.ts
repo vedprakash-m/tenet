@@ -795,6 +795,39 @@ test("remove clears known generated state without a manifest", async (t) => {
   await assert.rejects(lstat(path.join(setup.repo.path, ".tenet")), { code: "ENOENT" });
 });
 
+test("[AC-C2] [R2-21] remove keeps Owner interview answers and lists every generated file it deletes", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  const generated = [
+    ".tenet/onboard/inventory.json",
+    ".tenet/onboard/assignment.json",
+    ".tenet/onboard/scratch/unit.json",
+    ".tenet/reports/test.xml",
+    ".tenet/cache/session/output.txt",
+    ".tenet/runs/session/output.txt",
+  ];
+  for (const filename of generated) await setup.repo.write(filename, "generated\n");
+  await setup.repo.write(".tenet/onboard/interview.json", '{"questions":[]}\n');
+
+  const result = await remove(setup.options);
+
+  assert.deepEqual(result.kept, [{
+    path: ".tenet/onboard/interview.json",
+    reason: "owner-answers",
+  }]);
+  assert.equal(
+    await readFile(path.join(setup.repo.path, ".tenet/onboard/interview.json"), "utf8"),
+    '{"questions":[]}\n',
+  );
+  for (const filename of generated) {
+    assert.ok(result.removed.some(({ path: itemPath, kind }) =>
+      itemPath === filename && kind === "file"), `${filename} is listed as removed`);
+    await assert.rejects(lstat(path.join(setup.repo.path, ...filename.split("/"))), {
+      code: "ENOENT",
+    });
+  }
+});
+
 test("p17 loader upgrades owned pins without changing policy", async (t) => {
   const setup = await makeCase("p17-upgrade-pins-and-policy");
   t.after(() => dispose(setup));

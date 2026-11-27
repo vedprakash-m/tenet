@@ -17,7 +17,7 @@ Run `tenet --help` for the command list and `tenet --version` for the installed 
 | `tenet context` | Selects relevant specification context. Use `--paths app.py,src/lib.py`, repeat `--paths` (for example `--paths app.py --paths src/lib.py`), or use separate values after one flag (`--paths app.py src/lib.py`). Use `--ids`, `--query` or `--budget-tokens` to narrow or budget the result. Add `--include-drafts` to select labeled draft text with the same rules. |
 | `tenet mcp` | Starts a local MCP server on standard input and output. It exposes context, check and status tools to a compatible host. |
 | `tenet upgrade` | Refreshes the lock and managed files for the installed package version. |
-| `tenet remove` | Removes managed setup and generated working state, and reports what it kept. |
+| `tenet remove` | Removes managed setup and generated working state. It lists every removed file and kept item. `.tenet/onboard/interview.json` is kept because it contains the Owner's answers. |
 | `tenet doctor` | Reports tool availability, lock verification and workflow status. |
 
 ## CI commands
