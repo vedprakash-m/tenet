@@ -52,7 +52,7 @@ Repository facts and `assignment.json` are byte-identical over `(HEAD, working t
 | plan | `## Plan` | `tenet/specs/plan.md` (L2) |
 
 `intent.md` sections keep the shown levels (`sections.<slug>.level`, R-207). Vision items are `V-<n>` (groups may use `V-P18`). **Who writes what:**
-- The agent writes text, citations, origins, `scope`, `applies_to`, conflicts and questions.
+- **Proposal · CP-0068 AC-A3.** The agent drafts the Markdown, citations, origins, `scope`, conflicts and questions. `tenet fix` creates the YAML header. Add optional `applies_to` path globs to the generated section entries.
 - `tenet fix` writes IDs, front matter, section entries, digests and `drafted_from` (the inventory's revision).
 - `tenet onboard --card` records `drafted_at_rev`, the commit holding the draft, which ALG-13 compares against.
 - The `draft-specs` skill ends with `fix`, `check`, a commit and `onboard --card` (agents.md §2). The drafter writes only the output paths.
@@ -62,6 +62,8 @@ Repository facts and `assignment.json` are byte-identical over `(HEAD, working t
 **The onboarding card.** No target Tenet workflow. `tenet onboard --card` checks uncommitted spec edits (`TN-SUBJ-DIRTY`), pins `drafted_at_rev` when unset (existing stamps stay pinned unless `--refresh` or cleared), and renders reads, conflicts (omitted at zero), section/origin counts, reading times (`Math.ceil(words / 200)` using `minute`/`minutes`; `"Sections (about <n> minutes)"` sums section minutes), and citation check. Combining `--card` with `--inventory-only`, `--refresh` or `--layout` returns `TN-USAGE-ONBOARD` exit 2. **Proposal · CP-0066 AB-A8–A10.** Open questions follow conflicts; stamped specifications and citation resolution appear. The next step uses working-tree/upstream state. `--pr <number>` identifies an existing pull request locally. Goldens: `pkg/conformance/cards/`; CI cards start after setup merges. Supported starts: protected main (onboarding pull request), empty repository (commit to main), template clone, contributor without settings rights (pull request waits for someone with rights).
 
 **Checks and blessing.** `tenet check` resolves citations (ALG-04) and flags missing origins. Interactive `tenet bless` (ALG-03) shows conflicts, then sections with reading times (`bless`, `confirm`, `edit`, `reject`, `defer`). It uses `owners[]` (card gives `gh pr checkout <n>`), appends `<records>/blessed/log.jsonl`, and records `recorded: "self"` (advisory; cards list changes; `forge` in alpha.1, `signed` in alpha.2).
+
+**Proposal · CP-0068 AC-A1–A5.** The assignment output is checked even if its front matter is missing or invalid. `board` reports the draft’s diagnostic instead of the empty-board message. `bless` validates selected specifications before asking any questions. Follow the diagnostic’s repair steps, then retry.
 
 Conflict resolutions use `resolution:` on `CF` items (`Resolution:` accepted on read), optional `(section: <slug|heading>)` or `null`, and `(affects: ID1, ID2)`. A choice contradicting a drafted ID opens it for editing; the text must change or vanish before `resolution:` is written and blessing is allowed.
 

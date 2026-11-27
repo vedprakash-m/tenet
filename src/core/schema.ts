@@ -63,18 +63,23 @@ for (const name of schemaNames) {
   validators.set(name, ajv.compile(schema));
 }
 
-export function validate(name: SchemaName, data: unknown): ValidationResult {
+export function validate(name: SchemaName, data: unknown, options: { propertyPointers?: boolean } = {}): ValidationResult {
   const validator = validators.get(name);
   if (!validator) throw new RangeError(`Unknown schema: ${name}`);
   const ok = validator(data);
   if (ok) return { ok: true, errors: [] };
   return {
     ok: false,
-    errors: (validator.errors ?? []).map((error) => ({
-      pointer: error.instancePath,
-      keyword: error.keyword,
-      message: error.message ?? "Validation failed",
-    })),
+    errors: (validator.errors ?? []).map((error) => {
+      const property: unknown = error.params.missingProperty ?? error.params.additionalProperty;
+      const suffix = options.propertyPointers && typeof property === "string"
+        ? "/" + property.replaceAll("~", "~0").replaceAll("/", "~1") : "";
+      return {
+        pointer: error.instancePath + suffix,
+        keyword: error.keyword,
+        message: error.message ?? "Validation failed",
+      };
+    }),
   };
 }
 

@@ -225,8 +225,8 @@ export const messageTemplates = {
     "fix": "Run `tenet fix` or prefix the line with an unused ID."
   },
   "TN-SPEC-NO-FRONT": {
-    "message": "Specification file has no valid YAML front matter.",
-    "fix": "Add YAML front matter (`---`) with `tenet` and `sections`, or run `tenet fix`."
+    "message": "Specification file has no YAML front matter.",
+    "fix": "Run `tenet fix` to add the front matter."
   },
   "TN-SPEC-REQ-META": {
     "message": "Requirement metadata is malformed: check closing braces, allowed keys, and origin.",

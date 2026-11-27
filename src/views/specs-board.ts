@@ -1,12 +1,14 @@
 import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { confine } from "../core/fs.js";
 import { git } from "../core/git.js";
 import { loadPolicy } from "../policy/index.js";
 import { scanTests } from "../reports/scan.js";
 import { citationParts } from "../specs/anchors.js";
 import { resolveCitations } from "../specs/citations.js";
 import { flags } from "../specs/flags.js";
+import { draftOutputPaths, validateSpecMatter } from "../specs/front-matter.js";
 import { ladder } from "../specs/ladder.js";
 import {
 	type ParsedDoc,
@@ -14,6 +16,7 @@ import {
 	parseDoc,
 	type Requirement,
 	type SpecSection,
+	specMatter,
 	specificationBody,
 } from "../specs/parse.js";
 
@@ -326,19 +329,25 @@ export async function board(options: BoardOptions = {}): Promise<SpecsBoard> {
 	const discovered = existsSync(recordsPath)
 		? await ladder({ cwd, specs_dir: policy.paths.records })
 		: [];
-	const entries = await Promise.all(
-		discovered.map(async (entry) => ({
-			...entry,
-			level:
-				configured.find((document) => document.path === entry.path)?.level ??
-				entry.level,
-			doc: parseDoc(
-				entry.path,
-				await readFile(path.join(cwd, ...entry.path.split("/")), "utf8"),
-				{ prefix: policy.specs.id_prefix },
-			),
-		})),
-	);
+	const drafts = new Set(await draftOutputPaths(cwd, policy.paths.records));
+	const candidatePaths = new Set([...discovered.map((entry) => entry.path), ...drafts]);
+	const candidates = await Promise.all([...candidatePaths].map(async (filename) => {
+		const text = await readFile(await confine(filename, cwd), "utf8").catch((error: NodeJS.ErrnoException) => {
+			if (error.code === "ENOENT" || error.code === "ENOTDIR") return null;
+			throw error;
+		});
+		if (text === null) return null;
+		const doc = parseDoc(filename, text, { prefix: policy.specs.id_prefix });
+		const { finding } = validateSpecMatter(filename, specMatter(doc));
+		if (finding) {
+			if (drafts.has(filename)) throw finding;
+			return null;
+		}
+		const level = configured.find((document) => document.path === filename)?.level ??
+			discovered.find((entry) => entry.path === filename)?.level ?? null;
+		return { path: filename, level, doc };
+	}));
+	const entries = candidates.filter((entry) => entry !== null);
 	entries.sort(
 		(left, right) =>
 			levelOrder(left.level) - levelOrder(right.level) ||
