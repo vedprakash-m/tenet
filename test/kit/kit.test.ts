@@ -86,14 +86,29 @@ test("[AC-D1] [R2-02] [AB-D1] [F-01] release docs include a working Windows chec
     const digest = createHash("sha256").update(bytes).digest("hex");
     await writeFile(path.join(cwd, "SHA256SUMS"), `${digest}  ${tarball}\n`);
     const command = powershellCommands[0]?.replaceAll("<version>", "0.0.0") ?? "";
+    const shell = [
+      { executable: "pwsh.exe", setup: "" },
+      {
+        executable: "powershell.exe",
+        setup: "Import-Module Microsoft.PowerShell.Utility -Force; ",
+      },
+    ].find(({ executable }) => {
+      const probe = spawnSync(
+        executable,
+        ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "$PSVersionTable.PSVersion.Major"],
+        { encoding: "utf8", shell: false, windowsHide: true },
+      );
+      return probe.status === 0;
+    });
+    assert.ok(shell, "a Windows PowerShell executable is available");
     const child = spawnSync(
-      "powershell.exe",
+      shell.executable,
       [
         "-NoLogo",
         "-NoProfile",
         "-NonInteractive",
         "-Command",
-        `Import-Module Microsoft.PowerShell.Utility -Force; ${command}`,
+        `${shell.setup}${command}`,
       ],
       { cwd, encoding: "utf8", shell: false, windowsHide: true },
     );
