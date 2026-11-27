@@ -211,3 +211,25 @@ test("generated and binary classifications precede oversize without reading excl
   assert.deepEqual(result.inventory.tests, []);
   assert.equal(result.findings.some(({ kind }) => kind === "skipped-tests"), false);
 });
+
+test("[AC-B3] [R2-09] first findings count missing paths without counting symbols or URLs", async (t) => {
+  const repo = await tmpRepo("path-shaped-findings");
+  t.after(repo.cleanup);
+  await repo.write("tenet.yaml", config);
+  await repo.write("docs/queue.md", [
+    "# Queue",
+    "`@Name.member`, `Name.member`, `module.func()`, `EventName`, and `https://example.invalid/queue`.",
+    "See [web](https://example.invalid/queue), [missing](missing.md), and `src/missing.ts:7`.",
+    "",
+  ].join("\n"));
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "docs"]);
+  const result = await onboard({ cwd: repo.path, inventoryOnly: true });
+  assert.deepEqual(result.findings.filter(({ kind }) => kind === "dead-path").map(({ message }) => message), [
+    "docs/queue.md links missing path missing.md",
+    "docs/queue.md links missing path src/missing.ts",
+  ]);
+  const human = await cli(["onboard", "--inventory-only"], repo.path);
+  assert.equal(human.code, 0, human.stderr);
+  assert.match(human.stdout, /First findings: 3 total \(dead-path 2 · no-test-report 1\)/);
+});
