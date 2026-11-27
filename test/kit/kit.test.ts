@@ -88,7 +88,13 @@ test("[AC-D1] [R2-02] [AB-D1] [F-01] release docs include a working Windows chec
     const command = powershellCommands[0]?.replaceAll("<version>", "0.0.0") ?? "";
     const child = spawnSync(
       "powershell.exe",
-      ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command],
+      [
+        "-NoLogo",
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        `Import-Module Microsoft.PowerShell.Utility -Force; ${command}`,
+      ],
       { cwd, encoding: "utf8", shell: false, windowsHide: true },
     );
     assert.equal(child.status, 0, child.stderr || child.stdout);
