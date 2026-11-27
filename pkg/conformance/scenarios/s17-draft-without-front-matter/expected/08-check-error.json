@@ -1,0 +1,28 @@
+{
+  "ok": false,
+  "command": "check",
+  "errors": {
+    "$assert": "contains",
+    "value": [
+      {
+        "severity": "error",
+        "file": "tenet/intent.md",
+        "fix": {
+          "$assert": "includes",
+          "value": "fix"
+        }
+      }
+    ]
+  },
+  "result": {
+    "findings": {
+      "$assert": "contains",
+      "value": [
+        {
+          "severity": "error",
+          "file": "tenet/intent.md"
+        }
+      ]
+    }
+  }
+}

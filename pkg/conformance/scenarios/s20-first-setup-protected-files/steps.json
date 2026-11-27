@@ -1,0 +1,112 @@
+{
+  "schema": 1,
+  "scenario": "s20-first-setup-protected-files",
+  "spec_refs": [
+    "tenet/packets/CP-0068-dogfood-fixes-0.2.0/definition.md#b--checks-that-would-become-false-blocks-in-020-r2-15-r2-18-r2-09",
+    "tenet/ledger/L-0043-owner-decisions-0.2.0.md#od-13--first-time-setup-exemptions-ac-b1"
+  ],
+  "pending": "Waiting for CP-0068 Group B (first-time setup exemption for init manifest paths when base lacks tenet.yaml)",
+  "steps": [
+    {
+      "id": "01-branch-first-setup",
+      "kind": "git",
+      "args": ["checkout", "-b", "feat/first-setup"]
+    },
+    {
+      "id": "02-init",
+      "kind": "cli",
+      "args": ["init", "--yes", "--offline", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/01-ok.json"
+    },
+    {
+      "id": "03-stage-init",
+      "kind": "git",
+      "args": ["add", "-A"]
+    },
+    {
+      "id": "04-commit-init",
+      "kind": "git",
+      "args": ["commit", "-m", "Initialize tenet"]
+    },
+    {
+      "id": "05-verify-first-setup-only",
+      "kind": "cli",
+      "args": ["verify", "--local", "--json"],
+      "withoutCiEvent": true,
+      "expectExitCodes": [0, 1],
+      "expectedJsonMatch": "expected/05-first-setup-only.json"
+    },
+    {
+      "id": "06-branch-setup-plus-codeowners",
+      "kind": "git",
+      "args": ["checkout", "-b", "feat/setup-plus-codeowners"]
+    },
+    {
+      "id": "07-edit-codeowners",
+      "kind": "write",
+      "files": {
+        "CODEOWNERS": "* @owner @second\n"
+      }
+    },
+    {
+      "id": "08-stage-codeowners",
+      "kind": "git",
+      "args": ["add", "-A"]
+    },
+    {
+      "id": "09-commit-codeowners",
+      "kind": "git",
+      "args": ["commit", "-m", "Also change CODEOWNERS during initial setup"]
+    },
+    {
+      "id": "10-verify-setup-plus-codeowners",
+      "kind": "cli",
+      "args": ["verify", "--local", "--json"],
+      "withoutCiEvent": true,
+      "expectExitCodes": [0, 1],
+      "expectedJsonMatch": "expected/09-setup-plus-codeowners.json"
+    },
+    {
+      "id": "11-merge-first-setup-to-main",
+      "kind": "git",
+      "args": ["checkout", "main"]
+    },
+    {
+      "id": "12-ff-merge-first-setup",
+      "kind": "git",
+      "args": ["merge", "--ff-only", "feat/first-setup"]
+    },
+    {
+      "id": "13-branch-later-pr",
+      "kind": "git",
+      "args": ["checkout", "-b", "feat/later-pr"]
+    },
+    {
+      "id": "14-edit-tenet-yaml-later",
+      "kind": "write",
+      "files": {
+        "tenet.yaml": "standard: \"~0.1\"\npaths:\n  records: tenet\nlevel: observe\nspecs:\n  id_prefix: R\nowners:\n  - \"@owner\"\nchecks:\n  test:\n    setup: []\n    run: npm test\n    report: none\n    report_from: stdout\nci:\n  mode: tenet-workflow\n  test_workflow: .github/workflows/tenet-tests.yml\nstop:\n  failing_evaluations: 2\nagents:\n  working_rules: default\nprotect:\n  - .github/workflows/tenet.yml\n  - .github/workflows/tenet-tests.yml\n  - tenet.yaml\n  - tenet.lock\n  - CODEOWNERS\n"
+      }
+    },
+    {
+      "id": "15-stage-later-pr",
+      "kind": "git",
+      "args": ["add", "-A"]
+    },
+    {
+      "id": "16-commit-later-pr",
+      "kind": "git",
+      "args": ["commit", "-m", "Edit tenet.yaml after initial setup"]
+    },
+    {
+      "id": "17-verify-later-pr",
+      "kind": "cli",
+      "args": ["verify", "--local", "--json"],
+      "withoutCiEvent": true,
+      "expectExitCodes": [0, 1],
+      "expectedJsonMatch": "expected/13-later-pr.json",
+      "expectedProjection": "expected/13-no-first-setup-note.json"
+    }
+  ]
+}

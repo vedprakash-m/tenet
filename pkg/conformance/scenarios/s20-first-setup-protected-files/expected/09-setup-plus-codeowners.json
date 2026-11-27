@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "command": "verify",
+  "result": {
+    "card": {
+      "protected": ["CODEOWNERS"]
+    },
+    "markdown": {
+      "$assert": "includes",
+      "value": "First-time setup: protected Tenet files are expected in this pull request."
+    }
+  }
+}

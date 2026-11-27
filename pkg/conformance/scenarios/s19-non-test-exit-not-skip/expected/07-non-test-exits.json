@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "command": "verify",
+  "result": {
+    "card": {
+      "weakening": {
+        "found": false,
+        "by": {
+          "$assert": "none",
+          "value": {
+            "finding": "skip-added"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "ok": false,
+  "errors": {
+    "$assert": "all",
+    "checks": [
+      {
+        "$assert": "contains",
+        "value": [
+          {
+            "code": "TN-SCHEMA",
+            "severity": "error",
+            "message": {
+              "$assert": "or",
+              "options": [
+                { "$assert": "includes", "value": "/tenet" },
+                { "$assert": "includes", "value": "/sections" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "$assert": "none",
+        "value": {
+          "code": "TN-INTERNAL"
+        }
+      }
+    ]
+  }
+}
