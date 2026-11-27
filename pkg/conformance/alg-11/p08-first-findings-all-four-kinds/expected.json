@@ -192,6 +192,32 @@
       }
     ],
     "question_limit": 10,
+    "questions": {
+      "project_kind": [
+        "What need does the application meet, and for whom?",
+        "Which user journeys and roles are essential?",
+        "Which screens, inputs and notifications must stay usable?",
+        "Which data is stored, shown, shared or retained?",
+        "Which privacy, security and permission rules apply?",
+        "Which browsers, devices and accessibility levels are supported?",
+        "How must offline, loading and partial-failure states behave?",
+        "Which integrations and release platforms are in scope?",
+        "What user or product outcome must never happen?",
+        "Which user experience or reliability goal matters most?"
+      ],
+      "generic": [
+        "What is this project for?",
+        "Who are its primary users and owners?",
+        "Which outcomes matter most?",
+        "Which boundaries and never-dos are non-negotiable?",
+        "Which inputs, outputs and interfaces define it?",
+        "Which data, privacy and retention rules apply?",
+        "Which reliability and failure behavior matters?",
+        "Which environments or compatibility promises are required?",
+        "Which dependencies may it rely on?",
+        "Which work or priority should come first?"
+      ]
+    },
     "output": {
       "paths": [
         "tenet/intent.md"
