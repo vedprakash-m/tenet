@@ -1,3 +1,24 @@
+---
+tenet: {spec: 1, doc: tech-spec, level: L2, version: "0.12", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:2f9d1d59b257b3ab489898cf4b5411ee0e4581dbd73f06b1957774b36ba21279, flags: []}
+  alg-01: {state: draft, digest: sha256:0b13cbc010c9e82b3f86e65262d7337ab4cbc40c5e08bd910450cd52c789b56b, flags: []}
+  alg-02: {state: draft, digest: sha256:cc03b1de45c5627e93bcca83195e83b309e06e7e00e4de22da04d558e9dd8973, flags: []}
+  alg-03: {state: draft, digest: sha256:15376fb12a26789b5e8f69174577086b6781b1d6410fb8837f29d1a951498294, flags: []}
+  alg-04: {state: draft, digest: sha256:5ff4dc20a07a51914c80b556fcc9d593e1e8a19268a533018fd5f02e3cadad7b, flags: []}
+  alg-05: {state: draft, digest: sha256:9b2a64ae1a34580bbc5174c4a18ba3c910f6d10c30ed80f46edefecaad608324, flags: []}
+  alg-06: {state: draft, digest: sha256:0cbd9e5f82705b68fd57374af166f71b101592693bdb37e018e54f9dcc8c79a6, flags: []}
+  alg-07: {state: draft, digest: sha256:7ef3ef7c0147e7ab6116b5d701ea80dd9cd636642cbb3f27b4ba23e80c54c2b2, flags: []}
+  alg-08: {state: draft, digest: sha256:c4d5319d8d0edc07c22879cb3ca32838c5962472d8d982331fc225eb98928662, flags: []}
+  alg-09: {state: draft, digest: sha256:3e6b277eb5ad84a6752ef1bfd531f8a0d7218242eaedd4bf8db38961884755f9, flags: []}
+  alg-10: {state: draft, digest: sha256:2dfb29a9a8cef5064362f1a3048f1cda924dfad11fc76d7069be265a45a06a72, flags: []}
+  alg-11: {state: draft, digest: sha256:727c954ef8fda775ac06d62bdc306c121081b52c311d17369ddd841ca1b1807c, flags: []}
+  alg-12: {state: draft, digest: sha256:dc3e580b30e1b3a68a940db6a0e4dd5d00db0df27f298a908dca31faef818e34, flags: []}
+  alg-13: {state: draft, digest: sha256:5a9f1581f440047e7ab46d63e475226bf58363d09e926b25ad59dbcc0a15a9d2, flags: []}
+  alg-14: {state: draft, digest: sha256:6d664f34e004ab89c35acc5865d574c8d5d78162ebe13d0612f8b69f56f7b6af, flags: []}
+  alg-15: {state: draft, digest: sha256:8aa71e957bf5b528cec5808a5a4f8be7a4e64f3521457ef845df4ed67256b210, flags: []}
+  alg-16: {state: draft, digest: sha256:05790334a2973c01bac8848a852f3e525b160c4a8158a22d1eb17874c4d718da, flags: []}
+---
 # Tenet technical specification: algorithms
 
 > Level L2 · Version 0.12 · Part of [tech-spec.md](../tech-spec.md) · Status: **draft, awaiting the Owner's approval** · Budget: 6,000 tokens · Added in L-0023 · Previous version: `archive/specs/tech-spec/algorithms.md@0.11.md`
@@ -140,20 +161,7 @@ Fixtures: one per row; an advisory review (row 7) beside an enforced failed clai
 
 ## ALG-09
 
-**Weakening.**
-- **Test files:** `**/*.{test,spec}.{ts,tsx,js,jsx,mjs,cjs}`, `**/test_*.py`, `**/*_test.py`, `**/*_test.go`, `**/*Test.java`, `**/tests/**/*.rs` (configurable).
-- **Declarations:** `(?:^|[^\w$.])(?:it|test)(?:\.each\([^)]*\))?\s*\(`, `^\s*def\s+test_\w*\s*\(`, `^\s*func\s+Test\w*\s*\(`, `\bt\.Run\s*\(`, `^\s*@Test\b` (with the method on a following line) and `^\s*#\[test\]` (with the `fn` on a following line).
-
-Over `git diff -M -U0 <base>..<tested>`:
-
-| Finding | Detected when |
-|---|---|
-| `removed-tests` | Tagless `name` on a removed line is declared on no added line anywhere (moves between files are not removals); emit deduped tagless `name` |
-| `tests-consolidated` (in `notes[]`; suppresses `removed-tests` in that file, leaving `found: false` alone) | Un-redeclared removed tagless names in a file also adding `.each(`, `@pytest.mark.parametrize` or `t.Run(` |
-| `skip-added` | Added line (not `//` or `.py` `#` comment) contains `.skip(`, `.only(`, `.todo(`, `.skipIf(`, `xit(`, `xdescribe(`, `@pytest.mark.skip`, `@pytest.mark.xfail`, `pytest.skip(`, `@unittest.skip`, `t.Skip(`, `@Disabled`, `@Ignore` or `#[ignore]`; `names` = innermost enclosing declaration or next within 3 lines, else trimmed line |
-| `file-deleted` | A test file is deleted with no rename; `names` = deduped tagless names at `base` (suppresses `removed-tests` for that file) |
-
-For `not_checked`: map changed code extensions at `head` (`.rb` ruby, `.cs` csharp, `.php` php, `.kt` kotlin, `.swift` swift, `.scala` scala, `.c/.h/.cc/.cpp/.hpp` c/c++, `.ts/.tsx/.js/.jsx/.mjs/.cjs` javascript/typescript, `.py` python, `.go` go, `.java` java, `.rs` rust) and emit any changed language lacking recognized test files at `head`. Say "no weakening detected by these checks", never "no weakening". Fixtures: deleting `init(`; moving a test file; consolidating 3 tests into `it.each`.
+**Weakening:** in [evidence.md §5](evidence.md#5-weakening-alg-09), moved under the rollover rule.
 
 ## ALG-10
 
@@ -183,13 +191,7 @@ Fixtures: changing `src/retry.ts:42` → `cited-code-changed`; sibling file → 
 
 ## ALG-15
 
-**Touched-scope and rename diff mapper** (`src/specs/diff-mapper.ts`, replacing private diff parsers in `src/specs/touched.ts` and `src/reports/weakening.ts` for `ALG-08`, `ALG-09`, `ALG-14`, `CP-0036`, `CP-0039`).
-- **Inputs:** `(base_sha, tested_sha)`; computes `diff_base_sha = git merge-base base_sha tested_sha` and diffs `diff_base_sha..tested_sha`.
-- **Attribute and environment isolation:** invoke `git` with `GIT_CONFIG_NOSYSTEM=1`, empty global config, `GIT_ATTR_NOSYSTEM=1`, `-c core.quotepath=false -c core.attributesfile= -c diff.algorithm=myers -c diff.renames=true -c diff.renameLimit=1000 -c diff.mnemonicPrefix=false -c diff.noprefix=false -c diff.relative=false diff --no-ext-diff --no-textconv --no-color --text -M50%`. Overflowing `renameLimit` fails as `unknown`.
-- **Binary detection:** inspect raw blob bytes via `git cat-file --batch`; blobs containing `0x00` are `is_binary: true`, while all non-NUL blobs produce UTF-8 hunks regardless of `.gitattributes` `binary` or `-diff`.
-- **Scopes (`no 20-line bypass`):** `min_changed_lines` never skips `enforce` checks (`low_sample: true` advisory badge below `20`). `touched_files` and `area` (`enforce`-eligible) compare baseline-relative multiset counts within `(file_or_renamed_path, area, fp_key)` (`-M50%` credit only within equal `area`s, and count-based `max(0, current_ref[k] - allowed_counts[k])` on `referenced_paths[]`). `touched_lines` (always capped strictly at `advise` in core `CP-0039`) checks findings overlapping `[newStart, newEnd]` added/modified hunks plus `referenced_paths[]`, never triggering on unmodified shifted lines outside `-U0` hunks.
-
-Fixtures: `.gitattributes -diff` + deleted-test red-team case across Windows/macOS/Linux; hostile global gitconfig; `renameLimit` overflow; CRLF parity; cross-area rename.
+**Touched-scope and rename diff mapper:** in [health.md §3](health.md#3-touched-scope-and-rename-diff-mapper-alg-15), moved under the rollover rule.
 
 ## ALG-16
 

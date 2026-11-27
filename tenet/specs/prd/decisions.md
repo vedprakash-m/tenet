@@ -1,3 +1,11 @@
+---
+tenet: {spec: 1, doc: prd, level: L1, version: "0.13", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:6b13fd2bbf7c7e4a7ffc8f4acf83e3c87eecf2bf2d7a4477bf39dfbf2e050bbe, flags: []}
+  7-decisions: {state: draft, digest: sha256:8848f2637c582edb07699e001f8d9fa02e3eae0e15be3d8ab46361dca9f32666, flags: []}
+  8-risks: {state: draft, digest: sha256:175d1fd10922a2891791ced71b6c1c6b3699119b23055bd6e3e244649cf7fab7, flags: []}
+  9-open-questions: {state: draft, digest: sha256:83c1b8aec8f3f7a360ed5da7633a13c992c0c364def54fab71c09a52dc43f595, flags: []}
+---
 # Tenet requirements: decisions, risks and open questions
 
 > Level L1 · Version 0.13 · Part of [prd.md](../prd.md) · Status: **draft, awaiting the Owner's approval** · Budget: 7,000 tokens · Split from `prd.md` §7–§9 under the rollover rule (L-0024)
@@ -6,7 +14,7 @@
 
 ## 7. Decisions
 
-| ID | Decision | Ledger |
+| Decision ID | Decision | Ledger |
 |---|---|---|
 | DEC-01 | Tenet is the standard; the VS Code implementation is Tenet for Copilot | L-0001 |
 | DEC-02–04 | One package holds kit, CLI and SDK; the kit is pinned by a lock (vendored only on request, DEC-41); overlays only narrow | L-0002, L-0005 |
@@ -47,7 +55,7 @@
 
 ## 8. Risks
 
-| ID | Risk | Mitigation |
+| Risk ID | Risk | Mitigation |
 |---|---|---|
 | RK-01 | The standard grows too large | Seven primitives; kernel budget of 8,000 tokens; scope freeze; new ideas are catalog `idea` entries |
 | RK-02 | Hosts and forges change faster than bindings and runner adapters | Bindings and adapters versioned apart; a capability table per adapter; stale ones marked unsupported; a generic command adapter always works |
@@ -72,7 +80,7 @@
 
 ## 9. Open questions
 
-| ID | Question | Needed by |
+| Question ID | Question | Needed by |
 |---|---|---|
 | OQ-01 | Package name: settled as `@vedprakash-m/tenet` (L-0022); revisit only if the plain name becomes available | — |
 | OQ-02 | Which issue sources `tenet import` reads first | 0.1.x |

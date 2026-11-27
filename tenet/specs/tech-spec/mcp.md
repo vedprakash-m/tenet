@@ -1,3 +1,10 @@
+---
+tenet: {spec: 1, doc: tech-spec, level: L2, version: "0.1", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:c5479c09095dcb5f8d55e85bd0d435cd935f6ecfb69ef026bd6cc1f45b675584, flags: []}
+  1-mcp: {state: draft, digest: sha256:f50f40f03e81a5a9cd1a3b58ba4e4e6e23a57de7f78e4bb1c3c7eddc40c9b096, flags: []}
+  2-context-selection-alg-10: {state: draft, digest: sha256:61498b4dce17ef76b23509825633b5ee68d1ebb1be5be4c8215e7016b52676aa, flags: []}
+---
 # Tenet technical specification: MCP and context selection
 
 > Level L2 · Version 0.1 · Part of [tech-spec.md](../tech-spec.md) · Status: **draft, awaiting the Owner's approval** · Budget: 6,000 tokens · Split from `contracts.md` §9 and `algorithms.md` ALG-10 under the rollover rule

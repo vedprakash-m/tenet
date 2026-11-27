@@ -1,3 +1,8 @@
+---
+tenet: {spec: 1, doc: plan, level: L2, version: "0.1", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:4601155f579c5471598542c511932dd4fc70c563b97d93ff1796d5d040f862ab, flags: []}
+---
 # Tenet plan: 0.1.0-alpha.1 (protect)
 
 > Level L2 · Track 1 draft for Owner approval · Budget: 6,000 tokens · Part of [plan.md](../plan.md)

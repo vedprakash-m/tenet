@@ -1,3 +1,12 @@
+---
+tenet: {spec: 1, doc: tech-spec, level: L2, version: "0.1", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:26d538ceb8dca906e155bd8ee2209a4ef194ceac3f9e0e88616357a537553101, flags: []}
+  1-placeholder-rules: {state: draft, digest: sha256:1e6a1cd11219981b7881f104b427d462b41e4b1d5a94909057cdead5325a084b, flags: []}
+  2-message-and-fix-table: {state: draft, digest: sha256:efe407e09a19266b548f17e02a3d0bd74d575336294e4bad27244cadbe1f4754, flags: []}
+  3-alpha1-message-templates: {state: draft, digest: sha256:07503ccd2ff728713ee1701a1f0c57453bf8aaf7195a005d14175412d2c95238, flags: []}
+  4-01x-message-templates: {state: draft, digest: sha256:654fea1db55c4ca9d63acd84ea1f39951adfcb5e699eba2f01c0db40956e6422, flags: []}
+---
 # Tenet technical specification: error messages
 
 > Level L2 · Version 0.1 · Part of [tech-spec.md](../tech-spec.md) · Status: **draft, awaiting the Owner's approval** · Budget: 6,000 tokens · Previous version: `—`

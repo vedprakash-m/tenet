@@ -1,3 +1,13 @@
+---
+tenet: {spec: 1, doc: tech-spec, level: L2, version: "0.12", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:80012618c3b959c8d1a1becc4fe1b34170d086bdb8a320a2cda7d67189b73ae4, flags: []}
+  1-evidence-payloads: {state: draft, digest: sha256:832ed7d1c26a78079dfb097a6b34f21b2d26d7dff48bcff609e7d17c84514cdb, flags: []}
+  2-real-test-reports: {state: draft, digest: sha256:38a40f209ea0d3967857ddb8f25e1836fcfe3d872cada41c88e26bbbf7a43ef1, flags: []}
+  3-test-evidence-matching-alg-08: {state: draft, digest: sha256:76c164440a8733550e10a3f804b7fea65f39b028f529d6f54a7c1f318a80fe7d, flags: []}
+  4-trust-observations-and-guarantee-levels: {state: draft, digest: sha256:18cada498cd28f3908a8137e9019c5c336dd0329bbfaffeb47a73dcff36c35eb, flags: []}
+  5-weakening-alg-09: {state: draft, digest: sha256:65a83af0bc7ac0f3fd413f09220e63d870cd7719f31d0d2166b1863bcb247a40, flags: []}
+---
 # Tenet technical specification: evidence payloads and real reports
 
 > Level L2 · Version 0.12 · Part of [tech-spec.md](../tech-spec.md) · Status: **draft, awaiting the Owner's approval** · Budget: 6,000 tokens · Split from `contracts.md` §6 and §12 under the rollover rule (L-0030)
@@ -91,3 +101,19 @@ Separately, the attest job observes **whether merging requires the Tenet status*
 | Protected paths unchanged | enforced* | enforced* (detected below `verify`) |
 | Holdout hidden | enforced* if the binding shows builders can't read the external holdout | the same; advisory in-repo |
 | Agent tools, paths, network | as the adapter declares | as the host binding declares |
+
+## 5. Weakening (ALG-09)
+
+- **Test files:** `**/*.{test,spec}.{ts,tsx,js,jsx,mjs,cjs}`, `**/test_*.py`, `**/*_test.py`, `**/*_test.go`, `**/*Test.java`, `**/tests/**/*.rs` (configurable).
+- **Declarations:** `(?:^|[^\w$.])(?:it|test)(?:\.each\([^)]*\))?\s*\(`, `^\s*def\s+test_\w*\s*\(`, `^\s*func\s+Test\w*\s*\(`, `\bt\.Run\s*\(`, `^\s*@Test\b` (method on a following line) and `^\s*#\[test\]` (`fn` on a following line).
+
+Over `git diff -M -U0 <base>..<tested>`:
+
+| Finding | Detected when |
+|---|---|
+| `removed-tests` | Tagless `name` on a removed line is declared on no added line anywhere (moves between files are not removals); emit deduped tagless `name` |
+| `tests-consolidated` (in `notes[]`; suppresses `removed-tests` in that file, leaving `found: false` alone) | Un-redeclared removed tagless names in a file also adding `.each(`, `@pytest.mark.parametrize` or `t.Run(` |
+| `skip-added` | Added line (not `//` or `.py` `#` comment) contains `.skip(`, `.only(`, `.todo(`, `.skipIf(`, `xit(`, `xdescribe(`, `@pytest.mark.skip`, `@pytest.mark.xfail`, `pytest.skip(`, `@unittest.skip`, `t.Skip(`, `@Disabled`, `@Ignore` or `#[ignore]`; `names` = innermost enclosing declaration or next within 3 lines, else trimmed line |
+| `file-deleted` | A test file is deleted with no rename; `names` = deduped tagless names at `base` (suppresses `removed-tests` for that file) |
+
+For `not_checked`: map changed code extensions at `head` (`.rb` ruby, `.cs` csharp, `.php` php, `.kt` kotlin, `.swift` swift, `.scala` scala, `.c/.h/.cc/.cpp/.hpp` c/c++, `.ts/.tsx/.js/.jsx/.mjs/.cjs` javascript/typescript, `.py` python, `.go` go, `.java` java, `.rs` rust) and emit any changed language lacking recognized test files at `head`. Say "no weakening detected by these checks", never "no weakening". Fixtures: deleting `init(`; moving a test file; consolidating 3 tests into `it.each`.

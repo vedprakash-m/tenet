@@ -1,10 +1,22 @@
+---
+tenet: {spec: 1, doc: ux-spec, level: L2, version: "0.13", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:caefd4ed3b03bc8a46272886e7afaaad147177db6fd59c206aef7b3732d130b4, flags: []}
+  part-0-get-tenet: {state: draft, digest: sha256:9b8dd29eadb5615e6764c5318068b20bfba80cf70c8681989f48f5a563831728, flags: []}
+  part-1-start-here: {state: draft, digest: sha256:e8e663bd3c11f9c9383c8ee838ff3a20f0ce4e0add41510117c7384e7e864b1b, flags: []}
+  part-2-the-daily-loop: {state: draft, digest: sha256:a032dea20e6dab7c1507f20efe84724c80b52bdae538dadba6246d3aceba4984, flags: []}
+  part-3-when-you-want-more: {state: draft, digest: sha256:4ef2b427a1050bb147af23731961557ebda8825815b7076fcf57146bf045a75a, flags: []}
+  part-4-keeping-tenet-current: {state: draft, digest: sha256:18b766dd5353867e0413ef076f4fcf8191d39eb8568a58019fb59c6cc791a66a, flags: []}
+  part-5-the-agents-side: {state: draft, digest: sha256:2806567daf1eff601904629e0e24acfda02c989737b19320424a9799443e774d, flags: []}
+  part-6-reference: {state: draft, digest: sha256:bc0bbbdc46af8aaa669aaa0c90676ff5b558f4643e1e2e906990475c83c65988, flags: []}
+---
 # Tenet experience specification
 
-> Level L2 · Version 0.13 · Status: **draft, awaiting the Owner's approval** · Implements [prd.md](prd.md) · Mechanisms: [tech-spec.md](tech-spec.md) and [its onboarding part](tech-spec/onboarding.md) · Budget: 6,000 tokens · Previous version: `archive/specs/ux-spec.md@0.12.md` · Release labels follow [contracts §8](tech-spec/contracts.md#8-commands)
+> L2 · Version 0.13 · Draft · [PRD](prd.md) · [Tech spec](tech-spec.md) and [onboarding](tech-spec/onboarding.md) · Budget: 6,000 tokens · Previous: `archive/specs/ux-spec.md@0.12.md` · Release labels follow [contracts §8](tech-spec/contracts.md#8-commands)
 
-**Context card.** What using Tenet is like. **Part 0:** get Tenet. **Part 1:** pick your starting point, an existing repository or a new project, and follow its steps. Both end with specifications you have read and blessed, and the same daily loop (Part 2). Part 3 is what you add when you choose to; Part 4 is keeping Tenet current; Part 5 is the agent's side; Part 6 is the reference. Every feature is labelled with the release it arrives in; unlabelled means the first release, 0.1.0-alpha.0.
+**Context card.** Get Tenet (Part 0), then follow the existing or new repository path to blessed specs (Part 1) and the daily loop (Part 2). Parts 3–6 cover optional controls, upkeep, the agent and reference. Unlabelled features ship in 0.1.0-alpha.0.
 
-**Who acts.** *You* are the Owner (or anyone with decision rights). *Your agent* is the coding agent you already use. *Tenet* is the command on your machine and the workflow it adds to CI. Tenet never calls a model: when something is drafted, your agent drafts it.
+**Who acts.** You are the Owner or decision-maker. Your agent drafts. Tenet is the local CLI and CI workflow. It never calls a model.
 
 ## Part 0: get Tenet
 
@@ -51,7 +63,7 @@ Every file is listed before it is written, and recorded so `tenet remove` can un
 
 **Step 2 · Your agent: draft your specifications.** `tenet onboard` builds an inventory of your project (modules, interfaces, configuration, tests, docs and their age, owners) and hands it to your agent with the `draft-specs` skill. Before drafting, your agent asks you what code can't tell it: what the project is for, who it serves, what it must never do, what matters most. It then drafts five views of your project (vision, requirements, design, experience, plan), one part of the codebase at a time, as one `tenet/intent.md` for a small project or separate documents for a larger one, and opens one onboarding pull request with the setup files. Nothing in it is in force yet.
 
-Every statement says where it came from: *observed* in code or tests (with the file and line, or the test), *documented* (with the doc section), *asked* (your answer) or *inferred* (flagged). Where sources disagree, the draft lists the conflict instead of choosing. Where nothing tells it, it writes "undecided, needs you". Drafting reads your code through your agent and its model provider; `tenet onboard --inventory-only` stops before that.
+Each statement names its origin: *observed* in code or tests (cite file and lines or test), *documented* (cite the section), *asked* (your answer), or *inferred* (flagged). The draft lists conflicts and says “undecided, needs you” when sources give no answer. Drafting reads code through your agent and its model provider; `tenet onboard --inventory-only` stops before drafting.
 
 **Step 3 · You: read and bless.** Run `tenet onboard --card` after committing the drafts. Paste the card into the setup pull request if you use one. CI cards start once the setup is merged.
 
@@ -114,7 +126,7 @@ Blessed 4 of 5 sections
 → git add -- "tenet" && git commit -m "Bless specifications"
 ```
 
-Only a person blesses, explicitly: `tenet bless` in a terminal, or a review action from alpha.1. Merging setup files or saying nothing never blesses anything. Settling a conflict records your answer; fixing the README is an ordinary change for your agent. In alpha.0 a blessing records who gave it without proof (a recorded blessing), so cards list the blessings a pull request changes and who committed them; from alpha.1 a review is forge-attributed, and from alpha.2 it is signed. Blessing sets what is in force; whether it was right stays your judgment. Once blessed, a section stays in force until you bless a replacement: an edit waits for blessing, and if cited code changes, `tenet bless` shows the diff so you can confirm with one key. You can bless sections piecemeal; anything left stays a draft. Agents treat blessed sections as truth and drafts as hints only. Merge the pull request: proof cards start on the next one.
+Only a person explicitly blesses, via `tenet bless` in a terminal or review from alpha.1. Merging setup or staying silent never blesses. Settling a conflict records your answer. Your agent fixes the README as a normal change. Alpha.0 records the person without proof and lists changed blessings and committers on cards. Review attribution starts in alpha.1 and signing in alpha.2. Blessing sets what is in force; correctness is your judgment. The blessed section remains binding while an edit awaits blessing. If cited code changes, the command shows the diff for one-key confirmation. Bless piecemeal. Agents treat unblessed sections as draft hints. Merge setup to get proof cards on subsequent pull requests.
 
 **Step 4 · You: ask your agent for the next change you needed anyway.** "Fix checkout retries per C-1." Your agent gets the blessed sections that apply (Part 5), writes the code and a test, and opens a pull request listing what it must prove:
 
@@ -192,15 +204,15 @@ Spec debt (1)
   Design cites src/legacy/queue.ts, which no longer exists
 ```
 
-**Change a specification.** When your agent finds a spec wrong, it proposes the change in the same pull request; the card shows it with the requirements it touches and asks whoever must approve it. Approving the review approves it (alpha.1; before then, `tenet bless`).
+**Change a specification.** When your agent finds a spec wrong, it proposes the change in the same pull request; the card shows it with touched requirements and asks required approvers (alpha.1 via review approval; before then, `tenet bless`).
 
 ## Part 3: when you want more
 
-**Turn on rules (alpha.1).** `tenet rules` shows, per rule, what it would have blocked and how often findings were marked not useful (`/tenet not-useful`). `tenet rules enforce tests-not-weakened` makes one block; `tenet level protect` turns on the rules that level recommends. At `protect` a rule stops honest mistakes; a pull request that changes Tenet's own workflow is flagged on the card, and full enforcement starts at `verify`.
+**Turn on rules (alpha.1).** `tenet rules` shows what each rule would block and its `/tenet not-useful` rate. `tenet rules enforce tests-not-weakened` blocks on that rule; `tenet level protect` enables the level's defaults. At `protect`, rules stop honest mistakes and workflow edits flag the card; full enforcement starts at `verify`.
 
-**Decisions (alpha.1).** Approve the review, or reply `/tenet pick 2` to a decision with options. A reply counts for what the latest card showed (its commit, acceptance list and the blessed text it implements); if any of that changed, you're asked to look again.
+**Decisions (alpha.1).** Approve the review, or reply `/tenet pick 2`. Replies bind what the latest card showed (commit, acceptance list, blessed text); if any changed, you're asked again.
 
-**Careful and deep work (0.1.0).** By policy, risky changes (authentication, data, payments) go to the careful or deep lane. Run `tenet new feature "<title>"`, then `tenet-runner start <id>` (the optional runner, installed like Tenet): the shaper drafts the definition and stops for your one approval; a separate test writer writes the tests, the builder works until they pass, the judge reviews, and a pull request arrives with its card. Prefer your own agent or factory? It takes the same steps from `tenet_next`. Accepting a known shortfall is a waiver with a reason and an expiry.
+**Careful and deep work (0.1.0).** Policy routes risky changes (authentication, data, payments) to careful or deep lanes. Run `tenet new feature "<title>"` and `tenet-runner start <id>`: shaper drafts the definition and stops for your approval; an independent test writer adds tests, builder satisfies them, judge reviews, and a PR opens with its card. Or drive your own agent/factory via `tenet_next`. Shortfalls require a dated waiver with reason.
 
 **Stuck work.** After repeated failures (by default, a card failing three times in a row), or when work and a spec disagree, your agent stops and Tenet asks one question: "C-3 says 'never retry', C-1 says 'retry once' · 1. Stop 2. C-3 wins 3. C-1 wins 4. Talk it through".
 
@@ -221,7 +233,7 @@ An upgrade never changes your level or turns a new rule beyond `observe`; a chan
 
 ## Part 5: the agent's side
 
-The `AGENTS.md` block (under 1,500 tokens; its exact text is in [tech-spec/agents.md](tech-spec/agents.md)) is a short map: where the specifications are, which the agent may change (builders change none above L3, and propose a change instead), how to get context, what a pull request must list, working rules you can replace, what never to do, how to stop.
+The [`AGENTS.md` block](tech-spec/agents.md) is under 1,500 tokens. It locates the specs, explains context, pull requests, replaceable working rules, prohibitions and stopping. Builders may only propose changes above L3.
 
 ```text
 $ tenet context --paths src/retry.ts --include-drafts   # agents usually call this through MCP
@@ -248,7 +260,7 @@ Context always starts with your global rules, then the IDs the task names and wh
 
 ### Principles
 
-| ID | Principle | In practice |
+| UX ID | Principle | In practice |
 |---|---|---|
 | UX-1 | **Say what is true, then what to do** | Every result states the fact and the next step |
 | UX-2 | **Plain words** | "stale", not "invalidated"; "waiting for you", not "pending Owner action" |

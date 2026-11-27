@@ -1,10 +1,20 @@
+---
+tenet: {spec: 1, doc: tech-spec, level: L2, version: "0.1", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:437c50b1c325dc75159652cdf187218ba1bf5c0d25e0fb4121a538e23956301e, flags: []}
+  1-state-reduction-and-replay: {state: draft, digest: sha256:6d3404af6ccd6a09814aff5817a19d3f55df04ac8cb7e0a0f354204a31104ad0, flags: []}
+  2-evaluation-inputs-and-evidence: {state: draft, digest: sha256:29187704f25030d3e0e9f4ece2057437f524c85e10f9f5f996feb4c77819479f, flags: []}
+  3-decision-requests-and-proof: {state: draft, digest: sha256:535ead503c8fc6382a5ba23403a0a6e4a4eef9d72d80384ee50d8ac473ed0215, flags: []}
+  4-alpha1-backtest: {state: draft, digest: sha256:b9d12ea64f18c176c9eaf559b16d0413da0c54db1cdfacbe81be9ffa72e66376, flags: []}
+  5-merge-candidates-and-required-outcomes: {state: draft, digest: sha256:30fe23df8bde0d3b9a8385d70721fad1e366203c6229e1bad8aab3a42145e982, flags: []}
+---
 # Tenet technical specification: kernel contracts
 
 > Level L2 · Draft for Owner approval · Budget: 6,000 tokens · Implements Part I. The bindings in CI and agents supply transport and execution.
 
 ## 1. State reduction and replay
 
-Read the selected store revision in one batch. Reduce one work item at a time. Order eligible events by ancestry and break ties by ASCII event ID. Return the effective state, justified station, tentative moves, conflict heads, applied and held IDs, and sorted findings. The following table supplies the missing ALG-05 cases for CP-0007.
+Read the selected store revision in one batch. Reduce one work item at a time. Order eligible events by ancestry and break ties by ASCII event ID. Return `{state, justified_station, tentative_moves, conflicts, applied, held, findings}` (`conflicts` are conflict heads; `findings` are sorted `TN-EV-*`). The following table supplies the missing ALG-05 cases for CP-0007.
 
 | Input | Outcome |
 |---|---|
@@ -31,7 +41,7 @@ Read the selected store revision in one batch. Reduce one work item at a time. O
 | `decision.*` | Record the request or answer. Only an eligible decision supplies authority or resolves a conflict. |
 | `evidence.recorded`, `run.*`, `gate`, `lease.*` | Append observations. Lease strength depends on the actual atomic provider. |
 
-Replay uses the recorded policy, evidence-store and trust snapshots, pack, evaluator revision and evaluation time. Preserve the rule and evidence or decision IDs for each claim. Replaying today means reproducing that historical decision. Re-evaluation against today's inputs is a separate operation. Tentative moves supply no advancement authority. At the pending deadline an unresolved tentative move becomes unjustified. An observation arriving later can support a new evaluation. Preserve and expose the historical view. Test cycles, cross-work edges, both duplicate cases, delayed parents, resolution permutations and independent state in a partial failure.
+Replay uses the recorded policy, evidence-store and trust snapshots, pack, evaluator revision and evaluation time, returning transitions `{event_id, type, status: "justified"|"pending-evidence"|"unjustified", reason?}` and `state.endpoint` (`checked|integrated|implemented-unverified|cancelled|superseded|null`). Preserve the rule and evidence or decision IDs for each claim. Replaying today means reproducing that historical decision. Re-evaluation against today's inputs is a separate operation. Tentative moves supply no advancement authority. At the pending deadline an unresolved tentative move becomes unjustified. An observation arriving later can support a new evaluation. Preserve and expose the historical view. Test cycles, cross-work edges, both duplicate cases, delayed parents, resolution permutations and independent state in a partial failure.
 
 ## 2. Evaluation inputs and evidence
 
@@ -45,7 +55,7 @@ The R-009 and evaluator-trial YAML files supply fixture envelopes around the pri
 
 ## 3. Decision requests and proof
 
-Persist the request and presentation before accepting an answer. Its identity is `sha256:` followed by the SHA-256 of the UTF-8 RFC 8785 serialization with a request-domain label and repository, work, target, subject, decision kind, question, ordered choice IDs and labels, displayed evaluation, target policy revision, allowed actors sorted by ID and expiry. The selected choice binds that immutable request. Recompute authorization against its scope, proof minimum and permitted actor.
+Persist the request and presentation before accepting an answer. Its identity is `sha256:` followed by the SHA-256 of the UTF-8 RFC 8785 serialization with domain `"tenet.decision.request.v1"` and repository, work, target, subject, decision kind, question, ordered `choices: [{id, label}]`, displayed evaluation, target policy revision, allowed actors sorted by ID and expiry. The selected choice binds that immutable request. Recompute authorization against its scope, proof minimum and permitted actor.
 
 Preserve the forge source ID, reviewed revision, creation time and observed content digest. Exact redelivery is idempotent. Edits, dismissals, withdrawals and stale replies remain observations. A native review can count only when the reviewed commit and one request or evaluation can be established at submission. An unqualified reply can count only if the binding establishes one eligible presented request at submission. Explicit evaluation references cannot transfer between requests. Ambiguity or a late reply prompts a fresh decision. Concurrent compatible duplicates are equivalent. Competing answers leave the request unresolved until an authorized decision resolves the conflict. A waiver needs the eligible claim, matching scope, authorized actor, reason, strength and unexpired time. Follow R-203 for self-waivers and CI §6 for reserved rights.
 
@@ -65,7 +75,7 @@ The detached signature and key ID travel beside the signed bytes. Generate a fre
 
 Freeze a manifest of 100 distinct historical pull requests drawn from Tenet, Torus and one public project. Record repository, time window, inclusion and selection procedure before evaluating results. Pin the facts, policy and evaluation times. Use the recorded information available at each decision point. The independent adjudicator records whether the refusal was warranted under the applicable rule at that time and records a reason.
 
-Count a PR once in the headline false-block total when any enforced refusal is independently found wrong. Record per-rule findings separately. A waiver or not-useful mark is an input for adjudication. A case with inadequate history is unassessable. Report which cases are missing and rerun with a complete prespecified sample before claiming the 100-PR threshold. The result records the numerator, denominator, coverage and rule breakdown. Time active Tenet-specific human work, such as finding and correcting records, separately from ordinary review and waiting. Record the measurement protocol and sample distribution. Apply plan §1’s strict false-block threshold. Publish the duration for each trial including zero-active-work trials. The plan leaves the summary statistic for the overhead threshold unspecified. The proposal for Owner approval is total attributable active minutes divided by 100 with complete timing coverage.
+Count a PR once in the headline false-block total when any enforced refusal is independently found wrong. Record per-rule findings separately. A waiver or not-useful mark is an input for adjudication. A case with inadequate history is unassessable. Incomplete coverage (`coverage < 100` or any `incomplete: true`) fails validation with `TN-BACKTEST-INCOMPLETE` before claiming the 100-PR threshold. The result records the numerator, denominator, coverage and rule breakdown. Time active Tenet-specific human work, such as finding and correcting records, separately from ordinary review and waiting. Record the measurement protocol and sample distribution. Apply plan §1’s strict false-block threshold. Publish the duration for each trial including zero-active-work trials. The overhead metric is `mean_active_minutes_per_pr = total_active_minutes / 100` with complete timing coverage.
 
 ## 5. Merge candidates and required outcomes
 

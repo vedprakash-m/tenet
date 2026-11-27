@@ -7,7 +7,33 @@ paths: {records: tenet}
 level: observe
 owners:
   - {id: ved, name: Ved, roles: [owner], keys: [], forge_accounts: [vedprakash-m]}
-specs: {id_prefix: R}
+specs:
+  id_prefix: R
+  documents:
+    - {path: vision.md, level: L0}
+    - {path: specs/prd.md, level: L1}
+    - {path: specs/prd/catalog.md, level: L1}
+    - {path: specs/prd/decisions.md, level: L1}
+    - {path: specs/prd/tooling.md, level: L1}
+    - {path: specs/tech-spec.md, level: L2}
+    - {path: specs/tech-spec/agents.md, level: L2}
+    - {path: specs/tech-spec/algorithms.md, level: L2}
+    - {path: specs/tech-spec/ci.md, level: L2}
+    - {path: specs/tech-spec/contracts.md, level: L2}
+    - {path: specs/tech-spec/evidence.md, level: L2}
+    - {path: specs/tech-spec/health.md, level: L2}
+    - {path: specs/tech-spec/kernel.md, level: L2}
+    - {path: specs/tech-spec/mcp.md, level: L2}
+    - {path: specs/tech-spec/messages.md, level: L2}
+    - {path: specs/tech-spec/onboarding.md, level: L2}
+    - {path: specs/ux-spec.md, level: L2}
+    - {path: specs/plan.md, level: L2}
+    - {path: specs/plan/0.1.0.md, level: L2}
+    - {path: specs/plan/0.1.x.md, level: L2}
+    - {path: specs/plan/alpha.0.md, level: L2}
+    - {path: specs/plan/alpha.0b.md, level: L2}
+    - {path: specs/plan/alpha.1.md, level: L2}
+    - {path: specs/plan/alpha.2.md, level: L2}
 stop: {failing_evaluations: 3}
 checks:
   lint: {setup: [npm ci], run: npm run lint, report: none}

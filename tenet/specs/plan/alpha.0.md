@@ -1,15 +1,24 @@
+---
+tenet: {spec: 1, doc: plan, level: L2, version: "0.13", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:9de50c1ed61216c9fc37e3899eef519cc5f3545023dfdc035b1fe9b08dccbdd9, flags: []}
+  a0-1: {state: draft, digest: sha256:52c031dcb69216fbb2c676114a13345ce18495d2e32db580d699add7451334bc, flags: []}
+  a0-2: {state: draft, digest: sha256:22b68472c32753c1af72315a7bbed0cc7292c28da9a032c541c97668e43380e3, flags: []}
+  a0-3: {state: draft, digest: sha256:668f6655ec3667f1a59928233c5264dfdd8083390f1f53261462959871c735e5, flags: []}
+  a0-4: {state: draft, digest: sha256:804c01a6ff512f253c13ce082ed4ac3aca4d62e10bc8bc259fa51464e29c1d97, flags: []}
+---
 # Tenet plan: 0.1.0-alpha.0 build contracts, waves A0-1 to A0-4
 
 > Level L2 · Version 0.13 · Part of [plan.md](../plan.md) · Status: **draft, awaiting the Owner's approval; frozen by CP-0015** · Budget: 6,000 tokens · Added in L-0023 · Previous version: `archive/specs/plan/alpha.0.md@0.12.md` · Continued in [alpha.0b.md](alpha.0b.md) (CP-0053, A0-5 to A0-8)
 
-**Context card.** One build contract per alpha.0 packet, in wave order ([plan §2](../plan.md#2-waves)), with the eight fields of [plan §4](../plan.md#4-build-contract). A builder reads its contract, the sections it names and nothing else. If the contract and a specification disagree, the builder stops and escalates; it never chooses. References: **C** = [contracts](../tech-spec/contracts.md), **ALG** = [algorithms](../tech-spec/algorithms.md), **CI** = [ci](../tech-spec/ci.md), **AG** = [agents](../tech-spec/agents.md), **OB** = [onboarding](../tech-spec/onboarding.md), **TS** = [tech spec](../tech-spec.md), **UX** = [ux-spec](../ux-spec.md).
+**Context card.** Build contracts for alpha.0 in wave order ([plan §2](../plan.md#2-waves)) with [plan §4](../plan.md#4-build-contract)'s eight fields. Builders read only their contract and named sections, escalating any spec conflict without choosing. Refs: **C** = [contracts](../tech-spec/contracts.md), **ALG** = [algorithms](../tech-spec/algorithms.md), **CI** = [ci](../tech-spec/ci.md), **AG** = [agents](../tech-spec/agents.md), **OB** = [onboarding](../tech-spec/onboarding.md), **TS** = [tech spec](../tech-spec.md), **UX** = [ux-spec](../ux-spec.md).
 
-**Every contract also means:**
-- module import rules (TS §1), enforced by `test/architecture.test.ts`; SDK functions take `{cwd, stdin, stdout, now}`
-- error codes, exit codes and plain words (C §13, R-083); the finding shape, `--json` envelope and per-command results (C §8); determinism (C §11)
-- each command lives in `src/commands/<name>.ts`, with its result schema in `kit/schemas/results/<name>.json`; the one shared file, `src/commands/index.ts`, gets one import line per command
-- shared test helpers come from `test/helpers/` (CP-0005); tests in `test/<module>/`; algorithm fixtures in `pkg/conformance/alg-<nn>/`
-- Proving always includes `npm run lint`, `npm run check:examples` and `npm test` passing on Windows, macOS and Linux in CI
+**All contracts require:**
+- TS §1 imports (`test/architecture.test.ts`); `{cwd, stdin, stdout, now}` on SDK functions
+- plain-word errors and exit codes (C §13, R-083); `--json` envelope and results (C §8); determinism (C §11)
+- commands in `src/commands/<name>.ts` with `kit/schemas/results/<name>.json` and one import line in `src/commands/index.ts`
+- helpers from `test/helpers/` (CP-0005), tests in `test/<module>/`, fixtures in `pkg/conformance/alg-<nn>/`
+- proving: `npm run lint`, `npm run check:examples`, and `npm test` on Windows, macOS and Linux CI
 
 ## A0-1
 
@@ -111,7 +120,7 @@
    - async `ladder(policy?: {cwd?: string, specs_dir?: string, files?: string[]}) → Promise<[{path, level, doc}]>` (discovers `.md` files with `tenet.spec` front matter; when `files` and `specs_dir` are omitted, recursively walks `cwd` skipping `.git`, `.tenet`, `node_modules`, `dist`, `build`; sorted `L0 < L1 < L2 < null` then `path`)
    - async `deltas(base, head, opts?: {cwd?: string}) → Promise<[{doc, added: string[], modified: string[], removed: string[]}]>` (`doc` is `tenet.doc ?? path`; compares requirement and vision items by ID via `jcs({text, origin, cites, serves, scope, adopted_by})`, sorting IDs by trailing integer `(\d+)$` (else `Infinity`) then ASCII, omitting unchanged docs)
    - async `touched(base, head, implementsIds: string[], opts?: {cwd?: string, codeowners_path?: string}) → Promise<[{id, why}]>`
-4. *Behavior:* ALG-02, ALG-03's anchors, flags and unique relocation, ALG-04 and ALG-14 exactly. `parseDoc` retains CRLF→LF normalized `section.text` ending with `\n` when non-empty, accepts front matter carrying a `tenet` object defaulting missing `sections` to `{}`, parses `V-(?:[A-Z]+)?\d+` into `vision_items` in `L0`/Vision sections (`level === "L0" || slug === "vision" || /\bvision\b/i.test(heading)`) and `<prefix>-\d+` into `requirements` in every other section (`Requirements` = `slug === "requirements" || /\brequirements?\b/i.test(heading)`, which only governs bare-bullet `TN-SPEC-MISSING-ID`), and shares one per-file seen-ID set across `requirements`, `vision_items`, `conflicts` and `questions` excluding duplicates after the first. `parseRequirement` accepts `<prefix>-\d+` (empty body allowed as `""`); for OB §1 tables, parse `{…}` from text cell first, let non-empty columns override, and exclude `id`/`origin`/`cites`/`serves`/`scope`/`adopted by`/`adopted_by` from fallback text columns. `anchorsFor` stops `test:` blocks at the next `ALG-09` declaration or `describe(` at `<=` indentation and stores line-normalized section body in `texts` for `doc:`. `matchRenamed` omits merges (`≥2` vanished slugs matching one new section). `Finding.severity` is `"error"` for `parseDoc`/`resolveCitations`, with 1-based item/section `line` (`null` for `TN-SPEC-NO-FRONT`). Default `cwd = process.cwd()`, `prefix = "R"`.
+4. *Behavior:* ALG-02, ALG-03 (anchors, flags, unique relocation), ALG-04, ALG-14 exact. `parseDoc` keeps CRLF→LF `section.text` ending in `\n` when non-empty, accepts `tenet` front matter defaulting `sections: {}`, puts `V-(?:[A-Z]+)?\d+` in `vision_items` for `L0`/Vision (`level === "L0" || slug === "vision" || /\bvision\b/i.test(heading)`) and `<prefix>-\d+` in `requirements` elsewhere (`Requirements` = `slug === "requirements" || /\brequirements?\b/i.test(heading)`, governing bare-bullet `TN-SPEC-MISSING-ID`), and shares one per-file seen-ID set across items excluding duplicates after the first. `parseRequirement` accepts `<prefix>-\d+` (empty body `""`); OB §1 tables parse `{…}` from text cell first, let non-empty columns override, and exclude metadata headers from fallback text columns. `anchorsFor` stops `test:` blocks at next `ALG-09` declaration or `describe(` at `<=` indentation and stores line-normalized text in `texts` for `doc:`. `matchRenamed` skips merges (`≥2` vanished slugs matching one new section). `Finding.severity` is `"error"`, with 1-based item/section `line` (`null` for `TN-SPEC-NO-FRONT`). Defaults: `cwd = process.cwd()`, `prefix = "R"`.
 5. *Edge cases:*
    - missing braces (`TN-SPEC-REQ-META`); a duplicate ID across documents (`TN-SPEC-DUP-ID`); a line without an ID ("needs an ID"); a file without front matter (all `draft`, with a finding)
    - a `## ` inside a four-backtick fence; CRLF; a Unicode heading; a renamed heading
