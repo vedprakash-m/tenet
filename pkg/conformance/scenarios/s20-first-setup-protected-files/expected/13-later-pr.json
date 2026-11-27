@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "command": "verify",
+  "result": {
+    "card": {
+      "protected": ["tenet.yaml"]
+    },
+    "markdown": {
+      "$assert": "includes",
+      "value": "! protected files touched: tenet.yaml"
+    }
+  }
+}

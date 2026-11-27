@@ -1,0 +1,6 @@
+{
+  "stdoutMatches": [
+    "tenet/intent\\.md",
+    "^(?!.*No specifications found)[\\s\\S]+$"
+  ]
+}

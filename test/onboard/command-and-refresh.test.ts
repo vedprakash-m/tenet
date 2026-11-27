@@ -148,12 +148,12 @@ test("onboard uses the public CLI, emits a schema-valid result, and declares no 
 test("[AB-D6] [F-14] onboard findings are capped and skipped paths are counted by reason", async (t) => {
   const repo = await tmpRepo("onboard-findings-limit");
   t.after(repo.cleanup);
-  await repo.write("tenet.yaml", `${config}onboard:\n  exclude: ["archive/**"]\n`);
+  await repo.write("tenet.yaml", `${config}onboard:\n  exclude: ["private/**"]\n`);
   for (let index = 0; index < 6; index += 1) {
     await repo.write(`docs/page-${index}.md`, `# Page ${index}\n\nSee [missing](missing-${index}.md).\n`);
   }
   for (let index = 0; index < 11; index += 1) {
-    await repo.write(`archive/file-${index}.txt`, `${index}\n`);
+    await repo.write(`private/file-${index}.txt`, `${index}\n`);
   }
   repo.git(["add", "-A"]);
   repo.git(["commit", "-qm", "findings"]);
@@ -166,18 +166,42 @@ test("[AB-D6] [F-14] onboard findings are capped and skipped paths are counted b
   assert.match(human.stdout, /Skipped files: excluded 11 \(/);
 });
 
-test("[AB-D7] [F-40] onboard hints when many files sit in archive folders", async (t) => {
+test("[AC-D3] [R2-08] onboard skips archive folders and shows the negated opt-in pattern", async (t) => {
   const repo = await tmpRepo("onboard-archive-hint");
   t.after(repo.cleanup);
   await repo.write("tenet.yaml", config);
-  for (let index = 0; index < 11; index += 1) {
-    await repo.write(`archive/file-${index}.ts`, `export const value${index} = ${index};\n`);
-  }
+  await repo.write("archive/root.ts", "export const root = true;\n");
+  await repo.write("src/.archive/nested.ts", "export const nested = true;\n");
+  await repo.write("legacy/old/retired.ts", "export const retired = true;\n");
+  await repo.write("src/live.ts", "export const live = true;\n");
   repo.git(["add", "-A"]);
   repo.git(["commit", "-qm", "archive"]);
   const human = await cli(["onboard", "--inventory-only"], repo.path);
   assert.equal(human.code, 0, human.stderr);
-  assert.match(human.stdout, /Hint: 11 inventoried files are under archive\/\./);
+  assert.match(human.stdout, /Skipped files: archive 3/);
+  assert.ok(human.stdout.includes(
+    "add `!**/{.archive,archive,old}/**` to `onboard.exclude`",
+  ));
+  assert.doesNotMatch(human.stdout, /inventoried files are under/);
+  const result = JSON.parse((await cli(["onboard", "--json", "--inventory-only"], repo.path)).stdout);
+  assert.deepEqual(result.result.inventory.sources.skipped, [
+    { path: "archive/root.ts", reason: "archive" },
+    { path: "legacy/old/retired.ts", reason: "archive" },
+    { path: "src/.archive/nested.ts", reason: "archive" },
+  ]);
+
+  await repo.write(
+    "tenet.yaml",
+    `${config}onboard:\n  exclude: ["!**/{.archive,archive,old}/**"]\n`,
+  );
+  const included = await onboard({ cwd: repo.path });
+  assert.deepEqual(
+    included.inventory.sources.skipped.filter(({ reason }) => reason === "archive"),
+    [],
+  );
+  assert.ok(included.inventory.sources.files.some(({ path }) => path === "archive/root.ts"));
+  assert.ok(included.inventory.sources.files.some(({ path }) => path === "src/.archive/nested.ts"));
+  assert.ok(included.inventory.sources.files.some(({ path }) => path === "legacy/old/retired.ts"));
 });
 
 test("onboard refuses directories outside Git and repositories with no HEAD", async (t) => {
@@ -210,4 +234,26 @@ test("generated and binary classifications precede oversize without reading excl
   ]);
   assert.deepEqual(result.inventory.tests, []);
   assert.equal(result.findings.some(({ kind }) => kind === "skipped-tests"), false);
+});
+
+test("[AC-B3] [R2-09] first findings count missing paths without counting symbols or URLs", async (t) => {
+  const repo = await tmpRepo("path-shaped-findings");
+  t.after(repo.cleanup);
+  await repo.write("tenet.yaml", config);
+  await repo.write("docs/queue.md", [
+    "# Queue",
+    "`@Name.member`, `Name.member`, `module.func()`, `EventName`, and `https://example.invalid/queue`.",
+    "See [web](https://example.invalid/queue), [missing](missing.md), and `src/missing.ts:7`.",
+    "",
+  ].join("\n"));
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "docs"]);
+  const result = await onboard({ cwd: repo.path, inventoryOnly: true });
+  assert.deepEqual(result.findings.filter(({ kind }) => kind === "dead-path").map(({ message }) => message), [
+    "docs/queue.md links missing path missing.md",
+    "docs/queue.md links missing path src/missing.ts",
+  ]);
+  const human = await cli(["onboard", "--inventory-only"], repo.path);
+  assert.equal(human.code, 0, human.stderr);
+  assert.match(human.stdout, /First findings: 3 total \(dead-path 2 · no-test-report 1\)/);
 });

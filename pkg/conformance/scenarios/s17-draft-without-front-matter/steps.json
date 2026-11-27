@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "scenario": "s17-draft-without-front-matter",
+  "spec_refs": [
+    "tenet/packets/CP-0068-dogfood-fixes-0.2.0/definition.md#a--specification-front-matter-is-checked-and-written-in-one-place-r2-13-r2-16"
+  ],
+  "steps": [
+    {
+      "id": "01-init",
+      "kind": "cli",
+      "args": ["init", "--yes", "--offline", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/01-ok.json"
+    },
+    {
+      "id": "02-stage-init",
+      "kind": "git",
+      "args": ["add", "-A"]
+    },
+    {
+      "id": "03-commit-init",
+      "kind": "git",
+      "args": ["commit", "-m", "Initialize tenet"]
+    },
+    {
+      "id": "04-onboard-inventory",
+      "kind": "cli",
+      "args": ["onboard", "--inventory-only", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/01-ok.json"
+    },
+    {
+      "id": "05-write-draft-no-front-matter",
+      "kind": "write",
+      "files": {
+        "tenet/intent.md": "## Vision\n- V-1 Reliable calls never drop silently. {origin: asked}\n\n## Requirements\n- R-1 Failed calls retry once, never twice. {origin: observed; cites: src/retry.ts:1-3; serves: V-1}\n\n## Design\nRetry runs synchronously inside the caller wrapper (`src/retry.ts:1-3`).\n\n## Experience\nCallers observe at most one retry delay on timeout.\n\n## Plan\nVerify single-retry behavior in retry tests.\n"
+      }
+    },
+    {
+      "id": "06-stage-draft",
+      "kind": "git",
+      "args": ["add", "-A"]
+    },
+    {
+      "id": "07-commit-draft",
+      "kind": "git",
+      "args": ["commit", "-m", "Add draft without front matter"]
+    },
+    {
+      "id": "08-check-no-front-matter",
+      "kind": "cli",
+      "args": ["check", "--json"],
+      "expectExitCode": 1,
+      "expectedJsonMatch": "expected/08-check-error.json"
+    },
+    {
+      "id": "09-board-no-front-matter",
+      "kind": "cli",
+      "args": ["board", "--json"],
+      "expectExitCode": 1,
+      "expectedJsonMatch": "expected/09-board-error.json",
+      "expectedProjection": "expected/09-board-projection.json"
+    },
+    {
+      "id": "10-fix-front-matter",
+      "kind": "cli",
+      "args": ["fix", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/01-ok.json",
+      "expectedFilesInclude": {
+        "tenet/intent.md": ["tenet:", "sections:", "vision:", "requirements:", "design:", "experience:", "plan:", "draft"]
+      }
+    },
+    {
+      "id": "11-check-after-fix",
+      "kind": "cli",
+      "args": ["check", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/11-check-ok.json"
+    },
+    {
+      "id": "12-stage-repaired-draft",
+      "kind": "git",
+      "args": ["add", "-A"]
+    },
+    {
+      "id": "13-commit-repaired-draft",
+      "kind": "git",
+      "args": ["commit", "-m", "Commit repaired draft"]
+    },
+    {
+      "id": "14-onboard-card",
+      "kind": "cli",
+      "args": ["onboard", "--card", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/14-card.json"
+    },
+    {
+      "id": "15-bless-vision",
+      "kind": "cli",
+      "args": ["bless", "--section", "vision", "--json"],
+      "fakeTty": ["1", "bless"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/15-bless.json",
+      "expectedFilesInclude": {
+        "tenet/blessed/log.jsonl": ["vision", "bless"]
+      }
+    }
+  ]
+}

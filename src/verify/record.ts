@@ -226,7 +226,28 @@ async function specifications(
   return { blessed, requirements: [...requirements.values()], blessings_changed: blessings };
 }
 
-async function changedSurfaces(tested: VerificationBundle["tested"], policy: Policy, cwd: string): Promise<Pick<Subject, "protected" | "workflow_changed">> {
+async function firstSetupPaths(tested: VerificationBundle["tested"], cwd: string): Promise<Set<string>> {
+  const basePolicy = await git(["ls-tree", "--name-only", tested.base, "--", "tenet.yaml"], { cwd });
+  if (basePolicy.trim()) return new Set();
+  const headPaths = (await git(["ls-tree", "-r", "--name-only", tested.commit, "--", "tenet.yaml", ".tenet/manifest.json"], { cwd })).split("\n");
+  if (!headPaths.includes("tenet.yaml") || !headPaths.includes(".tenet/manifest.json")) return new Set();
+  const text = await git(["show", `${tested.commit}:.tenet/manifest.json`], { cwd });
+  let value: unknown;
+  try { value = JSON.parse(text); } catch { return new Set(); }
+  if (!value || typeof value !== "object" || Reflect.get(value, "schema_version") !== 1) return new Set();
+  const paths = new Set<string>();
+  for (const key of ["created", "blocks", "keys"]) {
+    const entries: unknown = Reflect.get(value, key);
+    if (!Array.isArray(entries)) return new Set();
+    for (const entry of entries) {
+      if (!entry || typeof entry !== "object" || typeof entry.path !== "string") return new Set();
+      paths.add(entry.path);
+    }
+  }
+  return paths;
+}
+
+async function changedSurfaces(tested: VerificationBundle["tested"], policy: Policy, cwd: string): Promise<Pick<Subject, "protected" | "workflow_changed"> & { firstSetup: boolean }> {
   const workflow = policy.ci?.test_workflow;
   const files = (await git(["diff", "--name-only", "--no-renames", "-z", tested.base, tested.commit], { cwd })).split("\0").filter(Boolean);
   const workflowFiles = [".github/workflows/tenet-tests.yml", ".github/workflows/tenet.yml"];
@@ -243,9 +264,13 @@ async function changedSurfaces(tested: VerificationBundle["tested"], policy: Pol
     }
   }
   const protectedMatchers = [...new Set([...defaultProtected, ...workflowFiles, ...(policy.protect ?? [])])].map((glob) => picomatch(glob, { dot: true }));
+  const protectedFiles = files.filter((file) => protectedMatchers.some((matches) => matches(file)));
+  const setupPaths = protectedFiles.length ? await firstSetupPaths(tested, cwd) : new Set<string>();
+  const protectedChanges = protectedFiles.filter((file) => !setupPaths.has(file)).sort();
   return {
-    protected: files.filter((file) => protectedMatchers.some((matches) => matches(file))).sort(),
-    workflow_changed: files.some((file) => workflowFiles.includes(file) && file !== ".github/workflows/tenet.yml"),
+    protected: protectedChanges,
+    workflow_changed: protectedChanges.some((file) => workflowFiles.includes(file) && file !== ".github/workflows/tenet.yml"),
+    firstSetup: protectedChanges.length < protectedFiles.length,
   };
 }
 
@@ -476,13 +501,21 @@ async function evaluate(event: VerifyEvent, pr: PullRequest | undefined, deps: V
         deps.touched(tested.base, tested.commit, acceptance.implements, specOptions),
         deps.deltas(tested.base, tested.commit, specOptions),
         declaredTags(tested.base, tested.commit, policy.specs.id_prefix, { cwd: snapshot.cwd }),
-        weakening(tested.base, tested.commit, { cwd: snapshot.cwd }),
+        weakening(tested.base, tested.commit, {
+          cwd: snapshot.cwd,
+          test_files: Object.values(policy.checks ?? {}).flatMap((check) => {
+            const globs: unknown = Reflect.get(check, "x-test-files");
+            return Array.isArray(globs) ? globs.filter((glob): glob is string => typeof glob === "string" && !!glob) : [];
+          }),
+        }),
       ]);
+      const { firstSetup, ...surfaces } = await changedSurfaces(tested, policy, snapshot.cwd);
+      if (firstSetup) notes.push("First-time setup: protected Tenet files are expected in this pull request.");
       subject = {
         ...emptySubject,
         ...await (deps.specification ? deps.specification(tested.base, tested.commit, policy, snapshot.cwd)
           : specifications(tested.base, tested.commit, policy, snapshot.cwd, deps)),
-        ...await changedSurfaces(tested, policy, snapshot.cwd),
+        ...surfaces,
       };
     } finally { await snapshot?.close(); }
   }

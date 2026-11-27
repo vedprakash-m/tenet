@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "scenario": "s18-invented-front-matter-shape",
+  "spec_refs": [
+    "tenet/packets/CP-0068-dogfood-fixes-0.2.0/definition.md#a--specification-front-matter-is-checked-and-written-in-one-place-r2-13-r2-16"
+  ],
+  "steps": [
+    {
+      "id": "01-init",
+      "kind": "cli",
+      "args": ["init", "--yes", "--offline", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/01-ok.json"
+    },
+    {
+      "id": "02-stage-init",
+      "kind": "git",
+      "args": ["add", "-A"]
+    },
+    {
+      "id": "03-commit-init",
+      "kind": "git",
+      "args": ["commit", "-m", "Initialize tenet"]
+    },
+    {
+      "id": "04-onboard-inventory",
+      "kind": "cli",
+      "args": ["onboard", "--inventory-only", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/01-ok.json"
+    },
+    {
+      "id": "05-write-invented-front-matter",
+      "kind": "write",
+      "files": {
+        "tenet/intent.md": "---\ntenet: \"~0.1\"\nsections:\n  - {id: vision, heading: Vision, level: L0}\n---\n## Vision\n- V-1 Reliable calls never drop silently. {origin: asked}\n\n## Requirements\n- R-1 Failed calls retry once, never twice. {origin: observed; cites: src/retry.ts:1-3; serves: V-1}\n\n## Design\nRetry runs synchronously inside the caller wrapper (`src/retry.ts:1-3`).\n\n## Experience\nCallers observe at most one retry delay on timeout.\n\n## Plan\nVerify single-retry behavior in retry tests.\n"
+      }
+    },
+    {
+      "id": "06-stage-draft",
+      "kind": "git",
+      "args": ["add", "-A"]
+    },
+    {
+      "id": "07-commit-draft",
+      "kind": "git",
+      "args": ["commit", "-m", "Add draft with invented front matter"]
+    },
+    {
+      "id": "08-check-schema-error",
+      "kind": "cli",
+      "args": ["check", "--json"],
+      "expectExitCode": 1,
+      "expectedJsonMatch": "expected/schema-error.json"
+    },
+    {
+      "id": "09-fix-schema-error",
+      "kind": "cli",
+      "args": ["fix", "--json"],
+      "expectExitCode": 1,
+      "expectedJsonMatch": "expected/schema-error.json"
+    },
+    {
+      "id": "10-onboard-card-schema-error",
+      "kind": "cli",
+      "args": ["onboard", "--card", "--json"],
+      "expectExitCode": 1,
+      "expectedJsonMatch": "expected/schema-error.json"
+    },
+    {
+      "id": "11-bless-schema-error-no-questions",
+      "kind": "cli",
+      "args": ["bless", "--json"],
+      "fakeTty": [],
+      "expectExitCode": 1,
+      "expectedJsonMatch": "expected/schema-error.json"
+    },
+    {
+      "id": "12-board-same-schema-error",
+      "kind": "cli",
+      "args": ["board", "--json"],
+      "expectExitCode": 1,
+      "expectedJsonMatch": "expected/schema-error.json",
+      "expectedProjection": "expected/board-projection.json"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "ok": true,
+  "command": "onboard",
+  "result": {
+    "card": {
+      "$assert": "includes",
+      "value": "Tenet onboarding"
+    }
+  }
+}

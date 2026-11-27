@@ -6,9 +6,10 @@ import { fail } from "../core/output.js";
 import { validate } from "../core/schema.js";
 import { loadPolicy } from "../policy/index.js";
 import { resolveCitations } from "../specs/citations.js";
-import { isOpenSpecItem, parseDoc, type ParsedDoc } from "../specs/parse.js";
+import { isOpenSpecItem, parseDoc, specMatter, type ParsedDoc } from "../specs/parse.js";
 import type { Assignment, Inventory } from "../types/generated.js";
-import { isGovernedSection, measureStatements, readCitationSource, readingMinutes, readSpecMatter, statements, writeSpecMatter } from "./bless.js";
+import { isDraftOutput, validateSpecMatter, writeSpecMatter } from "../specs/front-matter.js";
+import { isGovernedSection, measureStatements, readCitationSource, readingMinutes, statements } from "./bless.js";
 
 type CardOptions = { cwd?: string; pr?: number };
 type StructuredCardOptions = CardOptions & { format: "result" };
@@ -18,7 +19,8 @@ const inventoryPath = ".tenet/onboard/inventory.json";
 const assignmentPath = ".tenet/onboard/assignment.json";
 const skipLabels: Readonly<Record<string, string>> = {
   env: ".env*", credentials: "credentials", vendored: "vendored files",
-  generated: "generated files", excluded: "excluded paths", binary: "binary files", oversize: "oversized files",
+  archive: "archive folders", generated: "generated files", excluded: "excluded paths",
+  binary: "binary files", oversize: "oversized files",
 };
 
 export const onboardingCardText = {
@@ -157,15 +159,15 @@ export async function onboardingCard(
   let existingStamp: string | undefined;
   const patches: Array<{ relative: string; filename: string; original: string; next: string }> = [];
   for (const { relative, filename } of drafts) {
-    const records = policy.paths.records.replaceAll("\\", "/");
-    if (!relative.startsWith(`${records}/`) || !relative.endsWith(".md") || relative.startsWith(`${records}/blessed/`)) {
+    if (!isDraftOutput(relative, policy.paths.records)) {
       throw diagnostic("TN-SCHEMA", { path: assignmentPath, schema: "assignment", pointer: "/output/paths" });
     }
     const text = await readFile(filename, "utf8");
     const parsed = parseDoc(relative, text, { prefix: policy.specs.id_prefix });
-    const front = readSpecMatter(text);
-    const tenet = parsed.front?.tenet as { spec?: unknown; drafted_at_rev?: unknown } | undefined;
-    if (tenet?.spec !== 1) throw { ...diagnostic("TN-SPEC-NO-FRONT"), file: relative };
+    const front = specMatter(parsed);
+    const validation = validateSpecMatter(relative, front, true);
+    if (validation.finding) throw validation.finding;
+    const tenet = (parsed.front as { tenet: { drafted_at_rev?: string } }).tenet;
     docs.push(parsed);
     if (typeof tenet.drafted_at_rev === "string" && tenet.drafted_at_rev) {
       existingStamp ??= tenet.drafted_at_rev;
@@ -176,8 +178,9 @@ export async function onboardingCard(
     if (committed === null || committed.replaceAll("\r\n", "\n") !== text.replaceAll("\r\n", "\n")) {
       throw { ...diagnostic("TN-SUBJ-DIRTY", { command: "onboard --card" }), file: relative };
     }
-    front.yaml.setIn(["tenet", "drafted_at_rev"], head);
-    patches.push({ relative, filename, original: text, next: writeSpecMatter(front) });
+    const { yaml } = validation;
+    yaml.setIn(["tenet", "drafted_at_rev"], head);
+    patches.push({ relative, filename, original: text, next: writeSpecMatter(yaml, front.body) });
   }
   const next = await nextStep(cwd, patches.length > 0, options.pr);
   const card = composeCard(inventory, docs, readCitationSource(cwd), patches.map(({ relative }) => relative), next);

@@ -1,0 +1,5 @@
+{
+  "stdoutMatches": [
+    "^(?![\\s\\S]*First-time setup)[\\s\\S]+$"
+  ]
+}

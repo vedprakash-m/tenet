@@ -4,7 +4,7 @@ import { catFileBatch, git } from "../core/git.js";
 import { extractTags, extractTokenTags, stripTags } from "./tags.js";
 import type { ScanResult, TestDeclaration, TestSkip } from "./types.js";
 
-const defaultTestPatterns = [
+export const defaultTestPatterns = [
   "**/*.test.ts",
   "**/*.test.tsx",
   "**/*.test.js",
@@ -383,7 +383,11 @@ function recordPropertySources(lines: string[], start: number, end: number, pref
 export function skipPattern(file: string, line: string): string | undefined {
   const text = line.trimStart();
   if (text.startsWith("//") || (file.endsWith(".py") && text.startsWith("#"))) return undefined;
-  return skipPatterns.find((pattern) => text.includes(pattern));
+  return skipPatterns.find((pattern) => {
+    if (pattern === "xit(") return /(?:^|[^\w$.])xit\(/.test(text);
+    if (pattern === "xdescribe(") return /(?:^|[^\w$.])xdescribe\(/.test(text);
+    return text.includes(pattern);
+  });
 }
 
 function braceEnd(lines: string[], start: number): number {

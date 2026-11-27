@@ -1,28 +1,8 @@
 /// <reference path="../policy/picomatch.d.ts" />
 import picomatch from "picomatch";
 import { git } from "../core/git.js";
-import { scanTestsDetailed, skipPattern, type ScannedDeclaration } from "./scan.js";
+import { defaultTestPatterns, scanTestsDetailed, skipPattern, type ScannedDeclaration } from "./scan.js";
 import type { Weakening } from "./types.js";
-
-const testPatterns = [
-  "**/*.test.ts",
-  "**/*.test.tsx",
-  "**/*.test.js",
-  "**/*.test.jsx",
-  "**/*.test.mjs",
-  "**/*.test.cjs",
-  "**/*.spec.ts",
-  "**/*.spec.tsx",
-  "**/*.spec.js",
-  "**/*.spec.jsx",
-  "**/*.spec.mjs",
-  "**/*.spec.cjs",
-  "**/test_*.py",
-  "**/*_test.py",
-  "**/*_test.go",
-  "**/*Test.java",
-  "**/tests/**/*.rs",
-];
 
 type DiffLines = {
   added: Map<string, Map<number, string>>;
@@ -37,9 +17,10 @@ export async function weakening(
   options: { cwd?: string; test_files?: string[] } = {},
 ): Promise<Weakening> {
   const cwd = options.cwd ?? process.cwd();
-  const scanOptions = options.test_files === undefined
-    ? { cwd }
-    : { cwd, test_files: options.test_files };
+  const testFiles = [...defaultTestPatterns, ...options.test_files ?? []];
+  const scanOptions = { cwd, test_files: testFiles };
+  const matchers = testFiles.map((pattern) => picomatch(portable(pattern), { dot: true, nocase: false }));
+  const isTestFile = (filename: string) => matchers.some((matches) => matches(filename));
   const [before, after, lines, changes, headFiles] = await Promise.all([
     scanTestsDetailed(base, scanOptions),
     scanTestsDetailed(head, scanOptions),
@@ -85,6 +66,7 @@ export async function weakening(
   }
 
   for (const [file, added] of lines.added) {
+    if (!isTestFile(file)) continue;
     for (const [lineNumber, text] of added) {
       if (!skipPattern(file, text)) continue;
       const affected = affectedDeclaration(after.declarations, file, lineNumber);
@@ -98,9 +80,6 @@ export async function weakening(
 
   by.sort((left, right) => left.file.localeCompare(right.file) || left.finding.localeCompare(right.finding));
   notes.sort((left, right) => left.file.localeCompare(right.file));
-  const patterns = (options.test_files?.length ? options.test_files : testPatterns).map((pattern) =>
-    picomatch(pattern.replaceAll("\\", "/"), { dot: true, nocase: false }),
-  );
   const recognizedByLanguage = new Map<string, boolean>();
   const changedLanguages = unique(
     headFiles
@@ -113,7 +92,7 @@ export async function weakening(
       }),
   );
   for (const file of headFiles) {
-    if (!patterns.some((matches) => matches(file))) continue;
+    if (!isTestFile(file)) continue;
     const language = languageFor(file);
     if (language) recognizedByLanguage.set(language, true);
   }

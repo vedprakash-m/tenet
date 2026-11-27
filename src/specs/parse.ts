@@ -1,4 +1,4 @@
-import { parseDocument } from "yaml";
+import { readSpecMatter, validateSpecMatter, type SpecMatter } from "./front-matter.js";
 import type { Finding } from "../types/generated.js";
 import { sectionDigest, slugFor } from "./sections.js";
 
@@ -53,6 +53,7 @@ type RequirementOptions = ParseOptions & { line?: number; file?: string };
 type InternalSection = SpecSection;
 
 const lineLocations = new WeakMap<object, number>();
+const docMatters = new WeakMap<ParsedDoc, SpecMatter>();
 const sectionLocations = new WeakMap<SpecSection, { heading: number; start: number }>();
 const messageByCode: Record<string, [string, string]> = {
   "TN-SPEC-DUP-ID": [
@@ -66,10 +67,6 @@ const messageByCode: Record<string, [string, string]> = {
   "TN-SPEC-MISSING-ID": [
     "Specification line needs an ID.",
     "Run `tenet fix` or prefix the line with an unused ID.",
-  ],
-  "TN-SPEC-NO-FRONT": [
-    "Specification file has no valid YAML front matter.",
-    "Add YAML front matter (`---`) with `tenet` and `sections`, or run `tenet fix`.",
   ],
   "TN-SPEC-REQ-META": [
     "Requirement metadata is malformed: check closing braces, allowed keys, and origin.",
@@ -317,24 +314,6 @@ function frontMatterLines(text: string): { normalized: string; lines: string[]; 
   const lines = normalized.split("\n");
   const end = lines[0]?.trim() === "---" ? lines.findIndex((line, index) => index > 0 && line.trim() === "---") : -1;
   return { normalized, lines, end };
-}
-
-function splitFront(text: string): { front: Record<string, unknown> | null; body: string; bodyLine: number } {
-  const { normalized, lines, end } = frontMatterLines(text);
-  if (end < 0) return { front: null, body: normalized, bodyLine: 1 };
-  const yaml = lines.slice(1, end).join("\n");
-  try {
-    const document = parseDocument(yaml, { merge: false, prettyErrors: true, uniqueKeys: true });
-    if (document.errors.length > 0) return { front: null, body: lines.slice(end + 1).join("\n"), bodyLine: end + 2 };
-    const parsed = document.toJS({ maxAliasCount: 100 });
-    const top = record(parsed);
-    const tenet = record(top?.tenet);
-    if (!top || !tenet) return { front: null, body: lines.slice(end + 1).join("\n"), bodyLine: end + 2 };
-    if (top.sections === undefined) top.sections = {};
-    return { front: top, body: lines.slice(end + 1).join("\n"), bodyLine: end + 2 };
-  } catch {
-    return { front: null, body: lines.slice(end + 1).join("\n"), bodyLine: end + 2 };
-  }
 }
 
 export function specificationBody(text: string): string {
@@ -614,9 +593,12 @@ function parseStatements(
 
 export function parseDoc(path: string, text: string, opts: ParseOptions = {}): ParsedDoc {
   const filename = portable(path);
-  const { front, body, bodyLine } = splitFront(text);
-  const problems: Finding[] = [];
-  if (!front) problems.push(finding("TN-SPEC-NO-FRONT", filename, null));
+  const matter = readSpecMatter(text);
+  const { body, bodyLine } = matter;
+  const top = record(matter.data);
+  const front = top && record(top.tenet) ? top : null;
+  const header = !front ? validateSpecMatter(filename, matter).finding : null;
+  const problems: Finding[] = header ? [header] : [];
   const lines = body.split("\n");
   const raw: Array<{ slug: string; heading: string; bodyLines: string[]; start: number; headingLine: number }> = [];
   let current: { slug: string; heading: string; bodyLines: string[]; start: number; headingLine: number } | null =
@@ -699,7 +681,15 @@ export function parseDoc(path: string, text: string, opts: ParseOptions = {}): P
   );
   const seen = new Set<string>();
   for (const section of sections) parseStatements(section, opts.prefix ?? "R", seen, problems, filename);
-  return { path: filename, front, sections, problems };
+  const doc = { path: filename, front, sections, problems };
+  docMatters.set(doc, matter);
+  return doc;
+}
+
+export function specMatter(doc: ParsedDoc): SpecMatter {
+  const matter = docMatters.get(doc);
+  if (!matter) throw new TypeError("Expected a parsed specification");
+  return matter;
 }
 
 export function itemLine(item: object): number | null {

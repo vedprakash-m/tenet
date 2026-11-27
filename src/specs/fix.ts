@@ -2,13 +2,14 @@ import { readFileSync, type Dirent } from "node:fs";
 import { lstat, mkdir, readFile, readdir, rename } from "node:fs/promises";
 import path from "node:path";
 import { parse, stringify } from "yaml";
-import { writeAtomic } from "../core/fs.js";
+import { confine, writeAtomic } from "../core/fs.js";
 import { catFileBatch, git } from "../core/git.js";
 import { jcs } from "../core/hash.js";
 import { loadPolicy } from "../policy/index.js";
 import type { Policy } from "../policy/types.js";
 import { citationParts, relocate } from "./anchors.js";
 import { flags, matchRenamed } from "./flags.js";
+import { draftOutputPaths, inventoryRevision, readSpecMatter, validateSpecMatter } from "./front-matter.js";
 import { ladder, type LadderEntry } from "./ladder.js";
 import { itemLine, parseDoc, sectionLocation, type SpecSection } from "./parse.js";
 
@@ -58,31 +59,6 @@ function readSyncReader(cwd: string): (filename: string) => string | null {
   };
 }
 
-function splitFront(text: string): { front: Front | null; body: string } {
-  const normalized = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
-  const match = /^---\n([\s\S]*?)\n---(?:\n|$)/.exec(normalized);
-  if (!match?.[1]) return { front: null, body: normalized };
-  const parsed = parse(match[1]) as unknown;
-  const record = parsed && typeof parsed === "object" && !Array.isArray(parsed)
-    ? parsed as Record<string, unknown>
-    : null;
-  const tenet = record?.tenet;
-  const sections = record?.sections;
-  if (!record || !tenet || typeof tenet !== "object" || Array.isArray(tenet)) {
-    return { front: null, body: normalized };
-  }
-  return {
-    front: {
-      ...record,
-      tenet: tenet as Record<string, unknown>,
-      sections: sections && typeof sections === "object" && !Array.isArray(sections)
-        ? sections as Record<string, Record<string, unknown>>
-        : {},
-    },
-    body: normalized.slice(match[0].length),
-  };
-}
-
 function compose(front: Front, body: string): string {
   return `---\n${stringify(front, { lineWidth: 0 }).trimEnd()}\n---\n${body.replace(/^\n/, "")}`;
 }
@@ -108,24 +84,23 @@ function docLevel(policy: Policy, filename: string): string {
   const relative = filename.startsWith(`${policy.paths.records}/`)
     ? filename.slice(policy.paths.records.length + 1)
     : filename;
-  return policy.specs.documents.find((document) => document.path === relative)?.level ?? "L2";
+  return policy.specs.documents.find((document) => document.path === relative)?.level ?? (relative === "intent.md" ? "L1" : "L2");
 }
 
-function frontFor(entry: LadderEntry, current: Front | null, policy: Policy, head: string): Front {
-  const front = current ?? {
+function frontFor(entry: LadderEntry, current: Partial<Front> | null, policy: Policy, revision: string): Front {
+  return {
+    ...current,
     tenet: {
       spec: 1,
       doc: inferredDoc(entry.path),
       level: docLevel(policy, entry.path),
       version: "0.1",
       owner: docOwner(policy, entry.path),
+      drafted_from: revision,
+      ...current?.tenet,
     },
-    sections: {},
+    sections: current?.sections ?? {},
   };
-  if (typeof front.tenet.drafted_from !== "string" || front.tenet.drafted_from === "") {
-    front.tenet.drafted_from = head;
-  }
-  return front;
 }
 
 function occurrences(entries: LadderEntry[], prefix: string): IdOccurrence[] {
@@ -476,6 +451,8 @@ async function applyBlessedCopyMoves(
   }
 }
 
+const intentLevels = new Map([["vision", "L0"], ["requirements", "L1"], ["design", "L2"], ["experience", "L2"], ["plan", "L2"]]);
+
 function setSections(front: Front, doc: ReturnType<typeof parseDoc>, cwd: string): void {
   const read = readSyncReader(cwd);
   for (const section of doc.sections) {
@@ -483,7 +460,9 @@ function setSections(front: Front, doc: ReturnType<typeof parseDoc>, cwd: string
     const anchors = metadata.anchors && typeof metadata.anchors === "object" && !Array.isArray(metadata.anchors)
       ? metadata.anchors as Record<string, unknown>
       : {};
+    const level = front.tenet.doc === "intent" ? intentLevels.get(section.slug) : undefined;
     const updated: Record<string, unknown> = {
+      ...(level ? { level } : {}),
       ...metadata,
       state: metadata.state ?? "draft",
       digest: section.digest,
@@ -497,7 +476,7 @@ function setSections(front: Front, doc: ReturnType<typeof parseDoc>, cwd: string
 function removeOrphans(front: Front, doc: ReturnType<typeof parseDoc>): void {
   const present = new Set(doc.sections.map((section) => section.slug));
   for (const slug of Object.keys(front.sections)) {
-    if (!present.has(slug)) delete front.sections[slug];
+    if (!slug.startsWith("x-") && !present.has(slug)) delete front.sections[slug];
   }
 }
 
@@ -506,7 +485,9 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
   const policy = await loadPolicy({ cwd });
   const prefix = policy.specs.id_prefix;
   const activePaths = await activeDocumentPaths(cwd, policy);
-  const discovered = await ladder({ cwd, files: activePaths.files });
+  const drafts = new Set(await draftOutputPaths(cwd, policy.paths.records));
+  const sourceRevision = drafts.size ? await inventoryRevision(cwd) : undefined;
+  const discovered = await ladder({ cwd, files: [...new Set([...activePaths.files, ...drafts])] });
   const known = new Map(discovered.map((entry) => [entry.path, entry]));
   const active = new Set(activePaths.files);
   for (const document of policy.specs.documents) {
@@ -522,6 +503,15 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
       });
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+  }
+  for (const filename of drafts) {
+    if (known.has(filename)) continue;
+    try {
+      const text = await readFile(await confine(filename, cwd), "utf8");
+      known.set(filename, { path: filename, level: docLevel(policy, filename), doc: parseDoc(filename, text, { prefix }) });
+    } catch (error) {
+      if (!["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? "")) throw error;
     }
   }
   const entries = [...known.values()].sort((left, right) => left.path.localeCompare(right.path));
@@ -543,7 +533,7 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
       }];
     })
   ));
-  const branchIds = await otherBranchOccurrences(cwd, prefix, activePaths.roots);
+  const branchIds = await otherBranchOccurrences(cwd, prefix, [...activePaths.roots, ...drafts]);
   let nextRequirement = Math.max(0, ...requirementIds.map((item) => idNumber(item.id)),
     ...branchIds.filter((item) => item.id.startsWith(`${prefix}-`)).map((item) => idNumber(item.id))) + 1;
   let nextVision = Math.max(0, ...visionIds.map((item) => idNumber(item.id)),
@@ -555,8 +545,13 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
   const copyMoves: BlessedCopyMove[] = [];
   for (const entry of entries) {
     const original = await readFile(path.join(cwd, ...entry.path.split("/")), "utf8");
-    const { front, body } = splitFront(original);
-    let text = front ? original : body;
+    const matter = readSpecMatter(original);
+    const { finding, repairable, legacyBlessing } = validateSpecMatter(entry.path, matter);
+    const assigned = drafts.has(entry.path);
+    // Keep mechanical edits available for pre-existing records with incomplete blessing metadata.
+    if (finding && !repairable && (assigned || !legacyBlessing)) throw finding;
+    const front = matter.data as Partial<Front> | null;
+    let text = original;
     text = assignMissingIds(
       text,
       parseDoc(entry.path, text, { prefix }),
@@ -584,10 +579,11 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
       );
     }
     parsedAfterIds = parseDoc(entry.path, text, { prefix });
-    const completeFront = frontFor(entry, front, policy, head || "working-tree");
+    const revision = (assigned ? sourceRevision : undefined) ?? (head || "working-tree");
+    const completeFront = frontFor(entry, front, policy, revision);
     const renamed = moveRenames(completeFront, parsedAfterIds.sections);
     copyMoves.push(...planBlessedCopyMoves(completeFront, renamed));
-    let bodyAfter = front ? splitFront(text).body : text;
+    let bodyAfter = readSpecMatter(text).body;
     const read = readSyncReader(cwd);
     for (const section of parsedAfterIds.sections) {
       const metadata = completeFront.sections[section.slug] ?? {};
@@ -599,7 +595,10 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
     const reparsed = parseDoc(entry.path, compose(completeFront, bodyAfter), { prefix });
     removeOrphans(completeFront, reparsed);
     setSections(completeFront, reparsed, cwd);
-    perFile.set(entry.path, compose(completeFront, bodyAfter));
+    const repaired = compose(completeFront, bodyAfter);
+    const checked = validateSpecMatter(entry.path, readSpecMatter(repaired));
+    if (checked.finding && (assigned || !checked.legacyBlessing)) throw checked.finding;
+    perFile.set(entry.path, repaired);
   }
 
   const byId = new Map<string, IdOccurrence[]>();

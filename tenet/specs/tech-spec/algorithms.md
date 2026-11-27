@@ -49,6 +49,7 @@ Fixtures: CRLF and LF give one digest; editing one section leaves the others unc
 
 **Blessing and flags.**
 - **`bless(section)`** requires:
+  - **Proposal · CP-0068 AC-A4.** valid specification front matter before the first question, using contracts §3
   - an interactive terminal (else `TN-BLESS-NO-TTY`)
   - no open conflict or question naming the section (`TN-BLESS-OPEN-CONFLICT`)
   - no `origin: inferred` statement left (`TN-BLESS-INFERRED`; each is edited, or adopted, which sets `origin: asked; adopted_by`)
@@ -97,7 +98,7 @@ Errors, at most one per citation, checked as syntax, then file, then range, head
 **Event reduction** (alpha.1).
 1. Load a work item's events and validate each.
 2. A duplicate ID with identical content is ignored; with different content it is `TN-EV-DUP`.
-3. An event whose `prev` names an unknown ID is held as an orphan (`TN-EV-ORPHAN`) and not reduced.
+3. An event whose `prev` names an unknown ID is held as an orphan (`TN-EV-ORPHAN`, a warning) and not reduced, with its descendants, until the predecessor arrives.
 4. Order topologically over `prev`, ties by ID.
 5. Two state events, neither an ancestor of the other, **conflict** when they are:
    - `work.moved` with different stations
@@ -107,7 +108,7 @@ Errors, at most one per citation, checked as syntax, then file, then range, head
    - `claim.stated` for the same claim ID
 
    Disjoint field changes merge, and note events never conflict.
-6. A `resolve` whose `prev` includes every conflicting head keeps the event it names. A later incompatible event starts a new conflict.
+6. A `resolve` whose `prev` includes every conflicting head keeps the event it names and becomes the head. A later incompatible event starts a new conflict. Reduction follows cause only and never rejects a `work.moved` for its edge; `tenet move` and the gate check legal edges.
 7. A cycle, a self-link or a predecessor from another work item is a structural finding: those events and their dependents are held, and the rest still reduces ([kernel §1](kernel.md#1-state-reduction-and-replay)).
 
 Fixtures: every arrival order of the same set gives one state; a resolution delivered twice applies once.
@@ -151,7 +152,7 @@ Each applicable claim's result is `satisfied`, `waived`, `failed`, `unsatisfied`
 - **Lead reason and next action:** the first matching row with the verdict's value. All matching reasons are listed.
 - Property: adding an applicable claim that is enforced and unsatisfied never yields a more permissive verdict or disposition.
 
-**Output:** `{claims: [{id, result, reason}], verdict, disposition: blocks|advises|records, lead, reasons, next: {who, action, command}, blocking?, evaluated_at, snapshot}`. Order `reasons` by row (`1..8`), then ASCII `claim_id`; `blocking` is `{row, rule, claim_id, reason}` (`claim_id: null` for rows 1–5) for the earliest enforcing match (L-0032); live `next.command` is `tenet resolve|decide|escalate|fix` or `null`. Author self-waiver sets claim reason `TN-GATE-SELF-WAIVE` and `verdict: "refuse"`.
+**Output:** `{claims: [{id, result, reason}], verdict, disposition: blocks|advises|records, lead, reasons, next: {who, action, command}, blocking?, evaluated_at, snapshot}`. Order `reasons` by row (`1..8`), then ASCII `claim_id`; `blocking` is `{row, rule, claim_id, reason}` (`claim_id: null` for rows 1–5; `rule: "always-enforce"` for rows 1–4, which no rule produces, L-0043 OD-9) for the earliest enforcing match (L-0032); live `next.command` is `tenet resolve|decide|escalate|fix` or `null`. Author self-waiver sets claim reason `TN-GATE-SELF-WAIVE` and `verdict: "refuse"`.
 
 Fixtures: one per row; an advisory review (row 7) beside an enforced failed claim (row 8): verdict refuse, disposition blocks; an advisory failure beside an enforced pass; a stop threshold with all claims passing.
 

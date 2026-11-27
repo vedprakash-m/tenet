@@ -146,6 +146,16 @@ jobs:
 
 Both read `tenet.lock` from target (`base.sha`, else `event.before` or default-branch `HEAD`), install with `npm install --no-save --ignore-scripts` (for `x-integrity-source: "local"`, via registry, workspace `node_modules`, or repo/release `.tgz`), verify tarball `sha512` (registry) or installed-file `sha512` (local), and mark local locks advisory (`verify`/`assure` refuse).
 
+**Forge events (alpha.1; proposal · CP-0067, L-0043 OD-8).** One table for every forge event Tenet records. Each row runs without checking out or executing pull-request code, and CP-0019 must observe each row working in the sandbox repository before release.
+
+| Event | Trigger | Permissions | Repeat-delivery key | When missing or degraded |
+|---|---|---|---|---|
+| Ready for review, converted to draft, closed | `pull_request_target: {types: [ready_for_review, converted_to_draft, closed]}` in `tenet.yml` | the recorder's | `{repository, pr, action, head_sha, at}` | no state change; the board shows the observation as missing |
+| Native review (submitted, edited, dismissed) | `pull_request_review` in a no-secret capture workflow; the recorder reads it through `workflow_run` | capture: `contents: read`; recorder: its own | `{repository, review_id, submitted_at, content_digest}` | an observation only; no decision |
+| `/tenet` reply comment (created, edited) | `issue_comment` in the same capture workflow, then `workflow_run` | as above | `{repository, comment_id, updated_at, content_digest}` | an observation only; no decision |
+
+An exact repeat delivery is a no-op. A forge event moves a work item only to a destination the selected pack defines as legal for that event; otherwise it is kept as an observation and changes nothing. Only `work.created` starts a work item: a forge event for an unknown work item is an observation.
+
 **`verify --record` steps.**
 1. **Find the change.**
    - `workflow_run`: use `workflow_run.pull_requests`; else paginate open PRs matching `head.sha` (covers fork PRs and shared heads); none means a default-branch push.
@@ -223,6 +233,10 @@ Nothing silently passes: every degraded result is labelled on the card and the b
 In [onboarding.md §4](onboarding.md#4-release-procedure), moved under the rollover rule.
 
 ## 10. Outcomes
+
+**Proposal · CP-0068 AC-B1.** When the base commit has no `tenet.yaml`, the proof card exempts only changed protected paths listed in the tested commit’s version 1 `.tenet/manifest.json` under `created`, `blocks` or `keys`. It reports one informational note for those paths. “First-time setup: protected Tenet files are expected in this pull request.” All other protected changes use the usual rule. Once the base has `tenet.yaml`, the usual rule applies to every protected path.
+
+**Proposal · CP-0068 AC-B2.** `skip-added` considers only conventional test paths and any extra file globs in the target check definitions’ `x-test-files` lists. Process exits in scripts do not count as test skips (ALG-09).
 
 One table decides what every situation concludes. "Advisory" means the item, rule or card says so and nothing blocks.
 

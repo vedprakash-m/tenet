@@ -4,7 +4,7 @@ version: 1
 ---
 # CP-0068 · 0.2.0 fixes from the second dogfood
 
-> Scope proposed on 2026-11-26. These fixes ship in 0.2.0, and there is no 0.1.2 ([L-0042](../../ledger/L-0042-second-dogfood-rolls-into-0.2.0.md)). Scope approved by the Owner on 2026-11-26. AC-B1 is still a specification proposal, and AC-D3 is still an open Owner decision.
+> Scope proposed on 2026-11-26. These fixes ship in 0.2.0, and there is no 0.1.2 ([L-0042](../../ledger/L-0042-second-dogfood-rolls-into-0.2.0.md)). Scope approved by the Owner on 2026-11-26. The Owner decided AC-B1 and AC-D3 as OD-13 A and OD-14 B ([L-0043](../../ledger/L-0043-owner-decisions-0.2.0.md)). AC-B1's spec text is still a proposal for blessing.
 
 ## Why
 
@@ -32,7 +32,7 @@ A medium model ran 0.1.1 on a private existing project as a new user, blind to t
 
 ### B · Checks that would become false blocks in 0.2.0 (R2-15, R2-18, R2-09)
 
-- **AC-B1:** **First-time setup isn't flagged.** When the base commit has no Tenet setup (no `tenet.yaml`), the pull request that adds it isn't flagged for changing Tenet's own protected files. The card shows one note instead: *"First-time setup: protected Tenet files are expected in this pull request."* Every later pull request is checked as today.
+- **AC-B1:** **First-time setup isn't flagged.** When the base commit has no Tenet setup (no `tenet.yaml`), the pull request that adds it isn't flagged for changing Tenet's own protected files. The card shows one note instead: *"First-time setup: protected Tenet files are expected in this pull request."* The exemption covers only paths that `init`'s manifest lists; any other protected path is still flagged. Every later pull request is checked as today.
   - This is a **specification proposal**: it changes what `protect` means for the first pull request.
 - **AC-B2:** **"Skip added" counts only real test skips.** Weakening detection reports `skip-added` only for skip constructs inside test files, as classified by the configured checks or by conventional test paths.
   - A process exit in code that isn't a test, such as `sys.exit(1)` or `process.exit(1)`, is never a skip.
@@ -52,7 +52,7 @@ A medium model ran 0.1.1 on a private existing project as a new user, blind to t
 
 - **AC-D1:** **Windows checksum command.** README and Getting started show a PowerShell line next to `sha256sum -c SHA256SUMS`: `Get-FileHash` comparing against `SHA256SUMS`.
 - **AC-D2:** **Interview questions are shipped.** The skill, or the assignment, includes the interview questions it refers to for each `project_kind`, at most 10 per kind, plus the generic set.
-- **AC-D3 (needs the Owner):** **Archive folders.** Should conventional archive folders (`.archive/`, `archive/`, `old/`) be excluded from onboarding by default, still listed under "skipped", or only hinted, as today?
+- **AC-D3:** **Archive folders are excluded by default** (OD-14 B). Onboarding excludes `.archive/`, `archive/` and `old/` at any depth, lists them under "skipped" with reason `"archive"`, and prints how to include them again.
 
 ### E · Round 1 items deferred "for 0.1.2" (L-0041, now 0.2.0)
 
@@ -64,7 +64,8 @@ These are written from this definition, before the builder starts or apart from 
 
 - `s17-draft-without-front-matter`: draft, `check`, `fix`, card, bless (AC-A1 to A5);
 - `s18-invented-front-matter-shape`: a list `sections` and a string `tenet`; every command gives the same `TN-SCHEMA` (AC-A1, A4);
-- `s19-first-setup-and-non-test-exit`: AC-B1, B2.
+- `s19-non-test-exit-not-skip`: AC-B2;
+- `s20-first-setup-protected-files`: AC-B1.
 
 ## Done when
 

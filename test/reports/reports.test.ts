@@ -571,3 +571,30 @@ for (const [name, fixture] of Object.entries(conformance<Alg09Case>("alg-09"))) 
     assertProjection(actual, fixture.expected);
   });
 }
+
+test("[AC-B2] [R2-18] only test skips count, including configured test paths", async (t) => {
+  const repo = await tmpRepo("actual-skips");
+  t.after(repo.cleanup);
+  await repo.write("README.md", "# Queue\n");
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "base"]);
+  const base = repo.git(["rev-parse", "HEAD"]).trim();
+  const changes = {
+    "scripts/validate.py": "if bad_input:\n    sys.exit(1)\nif no_queue:\n    sys.exit(1)\n",
+    "scripts/validate.js": "if (!ready) process.exit(1);\n",
+    "scripts/validate.go": 'func Validate() { timer.Skip("tick") }\n',
+    "test_queue.py": 'def test_queue():\n    pytest.skip("outside scope")\n',
+    "queue.test.js": 'test.skip("queue", () => {});\ntest("error", () => process.exit(1));\n',
+    "queue_test.go": 'func TestQueue(t *testing.T) {\n    t.Skip("offline")\n}\n',
+    "checks/queue.js": 'xit("configured queue", () => {});\n',
+  };
+  for (const [file, text] of Object.entries(changes)) await repo.write(file, text);
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "add scripts and tests"]);
+  const actual = await reports.weakening(base, "HEAD", { cwd: repo.path, test_files: [
+    "**/test_*.py", "**/*.test.js", "**/*_test.go", "checks/*.js",
+  ] });
+  assert.deepEqual(actual.by.map(({ file }) => file).sort(), [
+    "checks/queue.js", "queue.test.js", "queue_test.go", "test_queue.py",
+  ]);
+});

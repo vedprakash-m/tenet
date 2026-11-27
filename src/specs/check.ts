@@ -1,5 +1,6 @@
 import { readFileSync, type Dirent } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
+import { confine } from "../core/fs.js";
 import path from "node:path";
 import { parseDocument } from "yaml";
 import { jcs } from "../core/hash.js";
@@ -12,8 +13,9 @@ import type { Policy } from "../policy/types.js";
 import type { Finding } from "../types/generated.js";
 import { citationParts } from "./anchors.js";
 import { resolveCitations } from "./citations.js";
+import { draftOutputPaths, validateSpecMatter } from "./front-matter.js";
 import { ladder, type LadderEntry } from "./ladder.js";
-import { parseDoc, itemLine, sectionLocation, specificationBody, type ParsedDoc, type Requirement, type SpecSection } from "./parse.js";
+import { parseDoc, itemLine, sectionLocation, specMatter, specificationBody, type ParsedDoc, type Requirement, type SpecSection } from "./parse.js";
 import { sectionDigest } from "./sections.js";
 
 export type CheckOptions = {
@@ -89,7 +91,7 @@ function parseYaml(text: string): unknown {
   return document.toJS({ maxAliasCount: 100 });
 }
 
-function schemaFindings(pathname: string, schema: "tenet-yaml" | "spec-front-matter" | "pack" | "lock", value: unknown): Finding[] {
+function schemaFindings(pathname: string, schema: "tenet-yaml" | "pack" | "lock", value: unknown): Finding[] {
   const checked = validate(schema, value);
   if (checked.ok) return [];
   return checked.errors.map((error) =>
@@ -208,6 +210,7 @@ function specificationItems(entry: LadderEntry): Array<{ id: string; line: numbe
 
 function localProblems(entry: LadderEntry): Finding[] {
   return entry.doc.problems.flatMap((finding) => {
+    if (finding.code === "TN-SPEC-NO-FRONT" || finding.code === "TN-SCHEMA") return [];
     if (finding.code !== "TN-SPEC-DUP-ID") return [finding];
     const id = /^Duplicate specification ID (.+)\.$/.exec(finding.message)?.[1];
     if (!id || finding.line === null) return [];
@@ -330,7 +333,8 @@ async function checkSections(
   };
   for (const entry of entries) {
     findings.push(...localProblems(entry));
-    if (entry.doc.front) findings.push(...schemaFindings(entry.path, "spec-front-matter", entry.doc.front));
+    const { finding } = validateSpecMatter(entry.path, specMatter(entry.doc));
+    if (finding) findings.push(finding);
     for (const section of entry.doc.sections) {
       if (section.state !== "blessed") continue;
       const raw = sectionRecord(entry.doc.front, section.slug);
@@ -466,6 +470,7 @@ async function configuredEntries(
   cwd: string,
   policy: Policy,
   filenames: string[],
+  draftPaths: string[],
 ): Promise<LadderEntry[]> {
   const selected = new Set(filenames.map(portable));
   const entries = new Map(
@@ -482,6 +487,11 @@ async function configuredEntries(
       level: document.level,
       doc: parseDoc(filename, text, { prefix: policy.specs.id_prefix }),
     });
+  }
+  for (const filename of draftPaths) {
+    if (!selected.has(filename) || entries.has(filename)) continue;
+    const text = await readOptional(await confine(filename, cwd));
+    if (text !== null) entries.set(filename, { path: filename, level: null, doc: parseDoc(filename, text, { prefix: policy.specs.id_prefix }) });
   }
   const rank = (level: string | null) => level && /^L\d$/.test(level) ? Number(level.slice(1)) : 5;
   return [...entries.values()].sort((left, right) =>
@@ -664,10 +674,11 @@ export async function check(options: CheckOptions = {}): Promise<CheckResult> {
   }
   const policy = await loadPolicy({ cwd });
   const activePaths = await activeDocumentPaths(cwd, policy, hasConfiguredLadder);
+  const draftPaths = await draftOutputPaths(cwd, policy.paths.records);
   const selectedPaths = scoped
     ? (options.paths ?? []).map(portable)
-    : activePaths.files;
-  const allEntries = await configuredEntries(cwd, policy, selectedPaths);
+    : [...new Set([...activePaths.files, ...draftPaths])];
+  const allEntries = await configuredEntries(cwd, policy, selectedPaths, draftPaths);
   const entries = selectedEntries(allEntries, options.paths);
   const findings: Finding[] = [...policy.findings];
   const sectionFindings = await checkSections(entries, cwd);

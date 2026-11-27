@@ -229,8 +229,8 @@ export const messageTemplates = {
     "fix": "Run `tenet fix` or prefix the line with an unused ID."
   },
   "TN-SPEC-NO-FRONT": {
-    "message": "Specification file has no valid YAML front matter.",
-    "fix": "Add YAML front matter (`---`) with `tenet` and `sections`, or run `tenet fix`."
+    "message": "Specification file has no YAML front matter.",
+    "fix": "Run `tenet fix` to add the front matter."
   },
   "TN-SPEC-REQ-META": {
     "message": "Requirement metadata is malformed: check closing braces, allowed keys, and origin.",
@@ -289,7 +289,7 @@ export function message(code: string, vars: MessageVars = {}): DiagnosticText {
 export const onboardText = {
   description: "Inspect your project and prepare a specification drafting assignment.",
   read: "Will read: code, configuration, tests, docs, CI, owners",
-  skip: "Will skip: .env*, credentials, vendored, generated, excluded, binary, and oversized files",
+  skip: "Will skip: .env*, credentials, archive folders, vendored, generated, excluded, binary, and oversized files",
   drafting: "Drafting sends project content to your agent and its model provider.",
   readCounts: (revision: string, read: number, skipped: number) => `Read ${read} files at ${revision} and skipped ${skipped}.`,
   firstFindings: (findings: string) => `First findings: ${findings}`,
