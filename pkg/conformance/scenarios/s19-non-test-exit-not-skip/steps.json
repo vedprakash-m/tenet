@@ -4,7 +4,6 @@
   "spec_refs": [
     "tenet/packets/CP-0068-dogfood-fixes-0.2.0/definition.md#b--checks-that-would-become-false-blocks-in-020-r2-15-r2-18-r2-09"
   ],
-  "pending": "Waiting for CP-0068 Group B (restrict skip-added detection to test files)",
   "steps": [
     {
       "id": "01-init",

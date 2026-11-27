@@ -5,7 +5,6 @@
     "tenet/packets/CP-0068-dogfood-fixes-0.2.0/definition.md#b--checks-that-would-become-false-blocks-in-020-r2-15-r2-18-r2-09",
     "tenet/ledger/L-0043-owner-decisions-0.2.0.md#od-13--first-time-setup-exemptions-ac-b1"
   ],
-  "pending": "Waiting for CP-0068 Group B (first-time setup exemption for init manifest paths when base lacks tenet.yaml)",
   "steps": [
     {
       "id": "01-branch-first-setup",

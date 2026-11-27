@@ -4,7 +4,6 @@
   "spec_refs": [
     "tenet/packets/CP-0068-dogfood-fixes-0.2.0/definition.md#a--specification-front-matter-is-checked-and-written-in-one-place-r2-13-r2-16"
   ],
-  "pending": "Waiting for CP-0068 Group A (single front-matter validator across check, fix, onboard --card, and bless)",
   "steps": [
     {
       "id": "01-init",
