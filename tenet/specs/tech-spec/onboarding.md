@@ -11,7 +11,7 @@ sections:
 
 > Level L2 · Version 0.12 · Part of [tech-spec.md](../tech-spec.md) · Status: **draft, awaiting the Owner's approval** · Budget: 6,000 tokens · Split from `tech-spec.md` §6.5 and §12 under the rollover rule (L-0022) · Previous version: `archive/specs/tech-spec/onboarding.md@0.11.md`
 
-**Context card.** Setup, drafting, blessing, upgrade and removal. Implements PRD R-223 and tooling R-020, R-021, R-025, R-051, R-221.
+**Context card.** Setup, drafting, blessing, upgrade and removal. Implements PRD R-223 and tooling R-020, R-021, R-025, R-051, R-221; experience: UX Parts 0, 1 and 4. Formats: [contracts.md](contracts.md) §1–§4 and §10; CI: [ci.md](ci.md); agents: [agents.md](agents.md); algorithms ALG-02, ALG-03, ALG-04, ALG-11, ALG-12, ALG-13.
 
 ## 1. Onboarding and blessing (R-223)
 
@@ -21,7 +21,7 @@ sections:
 - that drafting sends content to the user's own agent and its model provider
 
 `--inventory-only` writes `.tenet/onboard/inventory.json` and `.tenet/onboard/assignment.json` from `HEAD` (`inventory: ".tenet/onboard/inventory.json"`, contracts §4, atomic if un-ignored), flags uncommitted code (`dirty_warning: true`) and reads working `tenet.yaml`. Human output: `Will read: …`, `Will skip: …`, `Drafting sends project content to your agent and its model provider.`, `Read <read_count> files at <revision> and skipped <skipped_count>.`, optional `Working tree has uncommitted changes.`, `First findings: …`, and `Drafting assignment: .tenet/onboard/assignment.json`. Output is deterministic over `(HEAD, working tenet.yaml, .tenet/reports/*)`.
-- **Modules:** folders with a manifest (`package.json`, `pyproject.toml`, `setup.py`, `setup.cfg`, `go.mod`, `Cargo.toml`, `pom.xml`, `build.gradle`, `build.gradle.kts`, `Gemfile`, `composer.json`, `Package.swift`), otherwise top-level source folders. Languages: `ts/tsx typescript`, `js/jsx/mjs/cjs javascript`, `py python`, `go go`, `rs rust`, `java java`, `kt kotlin`, `cs csharp`, `rb ruby`, `php php`, `swift swift`, `c/h c`, `cc/cpp/hpp cpp`, `scala scala`.
+- **Modules:** folders with a manifest (`package.json`, `pyproject.toml`, `setup.py`, `setup.cfg`, `go.mod`, `Cargo.toml`, `pom.xml`, `build.gradle`, `build.gradle.kts`, `Gemfile`, `composer.json`, `Package.swift`), otherwise top-level source folders. Languages: `ts/tsx → typescript`, `js/jsx/mjs/cjs → javascript`, `py → python`, `go → go`, `rs → rust`, `java → java`, `kt → kotlin`, `cs → csharp`, `rb → ruby`, `php → php`, `swift → swift`, `c/h → c`, `cc/cpp/hpp → cpp`, `scala → scala`.
 - **Project kind (first match wins):**
   - `cli`: a `bin` entry in `package.json`, or a `cmd/` folder
   - `service`: a server framework dependency or a `Dockerfile*` exposing a port
@@ -29,7 +29,7 @@ sections:
   - `data`: `dbt_project.yml`, `dags/`, or notebooks (`*.ipynb`)
   - `infrastructure`: Terraform (`*.tf`), `Chart.yaml`, or Kubernetes manifests (`apiVersion:` + `kind:`)
   - `application`: otherwise
-- **Tests:** files matching ALG-09; `inventory.tests[]` keeps `{path, runner, cases}` (`scanTests`; names stay in test files; `.py pytest`, `.go go`, `.java junit`, `.rs cargo`, JS/TS imports/config: `node:test`/`vitest`/`jest`).
+- **Tests:** files matching ALG-09; `inventory.tests[]` keeps `{path, runner, cases}` (`scanTests`; names stay in test files; `.py → pytest`, `.go → go`, `.java → junit`, `.rs → cargo`, JS/TS imports/config: `node:test`/`vitest`/`jest`).
 - **Docs:** first `# ` heading (fallback `basename(path)`), `## ` slugs, `last_changed` (fallback `revision`).
 - **Instruction files** (`instructions`): `.github/copilot-instructions.md`, `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/**`, `.windsurfrules`, and `AGENTS.md` outside Tenet's block. Drafter turns project rules into cited `scope: global` requirements and working rules into a design section (agents.md §2); blessed Tenet blocks point to blessed text.
 
@@ -77,7 +77,7 @@ Conflict resolutions use `resolution:` on `CF` items (`Resolution:` accepted on 
 - the pull-request template block (GitHub) and the `.gitignore` and `.gitattributes` blocks
 - the host skills and MCP entries selected below; the plan lists each host path with its reason
 
-`.tenet/manifest.json`: `{schema_version, version, created: [{path, sha256}], blocks: [{path, kind: markdown|yaml, marker, previous_block?, prefix_sep?}], keys: [{path, pointer, previous, installed, previous_raw?}]}` (repo-relative only). Windows outside-repo edits use git-ignored `.tenet/manifest.local.json` (`{schema_version: 1, profile_roots, keys: [{host, path, pointer, previous, installed, previous_raw?}]}`). `.tenet/manifest.pending.json` holds the full plan (ALG-12). Markdown markers: `<!-- tenet:begin v<version> -->` … `<!-- tenet:end -->`; YAML markers: `# tenet:begin` … `# tenet:end`. Owned JSON keys: `/mcpServers/tenet`, `/servers/tenet` in `.vscode/mcp.json`; preserve previous value and optional `previous_raw`.
+`.tenet/manifest.json`: `{schema_version, version, created: [{path, sha256}], blocks: [{path, kind: markdown|yaml, marker, previous_block?, prefix_sep?}], keys: [{path, pointer, previous, installed, previous_raw?}]}` (repo-relative only). Windows outside-repo edits go only in git-ignored `.tenet/manifest.local.json` (`{schema_version: 1, profile_roots, keys: [{host, path, pointer, previous, installed, previous_raw?}]}`). `.tenet/manifest.pending.json` holds the full plan (ALG-12). Markdown markers: `<!-- tenet:begin v<version> -->` … `<!-- tenet:end -->`; YAML markers: `# tenet:begin` … `# tenet:end`. Owned JSON keys: `/mcpServers/tenet`, `/servers/tenet` in `.vscode/mcp.json`; preserve previous value and optional `previous_raw`.
 
 | Host marker | Writes |
 |---|---|
@@ -117,7 +117,7 @@ It prints findings and offers onboarding (empty repo: purpose and kind; `--yes`:
 ## 3. Onboarding measures (ALG-13)
 
 - **A statement** is one requirement line, or one sentence in a vision, design, experience or plan section.
-- **Kept:** whitespace-collapsed, `{…}`-removed text identical in draft/blessed copy. Other text is substantive edit. Unchanged adoptions count in `kept` and `adopted`; deleted drafts count in `edited` (`kept + edited === drafted`). `bless` compares with `drafted_at_rev`, the commit holding the agent's draft, then writes `<records>/blessed/log.jsonl` (**proposal · CP-0066 AB-A5:** `minutes` tracks section review). Missing or unreachable `drafted_at_rev` after squash merge leaves all five `statements` counts `null`.
+- **Kept:** whitespace-collapsed, `{…}`-removed text identical in draft/blessed copy. Other text is substantive edit. Unchanged adoptions count in `kept` and `adopted`; deleted drafts count in `edited` (`kept + edited === drafted`). `bless` compares each finished section with `drafted_at_rev`, the commit holding the agent's draft, then writes `<records>/blessed/log.jsonl` (**proposal · CP-0066 AB-A5:** `minutes` tracks section review). Missing or unreachable `drafted_at_rev` after squash merge leaves all five `statements` counts `null`.
 - **Denominator:** statements in blessed or rejected sections (`defer` writes a log row but stays outside `ALG-13`).
 - **Recall:** human-scored answer-key obligations matched by a kept or edited statement.
 - **Invented:** statements found in neither sources nor answer key.

@@ -37,7 +37,7 @@ Then run `tenet onboard`, follow the draft-specs skill, ask me the questions onl
 and open one pull request named "Set up Tenet" with the setup files and the drafted specifications.
 ```
 
-Commands name releases, never branches. Releases list `SHA256SUMS`; npm packages carry provenance. `tenet doctor` checks version and files. Tenet does not install by piping a script into a shell.
+Commands always name releases, never branches. Releases list `SHA256SUMS`; npm packages carry provenance. `tenet doctor` checks version and files. Tenet does not install by piping a script into a shell.
 
 ## Part 1: start here
 
@@ -308,4 +308,4 @@ Context always starts with global rules. It then uses named IDs and path matches
 | enforced/detected/advisory | secure/guaranteed/safe |
 | waiver (shortfall with expiry) | exception/bypass |
 | promise/health/campaign/lease | legacy requirement/quality score/batch/lock |
-| standard/pack; factory for running system | framework/methodology |
+| standard/pack; factory only for a running system | framework/methodology |
