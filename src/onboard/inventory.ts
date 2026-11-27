@@ -9,7 +9,7 @@ import type { RepositorySnapshot, TrackedFile } from "./preflight.js";
 export const views: Assignment["views"] = ["vision", "requirements", "design", "experience", "plan"];
 export type Layout = Inventory["layout"];
 type Kind = Inventory["sources"]["files"][number]["kind"];
-type Skip = "env" | "credentials" | "vendored" | "generated" | "excluded" | "binary" | "oversize";
+type Skip = "env" | "credentials" | "archive" | "vendored" | "generated" | "excluded" | "binary" | "oversize";
 type Owner = Inventory["owners"][number];
 
 export type InventorySource = Inventory["sources"]["files"][number] & { text: string };
@@ -44,10 +44,12 @@ function language(file: string): string | undefined {
   return Object.hasOwn(languages, extension) ? languages[extension] : undefined;
 }
 
-function earlySkip(file: string): Skip | undefined {
+function earlySkip(file: string, includeArchives: boolean): Skip | undefined {
   const base = path.posix.basename(file);
   if (/^\.env(?:\.|$)/.test(base)) return "env";
   if (/\.(?:pem|key)$|^id_|credentials|secret/i.test(base)) return "credentials";
+  if (!includeArchives && file.split("/").some((part) =>
+    ["archive", ".archive", "old"].includes(part.toLowerCase()))) return "archive";
   if (/(?:^|\/)(?:vendor|node_modules|dist|build)\//.test(file)) return "vendored";
   return undefined;
 }
@@ -105,17 +107,23 @@ function kindFor(file: string, text: string, installed: boolean): Kind {
 
 async function collect(snapshot: RepositorySnapshot, policy: TenetYaml): Promise<{ files: InventorySource[]; skipped: Inventory["sources"]["skipped"] }> {
   const tracked = snapshot.files.slice().sort((left, right) => ascii(left.path, right.path));
+  const excludePatterns = policy.onboard?.exclude ?? [];
+  const includedArchives = excludePatterns
+    .filter((pattern) => pattern.startsWith("!"))
+    .map((pattern) => picomatch(pattern.slice(1), { dot: true }));
   const early = new Map<string, Skip>();
   const eligible: TrackedFile[] = [];
   for (const file of tracked) {
-    const reason = earlySkip(file.path);
+    const reason = earlySkip(file.path, includedArchives.some((match) => match(file.path)));
     if (reason) early.set(file.path, reason);
     else if (file.regular) eligible.push(file);
   }
   const { blobs, generatedHeaders } = await snapshot.read(eligible, byteLimit);
   const attrs = new Map([...blobs].filter(([name]) => path.posix.basename(name) === ".gitattributes"));
   const rules = generatedRules(attrs);
-  const excluded = (policy.onboard?.exclude ?? []).map((pattern) => picomatch(pattern, { dot: true }));
+  const excluded = excludePatterns
+    .filter((pattern) => !pattern.startsWith("!"))
+    .map((pattern) => picomatch(pattern, { dot: true }));
   const skipped: Inventory["sources"]["skipped"] = [];
   const retained: TrackedFile[] = [];
   for (const file of tracked) {

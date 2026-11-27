@@ -24,6 +24,12 @@ sha256sum -c SHA256SUMS
 npm install --global ./vedprakash-m-tenet-<version>.tgz
 ~~~
 
+On Windows PowerShell, verify the same tarball with:
+
+~~~powershell
+$file = "vedprakash-m-tenet-<version>.tgz"; $expected = (Get-Content SHA256SUMS | Where-Object { $_ -match "  $([regex]::Escape($file))$" }).Split()[0]; if ((Get-FileHash $file -Algorithm SHA256).Hash -ne $expected) { throw "Checksum mismatch" }
+~~~
+
 You can use the release page in a browser instead of `gh release download`. npm dependencies in the tarball still come from your configured registry or mirror.
 
 After the global install works, use the offline step:
@@ -44,6 +50,8 @@ tenet onboard --inventory-only
 ~~~
 
 Read the setup plan and answer the prompts before confirming. If no test runner is detected, Tenet asks `What command runs your tests? (blank to skip)` (with `--yes`, no test check is written). Tenet may ask about adding a report to existing CI or changing local agent settings. Use the local settings option only if you want to authorize those writes. The inventory and assignment are written to `.tenet/onboard/`. Read the inventory before giving source material to your agent.
+
+Onboarding skips `.archive/`, `archive/` and `old/` folders at any depth and lists them as `archive` in the inventory. Its output tells you how to add a negated pattern to `onboard.exclude` when you want those folders included.
 
 ## Configure your tests
 

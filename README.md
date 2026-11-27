@@ -121,6 +121,12 @@ sha256sum -c SHA256SUMS
 npm install --global ./vedprakash-m-tenet-<version>.tgz
 ~~~
 
+On Windows PowerShell, verify the same tarball with:
+
+~~~powershell
+$file = "vedprakash-m-tenet-<version>.tgz"; $expected = (Get-Content SHA256SUMS | Where-Object { $_ -match "  $([regex]::Escape($file))$" }).Split()[0]; if ((Get-FileHash $file -Algorithm SHA256).Hash -ne $expected) { throw "Checksum mismatch" }
+~~~
+
 You can also download both files from the GitHub release page. The tarball includes Tenet, but npm dependencies still come from the registry or mirror configured for npm.
 
 Once Tenet is installed, use `--offline` after the release-tarball install if network lookups are unavailable:

@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
+import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -61,12 +64,34 @@ test("[AB-B4] [F-12] skills use installed names and stay within their 2,000-toke
   }
 });
 
-test("[AB-D1] [F-01] user docs include release-tarball installation and SHA256SUMS", async () => {
+test("[AC-D1] [R2-02] [AB-D1] [F-01] release docs include a working Windows checksum command", async (t) => {
   const readme = await readFile(path.join(root, "README.md"), "utf8");
   const gettingStarted = await readFile(path.join(root, "docs", "getting-started.md"), "utf8");
+  const powershellCommands: string[] = [];
   for (const text of [readme, gettingStarted]) {
     assert.match(text, /release tarball/i);
     assert.match(text, /SHA256SUMS/);
+    const command = /^~~~powershell\r?\n([^\r\n]+)\r?\n~~~$/m.exec(text)?.[1];
+    assert.ok(command?.includes("Get-FileHash"));
+    assert.ok(command.includes("Get-Content SHA256SUMS"));
+    powershellCommands.push(command);
+  }
+  assert.equal(powershellCommands[0], powershellCommands[1]);
+  if (process.platform === "win32") {
+    const cwd = await mkdtemp(path.join(tmpdir(), "tenet-checksum-"));
+    t.after(() => rm(cwd, { recursive: true, force: true }));
+    const tarball = "vedprakash-m-tenet-0.0.0.tgz";
+    const bytes = Buffer.from("synthetic release\n", "utf8");
+    await writeFile(path.join(cwd, tarball), bytes);
+    const digest = createHash("sha256").update(bytes).digest("hex");
+    await writeFile(path.join(cwd, "SHA256SUMS"), `${digest}  ${tarball}\n`);
+    const command = powershellCommands[0]?.replaceAll("<version>", "0.0.0") ?? "";
+    const child = spawnSync(
+      "powershell.exe",
+      ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command],
+      { cwd, encoding: "utf8", shell: false, windowsHide: true },
+    );
+    assert.equal(child.status, 0, child.stderr || child.stdout);
   }
 });
 
