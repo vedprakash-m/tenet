@@ -4,7 +4,7 @@ version: 1
 ---
 # CP-0068 · 0.2.0 fixes from the second dogfood
 
-> Scope proposed on 2026-11-26. These fixes ship in 0.2.0, and there is no 0.1.2 ([L-0042](../../ledger/L-0042-second-dogfood-rolls-into-0.2.0.md)). **Groups and acceptance items are proposals until the Owner approves them.** Moving the packet to `build` records that approval.
+> Scope proposed on 2026-11-26. These fixes ship in 0.2.0, and there is no 0.1.2 ([L-0042](../../ledger/L-0042-second-dogfood-rolls-into-0.2.0.md)). Scope approved by the Owner on 2026-11-26. AC-B1 is still a specification proposal, and AC-D3 is still an open Owner decision.
 
 ## Why
 

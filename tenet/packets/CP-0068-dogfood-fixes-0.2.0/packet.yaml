@@ -9,7 +9,7 @@ serves: [V-P5, V-M8]
 implements: [R-223]
 milestone: M1
 source: "second dogfood of 0.1.1 on a private existing project, 2026-11-26 (entries R2-01 to R2-21; L-0042)"
-stage: triage
+stage: build
 status: ready
 blocked_by: []
 unblocks: []
@@ -22,3 +22,4 @@ endpoint: null
 history:
   - {at: 2026-11-26T22:00Z, to: intake, by: Ved, reason: "second dogfood of 0.1.1 logged 2 blockers and 6 major problems; scope proposed by the coordinator"}
   - {at: 2026-11-26T22:00Z, from: intake, to: triage, by: Ved, reason: "Owner chose to ship these fixes in 0.2.0, not a 0.1.2 (L-0042)"}
+  - {at: 2026-11-26T23:00Z, from: triage, to: build, by: Ved, reason: "Owner approved the CP-0068 scope as proposed; AC-B1 stays a spec proposal and AC-D3 an open Owner decision"}
