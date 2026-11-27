@@ -77,7 +77,7 @@ Each skill is a `SKILL.md` in the open agent-skills format, under 2,000 tokens, 
 
 **`tenet-draft-specs`** (onboarding):
 1. Run `tenet onboard` and read `.tenet/onboard/assignment.json`.
-2. Ask the Owner the interview questions for the project's kind (at most 10, grouped). Record the answers in `.tenet/onboard/interview.json`.
+2. Read the project-kind and generic interview questions from `assignment.questions` (at most 10 in each set, grouped without repetition, and no more than `question_limit` asked). Record the answers in `.tenet/onboard/interview.json`.
 3. For each drafting unit in the assignment, in order:
    - read its slice of the inventory and its files
    - draft its sections into the output paths (onboarding §1); write nowhere else

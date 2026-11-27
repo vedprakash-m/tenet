@@ -10,7 +10,7 @@ Follow these steps in order when onboarding a repository to Tenet:
    Run `tenet onboard` and read `.tenet/onboard/assignment.json`.
 
 2. **Interview the Owner.**
-   Ask the Owner the interview questions for `assignment.project_kind` (at most 10 questions, grouped cleanly; if `project_kind` is unlisted, ask generic questions covering purpose, primary users, never-dos and priorities). Record every answer in `.tenet/onboard/interview.json` under `{questions: [{id, text, answer, answered_at}]}` with UTC timestamps.
+   Read `assignment.questions.project_kind` and `assignment.questions.generic`. Ask the matching project-kind questions and the generic questions (each set has at most 10; group them cleanly without repeating the same question). Record every answer in `.tenet/onboard/interview.json` under `{questions: [{id, text, answer, answered_at}]}` with UTC timestamps.
 
 3. **Draft each unit in order.**
    For each drafting unit in `.tenet/onboard/assignment.json`, in order (or, in an empty repository with no source files or docs, draft purely from `asked` interview answers and `"undecided, needs the Owner"` without inventing `observed` or `documented` statements):

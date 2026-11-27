@@ -165,9 +165,9 @@ function taggingLine(runner: RunnerFact | null): string {
   }
 }
 
-function documentsLine(oneFile: boolean): string {
-  if (oneFile) return "tenet/intent.md (L1)";
+function documentsLine(): string {
   return [
+    "tenet/intent.md (L1) for one-file projects",
     "tenet/vision.md (L0)",
     "tenet/specs/prd.md (L1)",
     "tenet/specs/tech-spec.md (L2)",
@@ -190,13 +190,12 @@ async function agentsBlock(
   kitPath: string,
   version: string,
   runner: RunnerFact | null,
-  oneFile: boolean,
 ): Promise<string> {
   const template = await readFile(path.join(kitPath, "templates", "agents-block.md"), "utf8");
   const workingRules = (await readFile(path.join(kitPath, "practices", "default.md"), "utf8")).trimEnd();
   return templateBody(template, {
     version,
-    "documents with their levels": documentsLine(oneFile),
+    "documents with their levels": documentsLine(),
     prefix: "R",
     "tagging line for the detected runner": taggingLine(runner),
     "L0–L2 documents": "the L0–L2 documents listed above",
@@ -673,8 +672,6 @@ export async function planWriteSet(
   const priorManifest = await managedManifest(cwd);
   const priorLocalManifest = await managedLocalManifest(cwd);
   const files = new Map<string, PlannedFile>();
-  const hasIntent = preflight.facts.repository.empty ||
-    (await fileState(path.join(cwd, "tenet", "intent.md"))).exists;
   files.set("tenet.lock", {
     path: "tenet.lock",
     content: jsonFile({
@@ -908,7 +905,6 @@ export async function planWriteSet(
         kitPath,
         releaseInfo.version,
         preflight.facts.runner,
-        hasIntent,
       );
       const result = replaceBlock(source, block.kind, `${replacement.trimEnd()}\n`);
       managed = { replacement, target: result.content, previous: result.previous, prefixSep: result.prefixSep };

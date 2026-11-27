@@ -23,6 +23,14 @@
     }
   ],
   "question_limit": 10,
+  "questions": {
+    "project_kind": [
+      "Which public API contract must remain stable?"
+    ],
+    "generic": [
+      "What is this project for?"
+    ]
+  },
   "output": {
     "paths": [
       "tenet/specs/intent.md"

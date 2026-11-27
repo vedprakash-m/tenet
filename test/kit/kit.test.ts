@@ -62,6 +62,9 @@ test("[AB-B4] [F-12] skills use installed names and stay within their 2,000-toke
     assert.ok(tokens(text) <= 2000, `${name}: ${tokens(text)} tokens`);
     assert.equal(frontMatter(text) && (frontMatter(text) as Record<string, unknown>).name, `tenet-${name}`);
   }
+  const drafting = await read("skills", "draft-specs", "SKILL.md");
+  assert.match(drafting, /assignment\.questions\.project_kind/);
+  assert.match(drafting, /assignment\.questions\.generic/);
 });
 
 test("[AC-D1] [R2-02] [AB-D1] [F-01] release docs include a working Windows checksum command", async (t) => {

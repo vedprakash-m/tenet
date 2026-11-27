@@ -52,6 +52,10 @@ export type Assignment = {
   views: Array<string>;
 }>;
   question_limit: 10;
+  questions: {
+  project_kind: Array<string>;
+  generic: Array<string>;
+};
   output: {
   paths: Array<string>;
 };
@@ -274,6 +278,21 @@ export type Manifest = {
   pointer: string;
   previous: unknown;
   installed: unknown;
+}>;
+};
+
+export type ManifestLocal = {
+  schema_version: 1;
+  profile_roots: {
+  [key: string]: string;
+};
+  keys: Array<{
+  host: string;
+  path: string;
+  pointer: string;
+  previous: unknown;
+  installed: unknown;
+  previous_raw?: string;
 }>;
 };
 
