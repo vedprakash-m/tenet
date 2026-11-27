@@ -139,7 +139,7 @@ A loop is data in `kit/loops/<name>.yaml` (`kit/schemas/loop.json` validates str
 |---|---|
 | `loop`, `kind` | Name; `station` or `fix` |
 | `applies` | `{station, lanes}` |
-| `limits` | `{rounds}` (default 5; `tenet.yaml` may lower it) and `{steps}`, a total cap (default 40). A loop ends at agreement (no blocking critic finding) or `limits.rounds` |
+| `limits` | `{rounds}` (default 5; `tenet.yaml` may lower it) and `{steps}`, a total cap (default 20, [L-0043](../../ledger/L-0043-owner-decisions-0.2.0.md) OD-2; a pack may set a higher cap). A loop ends at agreement (no blocking critic finding) or `limits.rounds` |
 | `steps[]` | In order; each has an `id` and a `kind` |
 
 | Step kind | Fields | Does |

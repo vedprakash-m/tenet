@@ -22,13 +22,13 @@ Read the selected store revision in one batch. Reduce one work item at a time. O
 | One valid creation | Initialize the immutable work identity and starting station. Multiple incompatible causally unrelated creations have no effective identity until resolved. |
 | Identical canonical events with the same ID | Apply once. |
 | Same ID with distinct content | Report `TN-EV-DUP`. Exclude all candidates for that ID and hold dependents. |
-| Missing predecessor | Report `TN-EV-ORPHAN`. Hold it and its descendants until the predecessor is available. |
+| Missing predecessor | Report `TN-EV-ORPHAN` as a warning, never a structural error. Hold it and its descendants until the predecessor is available (L-0043 OD-5). |
 | Cycle or self-link | Structural invalid history for the cycle. Hold its descendants. Reduce independent valid history. |
 | Predecessor belongs to a different work item | Structural invalid predecessor. Hold its descendants. |
-| Comparable state events | Apply in causal order using the pack's legal edges. |
+| Comparable state events | Apply in causal order. Reduction never rejects a move for not being a legal edge: `tenet move` and the gate check legal edges (L-0043 OD-7). |
 | Concurrent disjoint changes | Merge named fields, subject to ALG-05's closure rule. |
 | Concurrent incompatible changes | Keep the prior effective value and competing heads visible. Refuse advancement until resolution. |
-| Authorized resolution naming every conflicting head and the retained event | Apply the chosen change. A later incompatible concurrent event reopens the conflict. |
+| Authorized resolution naming every conflicting head and the retained event | Apply the chosen change. The `resolve` event becomes the head (L-0043 OD-7). A later incompatible concurrent event reopens the conflict. |
 
 | Event | State affected |
 |---|---|

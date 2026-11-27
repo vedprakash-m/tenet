@@ -146,6 +146,16 @@ jobs:
 
 Both read `tenet.lock` from target (`base.sha`, else `event.before` or default-branch `HEAD`), install with `npm install --no-save --ignore-scripts` (for `x-integrity-source: "local"`, via registry, workspace `node_modules`, or repo/release `.tgz`), verify tarball `sha512` (registry) or installed-file `sha512` (local), and mark local locks advisory (`verify`/`assure` refuse).
 
+**Forge events (alpha.1; proposal · CP-0067, L-0043 OD-8).** One table for every forge event Tenet records. Each row runs without checking out or executing pull-request code, and CP-0019 must observe each row working in the sandbox repository before release.
+
+| Event | Trigger | Permissions | Repeat-delivery key | When missing or degraded |
+|---|---|---|---|---|
+| Ready for review, converted to draft, closed | `pull_request_target: {types: [ready_for_review, converted_to_draft, closed]}` in `tenet.yml` | the recorder's | `{repository, pr, action, head_sha, at}` | no state change; the board shows the observation as missing |
+| Native review (submitted, edited, dismissed) | `pull_request_review` in a no-secret capture workflow; the recorder reads it through `workflow_run` | capture: `contents: read`; recorder: its own | `{repository, review_id, submitted_at, content_digest}` | an observation only; no decision |
+| `/tenet` reply comment (created, edited) | `issue_comment` in the same capture workflow, then `workflow_run` | as above | `{repository, comment_id, updated_at, content_digest}` | an observation only; no decision |
+
+An exact repeat delivery is a no-op. A forge event moves a work item only to a destination the selected pack defines as legal for that event; otherwise it is kept as an observation and changes nothing. Only `work.created` starts a work item: a forge event for an unknown work item is an observation.
+
 **`verify --record` steps.**
 1. **Find the change.**
    - `workflow_run`: use `workflow_run.pull_requests`; else paginate open PRs matching `head.sha` (covers fork PRs and shared heads); none means a default-branch push.
