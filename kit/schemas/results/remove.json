@@ -23,7 +23,7 @@
         "additionalProperties": false,
         "properties": {
           "path": { "type": "string", "minLength": 1 },
-          "reason": { "enum": ["edited-by-you", "spec-or-records"] }
+          "reason": { "enum": ["edited-by-you", "spec-or-records", "Owner interview answers"] }
         },
         "required": ["path", "reason"]
       }

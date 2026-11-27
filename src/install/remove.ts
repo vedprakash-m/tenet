@@ -49,8 +49,6 @@ const managedDirectoryPaths = [
 
 function generatedWorkingPaths(reportPaths: string[]): string[] {
   return [
-    ".tenet/onboard/inventory.json",
-    ".tenet/onboard/assignment.json",
     ...standardReportPaths,
     ...reportPaths,
   ];
@@ -466,6 +464,18 @@ async function removeGeneratedWorkingState(
   caseInsensitive: boolean,
 ): Promise<void> {
   const removedParents = new Set<string>();
+  const onboardPath = path.resolve(cwd, ".tenet", "onboard");
+  try {
+    const entries = await readdir(onboardPath, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name.toLowerCase() === "interview.json") continue;
+      const relative = path.posix.join(".tenet/onboard", entry.name);
+      await removePathTree(cwd, relative, removed, true);
+      removedParents.add(".tenet/onboard");
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
   for (const relative of new Set(generatedWorkingPaths(reportPaths))) {
     if (await removeRegularFile(cwd, relative, removed, caseInsensitive)) {
       removedParents.add(path.posix.dirname(relative));
@@ -488,6 +498,22 @@ async function removeGeneratedWorkingState(
     cwd,
     removableParents.filter((directory) => directory.startsWith(".tenet")),
   );
+}
+
+async function interviewAnswersExist(
+  cwd: string,
+  caseInsensitive: boolean,
+): Promise<boolean> {
+  const relative = ".tenet/onboard/interview.json";
+  if (await symlinkPath(cwd, relative)) return true;
+  if (caseInsensitive) return (await windowsPathMatch(cwd, relative)) !== null;
+  try {
+    await lstat(await confine(relative, cwd));
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+    throw error;
+  }
 }
 
 export async function remove(options: RemoveOptions = {}): Promise<RemoveResult> {
@@ -517,9 +543,7 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
       ".tenet/manifest.pending.json",
       ".tenet/manifest.local.json",
     ]) {
-      const link = await symlinkPath(cwd, relative);
-      if (link) await rm(link.filename, { force: true });
-      else await rm(await confine(relative, cwd), { force: true });
+      await removeRegularFile(cwd, relative, removed, caseInsensitive);
     }
     await removeGeneratedWorkingState(
       cwd,
@@ -528,7 +552,18 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
       null,
       caseInsensitive,
     );
-    return { removed, kept: [], reminder };
+    if (await interviewAnswersExist(cwd, caseInsensitive)) {
+      kept.set(".tenet/onboard/interview.json", "Owner interview answers");
+    }
+    return {
+      removed: removed.sort((left, right) =>
+        left.path < right.path ? -1 : left.path > right.path ? 1 : 0),
+      kept: [...kept.entries()].map(([itemPath, reason]) => ({
+        path: itemPath,
+        reason,
+      })),
+      reminder,
+    };
   }
   await validateRecordedPaths(
     cwd,
@@ -653,12 +688,11 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
     removed.push({ path: key.path, kind: "key" });
   }
 
-  const activePath = await confine(".tenet/manifest.json", cwd);
-  const pendingPath = await confine(".tenet/manifest.pending.json", cwd);
-  const localPath = await confine(".tenet/manifest.local.json", cwd);
-  await rm(activePath, { force: true });
-  await rm(pendingPath, { force: true });
-  if (!keptCreated.has(".tenet/manifest.local.json")) await rm(localPath, { force: true });
+  await removeRegularFile(cwd, ".tenet/manifest.json", removed, caseInsensitive);
+  await removeRegularFile(cwd, ".tenet/manifest.pending.json", removed, caseInsensitive);
+  if (!keptCreated.has(".tenet/manifest.local.json")) {
+    await removeRegularFile(cwd, ".tenet/manifest.local.json", removed, caseInsensitive);
+  }
   const createdDirectories = manifest["x-created-directories"] ?? [];
   await removeGeneratedWorkingState(
     cwd,
@@ -672,6 +706,9 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
     if (!createdDirectories.includes(root) || await retainedRoot(cwd, root)) {
       kept.set(root, "spec-or-records");
     }
+  }
+  if (await interviewAnswersExist(cwd, caseInsensitive)) {
+    kept.set(".tenet/onboard/interview.json", "Owner interview answers");
   }
   return {
     removed: [...new Map(removed.map((item) =>

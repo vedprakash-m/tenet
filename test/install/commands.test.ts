@@ -411,6 +411,31 @@ test("upgrade, remove and doctor wrappers preserve their public results", async 
   assert.deepEqual(doctor, { result: { checks }, findings: [], exitCode: 0 });
 });
 
+test("[AC-C2] [R2-21] remove human output lists deleted files and kept interview answers", async () => {
+  const command = makeRemoveCommand({
+    remove: async () => ({
+      removed: [
+        { path: ".tenet/onboard/inventory.json", kind: "file" },
+        { path: ".tenet/cache/session/output.txt", kind: "file" },
+      ],
+      kept: [{
+        path: ".tenet/onboard/interview.json",
+        reason: "Owner interview answers",
+      }],
+      reminder: null,
+    }),
+  });
+  const request = context({ json: false });
+  const output = await command.run?.(request);
+  assert.deepEqual(output, { result: null, findings: [] });
+  assert.match(request.captures.stdout.text(),
+    /Removed: \.tenet\/onboard\/inventory\.json \(file\)/);
+  assert.match(request.captures.stdout.text(),
+    /Removed: \.tenet\/cache\/session\/output\.txt \(file\)/);
+  assert.match(request.captures.stdout.text(),
+    /Kept: \.tenet\/onboard\/interview\.json — Owner interview answers/);
+});
+
 test("install result schemas accept the exact public shapes", async () => {
   const ajv = new Ajv2020({ strict: true });
   const examples = {
@@ -420,7 +445,14 @@ test("install result schemas accept the exact public shapes", async () => {
       findings: [],
     },
     upgrade: { from: "1.0.0", to: "1.0.1", changed: [] },
-    remove: { removed: [], kept: [], reminder: null },
+    remove: {
+      removed: [],
+      kept: [{
+        path: ".tenet/onboard/interview.json",
+        reason: "Owner interview answers",
+      }],
+      reminder: null,
+    },
     doctor: { checks: [{ name: "node", ok: true, detail: "Node.js 22.15.0" }] },
   };
   for (const [name, example] of Object.entries(examples)) {

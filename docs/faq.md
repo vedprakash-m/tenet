@@ -46,7 +46,7 @@ Run `tenet upgrade` after installing the intended package version. Review the re
 
 ## How do I remove Tenet?
 
-Run `tenet remove` to remove managed setup. Your specifications and records stay. Read the output for any files or settings Tenet kept and any reminder about branch rules.
+Run `tenet remove` to remove managed setup and generated files. Your specifications and records stay. Tenet also keeps `.tenet/onboard/interview.json` because it contains the Owner's answers, and reports it as kept. Read the output for every removed path, every kept item and the reminder about branch rules.
 
 ## Which steps use the network?
 
