@@ -65,6 +65,9 @@ test("[AB-B4] [F-12] skills use installed names and stay within their 2,000-toke
   const drafting = await read("skills", "draft-specs", "SKILL.md");
   assert.match(drafting, /assignment\.questions\.project_kind/);
   assert.match(drafting, /assignment\.questions\.generic/);
+  assert.match(drafting, /Ask at most `assignment\.question_limit` questions in total/);
+  assert.match(drafting, /project_kind` first, then fill the remaining count from `assignment\.questions\.generic`/);
+  assert.match(drafting, /Never repeat a question/);
 });
 
 test("[AC-D1] [R2-02] [AB-D1] [F-01] release docs include a working Windows checksum command", async (t) => {
