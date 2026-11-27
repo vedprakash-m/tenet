@@ -7,7 +7,7 @@ const [
   { resolveCitations },
   { deltas },
   { ladder },
-  { parseDoc, parseRequirement },
+  { itemLine, parseDoc, parseRequirement },
   { touched },
 ] = await Promise.all([
   import("../../dist/specs/anchors.js"),
@@ -29,6 +29,34 @@ function specification(items: string[], options: { doc?: string; level?: string;
     "",
   ].join("\n");
 }
+
+test("[CP-0066-R1] standalone HTML comments preserve later table rows and their line numbers", () => {
+  const rows = [
+    "| ID | Requirement | Origin |",
+    "| --- | --- | --- |",
+    "| R-1 | Keep a paper receipt. | asked |",
+    "<!-- Review the formats below. -->",
+    "| R-2 | Offer an email copy. | documented |",
+    "<!--",
+    "",
+    "## Internal note",
+    "| R-99 | Commented out. | asked |",
+    "-->",
+    "| R-3 | Show the receipt date. | asked |",
+    "",
+    "| R-4 | Outside the table. | asked |",
+  ];
+  const parsed = parseDoc("tenet/intent.md", specification(rows));
+  assert.deepEqual(parsed.sections.flatMap(({ requirements }) =>
+    requirements.map((item) => [item.id, item.text, itemLine(item)])), [
+    ["R-1", "Keep a paper receipt.", 8],
+    ["R-2", "Offer an email copy.", 10],
+    ["R-3", "Show the receipt date.", 16],
+  ]);
+  assert.deepEqual(parsed.problems, []);
+  assert.deepEqual(parsed.sections.map(({ heading }) => heading), ["Requirements"]);
+  assert.equal(parsed.sections[0]?.text, rows.join("\n") + "\n");
+});
 
 async function commitAll(
   repository: Awaited<ReturnType<typeof tmpRepo>>,

@@ -138,9 +138,46 @@ test("onboard uses the public CLI, emits a schema-valid result, and declares no 
   assert.equal(conforms(envelope.result), true, JSON.stringify(conforms.errors));
   const human = await cli(["onboard", "--inventory-only"], repo.path);
   assert.match(human.stdout, /Drafting sends project content/);
-  assert.match(human.stdout, /First findings: No machine-readable test report configured/);
+  assert.match(human.stdout, /First findings: 1 total \(no-test-report 1\)/);
+  assert.match(human.stdout, /- No machine-readable test report configured/);
+  assert.match(human.stdout, /Use the `tenet-draft-specs` skill/);
   assert.equal((await cli(["onboard", "--card"], repo.path)).code, 2);
   assert.equal((await cli(["onboard", "--layout", "invalid"], repo.path)).code, 2);
+});
+
+test("[AB-D6] [F-14] onboard findings are capped and skipped paths are counted by reason", async (t) => {
+  const repo = await tmpRepo("onboard-findings-limit");
+  t.after(repo.cleanup);
+  await repo.write("tenet.yaml", `${config}onboard:\n  exclude: ["archive/**"]\n`);
+  for (let index = 0; index < 6; index += 1) {
+    await repo.write(`docs/page-${index}.md`, `# Page ${index}\n\nSee [missing](missing-${index}.md).\n`);
+  }
+  for (let index = 0; index < 11; index += 1) {
+    await repo.write(`archive/file-${index}.txt`, `${index}\n`);
+  }
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "findings"]);
+  const human = await cli(["onboard", "--inventory-only"], repo.path);
+  assert.equal(human.code, 0, human.stderr);
+  assert.match(human.stdout, /First findings: 7 total \(dead-path 6 · no-test-report 1\)/);
+  const displayed = [...human.stdout.matchAll(/^- docs\/page-/gm)].length;
+  assert.equal(displayed, 5);
+  assert.match(human.stdout, /- 2 more findings; see \.tenet\/onboard\/inventory\.json/);
+  assert.match(human.stdout, /Skipped files: excluded 11 \(/);
+});
+
+test("[AB-D7] [F-40] onboard hints when many files sit in archive folders", async (t) => {
+  const repo = await tmpRepo("onboard-archive-hint");
+  t.after(repo.cleanup);
+  await repo.write("tenet.yaml", config);
+  for (let index = 0; index < 11; index += 1) {
+    await repo.write(`archive/file-${index}.ts`, `export const value${index} = ${index};\n`);
+  }
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "archive"]);
+  const human = await cli(["onboard", "--inventory-only"], repo.path);
+  assert.equal(human.code, 0, human.stderr);
+  assert.match(human.stdout, /Hint: 11 inventoried files are under archive\/\./);
 });
 
 test("onboard refuses directories outside Git and repositories with no HEAD", async (t) => {

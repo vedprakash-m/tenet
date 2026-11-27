@@ -1,10 +1,19 @@
 import { createInterface } from "node:readline";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import type { CommandContext, CommandSpec } from "../core/commands.js";
 import { message } from "../core/messages.js";
 import { errorFinding, fail, version, type Finding } from "../core/output.js";
 import { init as runInit } from "../install/init.js";
 import { preflight as runPreflight } from "../install/preflight.js";
-import type { InitOptions, InitResult, PreflightAnswers, PreflightPrompt, ProjectKind } from "../install/types.js";
+import type {
+  InitOptions,
+  InitResult,
+  PreflightAnswers,
+  PreflightPrompt,
+  ProjectKind,
+  SelectableHost,
+} from "../install/types.js";
 
 type InitDependencies = {
   init?: typeof runInit;
@@ -73,34 +82,90 @@ function preflightText(result: Awaited<ReturnType<typeof runPreflight>>): string
       : "local repository";
   const host = facts.repository.forge === "github" ? forge : facts.repository.forge;
   const runner = facts.runner ? `${facts.runner.kind} (${facts.runner.command})` : "no test runner";
+  const hostFiles: Array<{ path: string; reason: string }> = [];
+  const addHostFile = (itemPath: string, reason: string): void => {
+    if (!hostFiles.some((item) => item.path === itemPath)) hostFiles.push({ path: itemPath, reason });
+  };
+  for (const itemPath of plan.created) {
+    if (itemPath.startsWith(".claude/skills/")) addHostFile(itemPath, "Claude Code skill");
+    else if (itemPath.startsWith(".agents/skills/")) addHostFile(itemPath, "portable agent skill");
+  }
+  for (const { path: itemPath } of plan.blocks) {
+    if (itemPath === "AGENTS.md") addHostFile(itemPath, "gives all agents the Tenet workflow");
+    else if (itemPath === "CLAUDE.md") addHostFile(itemPath, "points Claude Code to AGENTS.md");
+    else if (itemPath === ".github/copilot-instructions.md") {
+      addHostFile(itemPath, "points GitHub Copilot to AGENTS.md");
+    }
+  }
+  for (const { path: itemPath, pointer } of plan.keys) {
+    addHostFile(
+      `${itemPath}${pointer}`,
+      itemPath === ".mcp.json"
+        ? "registers the Tenet MCP server for Claude Code"
+        : "registers the Tenet MCP server",
+    );
+  }
+  for (const { host, path: itemPath, pointer } of plan.local_keys) {
+    addHostFile(`${host}: ${itemPath}${pointer}`, `registers the Tenet MCP server locally for ${host}`);
+  }
+  const create = new Set<string>();
+  const edit = new Set<string>();
+  const plannedPaths = [
+    ...plan.created,
+    ...plan.blocks.map(({ path: filename }) => filename),
+    ...plan.keys.map(({ path: filename }) => filename),
+  ];
+  for (const filename of plannedPaths) {
+    if (existsSync(path.resolve(result.facts.repository.cwd, filename))) edit.add(filename);
+    else create.add(filename);
+  }
   const lines = [
     `Found: ${host} · ${runner} · ${plan.hosts.map(({ id, capability }) => `${id} (${capability})`).join(", ")}`,
-    `Will create: ${plan.created.join(", ")}`,
-    `Will edit: ${[
-      ...plan.blocks.map(({ path }) => path),
-      ...plan.keys.map(({ path, pointer }) => `${path}${pointer}`),
-    ].join(", ")}`,
+    ...(plan.hosts.every(({ id }) => id === "agents")
+      ? ["No agent host found; skills are in .agents/skills/. Rerun with `--host claude` to set up Claude Code."]
+      : []),
+    `Will create: ${[...create].join(", ")}`,
+    `Will edit: ${[...edit].map((filename) => {
+      const key = plan.keys.find(({ path: keyPath }) => keyPath === filename);
+      return key ? `${filename}${key.pointer}` : filename;
+    }).join(", ")}`,
     ...(plan.local_keys.length > 0 ? [
       `Will edit locally (outside repository): ${plan.local_keys
         .map(({ host, path, pointer }) => `${host}: ${path}${pointer}`)
         .join(", ")}`,
     ] : []),
     `Level: observe (nothing blocks) · CI: ${plan.ci_mode} (${plan.ci_reason})`,
+    ...(hostFiles.length > 0
+      ? ["Host files:", ...hostFiles.map(({ path: itemPath, reason }) => `- ${itemPath} — ${reason}`)]
+      : []),
     "Will never read: .env*, credentials, vendor/",
   ];
   return lines.join("\n");
 }
 
-function successText(value: InitResult): string {
+function successText(value: InitResult, offline: boolean, hasTestCheck: boolean): string {
   if (value.cancelled) return "Cancelled. No files were changed.";
   const count = value.wrote.created.length + value.wrote.blocks.length +
     value.wrote.keys.length + value.wrote.local_keys.length;
   const findings = value.findings.length
     ? `First findings: ${value.findings.map(({ message }) => message).join(" · ")}`
     : "First findings: none";
+  if (offline && value.findings.some(({ kind }) => kind === "local-integrity")) {
+    const otherFindings = value.findings.filter(({ kind }) => kind !== "local-integrity");
+    return [
+      `Set up Tenet${count === 0 ? " (already current)" : ""}.`,
+      "Recorded local package integrity (offline). Run `tenet upgrade` once you're online so CI can verify it.",
+      ...(otherFindings.length > 0
+        ? [`First findings: ${otherFindings.map(({ message }) => message).join(" · ")}`]
+        : []),
+      ...(!hasTestCheck ? ["No test check configured. Add checks.test in tenet.yaml (see docs/getting-started.md#configure-your-tests)."] : []),
+      "Next: tenet onboard drafts your specifications.",
+    ].join("\n");
+  }
   return [
     `Set up Tenet${count === 0 ? " (already current)" : ""}.`,
     findings,
+    ...(!hasTestCheck ? ["No test check configured. Add checks.test in tenet.yaml (see docs/getting-started.md#configure-your-tests)."] : []),
     "Next: tenet onboard drafts your specifications.",
   ].join("\n");
 }
@@ -111,8 +176,8 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
   return {
     name: "init",
     description: "Install Tenet in the current repository",
-    usage: "tenet init [--yes] [--local-hosts] [--vendor] [--force]",
-    options: ["--yes", "--local-hosts", "--vendor", "--force"],
+    usage: "tenet init [--yes] [--host <name>] [--local-hosts] [--vendor] [--force]",
+    options: ["--yes", "--host <name>", "--local-hosts", "--vendor", "--force"],
     async run(context) {
       if (context.args.length > 0) {
         return {
@@ -125,9 +190,27 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
       }
 
       try {
+        const rawHosts = context.options["--host"];
+        const selectedHosts = rawHosts === undefined
+          ? []
+          : (Array.isArray(rawHosts) ? rawHosts : [rawHosts]);
+        const allowedHosts: SelectableHost[] = ["claude", "cursor", "copilot", "vscode"];
+        const invalidHost = selectedHosts.find((host) =>
+          typeof host !== "string" || !allowedHosts.includes(host as SelectableHost)
+        );
+        if (invalidHost !== undefined) {
+          return {
+            findings: [diagnostic(
+              "init",
+              `unknown host: ${String(invalidHost)} (choose claude, cursor, copilot or vscode)`,
+            )],
+          };
+        }
+        const hosts = [...new Set(selectedHosts as SelectableHost[])];
         const options: InitOptions = {
           cwd: context.cwd,
           yes,
+          ...(hosts.length > 0 ? { hosts } : {}),
           localHosts: context.options["--local-hosts"] === true,
           offline: context.offline,
           vendor: context.options["--vendor"] === true,
@@ -154,6 +237,32 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
             prepared = await inspect({ ...options, answers });
             if (prepared.diagnostics.length > 0) return { findings: prepared.diagnostics };
           }
+          const testCommandPrompt = prepared.prompts.find(({ key }) => key === "testCommand");
+          if (testCommandPrompt) {
+            const answer = await ask(promptLabel(testCommandPrompt));
+            if (answer === null) return { findings: [noTty()] };
+            answers.testCommand = answer;
+            prepared = await inspect({ ...options, answers });
+            if (prepared.diagnostics.length > 0) return { findings: prepared.diagnostics };
+          }
+          context.stdout.write(`${preflightText(prepared)}\n`);
+          for (const prompt of prepared.prompts.filter(({ key }) =>
+            key !== "reporterEdit" && key !== "localHosts" && key !== "testCommand")) {
+            const answer = await ask(promptLabel(prompt));
+            if (answer === null) return { findings: [noTty()] };
+            if (prompt.key === "purpose") {
+              const purpose = answer || (typeof prompt.default === "string" ? prompt.default : "");
+              answers.purpose = purpose;
+            } else if (prompt.key === "kind") {
+              const kind = (answer || prompt.default || "other") as ProjectKind;
+              if (!prompt.options?.includes(kind)) {
+                return { findings: [diagnostic("init", `invalid project kind: ${kind}`)] };
+              }
+              answers.kind = kind;
+            } else {
+              answers.allowReporterEdit = answerBoolean(answer, false);
+            }
+          }
           const localPrompt = prepared.prompts.find(({ key }) => key === "localHosts");
           if (localPrompt) {
             const available = localPrompt.local_keys ?? [];
@@ -174,24 +283,6 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
               );
             }
           }
-          context.stdout.write(`${preflightText(prepared)}\n`);
-          for (const prompt of prepared.prompts.filter(({ key }) =>
-            key !== "reporterEdit" && key !== "localHosts")) {
-            const answer = await ask(promptLabel(prompt));
-            if (answer === null) return { findings: [noTty()] };
-            if (prompt.key === "purpose") {
-              const purpose = answer || (typeof prompt.default === "string" ? prompt.default : "");
-              answers.purpose = purpose;
-            } else if (prompt.key === "kind") {
-              const kind = (answer || prompt.default || "other") as ProjectKind;
-              if (!prompt.options?.includes(kind)) {
-                return { findings: [diagnostic("init", `invalid project kind: ${kind}`)] };
-              }
-              answers.kind = kind;
-            } else {
-              answers.allowReporterEdit = answerBoolean(answer, false);
-            }
-          }
           const answer = await ask("Continue? [Y/n] ");
           if (answer === null) return { findings: [noTty()] };
           answers.continue = answerBoolean(answer, true);
@@ -202,10 +293,14 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
         }
 
         const value = await install({ ...options, answers });
-        for (const finding of value.findings) {
-          if (finding.kind === "local-integrity") context.stderr.write(`Warning: ${finding.message}\n`);
+        if (!context.offline) {
+          for (const finding of value.findings) {
+            if (finding.kind === "local-integrity") context.stderr.write(`Warning: ${finding.message}\n`);
+          }
         }
-        if (!context.json) context.stdout.write(`${successText(value)}\n`);
+        if (!context.json) {
+          context.stdout.write(`${successText(value, context.offline, prepared.facts.runner !== null)}\n`);
+        }
         return { result: context.json ? value : null, findings: [] };
       } catch (error) {
         return { findings: [handled(error)] };

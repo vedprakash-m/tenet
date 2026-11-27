@@ -1,4 +1,4 @@
-# tenet:begin v0.1.0-alpha.0
+# tenet:begin v0.1.1
 .agents/skills/tenet-draft-specs/SKILL.md text eol=lf
 .agents/skills/tenet-review-with-findings/SKILL.md text eol=lf
 .agents/skills/tenet-work-a-change/SKILL.md text eol=lf
@@ -11,5 +11,4 @@
 AGENTS.md text eol=lf
 tenet.lock text eol=lf
 tenet.yaml text eol=lf
-tenet/intent.md text eol=lf
 # tenet:end

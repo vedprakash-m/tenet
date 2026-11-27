@@ -1,0 +1,162 @@
+{
+  "schema": 1,
+  "scenario": "s16-verify-local-preview",
+  "spec_refs": [
+    "tenet/packets/CP-0066-dogfood-0.1.1/definition.md#c--the-test-check-works-from-day-one-and-locally-track-2"
+  ],
+  "steps": [
+    {
+      "id": "01-init-without-a-test-runner",
+      "kind": "cli",
+      "args": [
+        "init",
+        "--yes",
+        "--offline"
+      ],
+      "expectExitCode": 0,
+      "expectedProjection": "expected/01-init.json"
+    },
+    {
+      "id": "02-disallow-git-network",
+      "kind": "git",
+      "args": [
+        "config",
+        "protocol.allow",
+        "never"
+      ]
+    },
+    {
+      "id": "03-configure-default-branch-check",
+      "kind": "write",
+      "files": {
+        "tenet.yaml": "{\n  \"standard\": \"~0.1\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"R\"\n  },\n  \"owners\": [\n    {\n      \"id\": \"owner\",\n      \"name\": \"Scenario Owner\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ],\n  \"checks\": {\n    \"test\": {\n      \"run\": \"node --test --test-reporter=junit test/receipt.test.mjs\",\n      \"report\": \"junit\",\n      \"report_from\": \"stdout\"\n    }\n  }\n}\n"
+      }
+    },
+    {
+      "id": "04-stage-setup",
+      "kind": "git",
+      "args": [
+        "add",
+        "-A"
+      ]
+    },
+    {
+      "id": "05-commit-setup",
+      "kind": "git",
+      "args": [
+        "commit",
+        "-m",
+        "Configure the receipt check"
+      ]
+    },
+    {
+      "id": "06-create-feature-branch",
+      "kind": "git",
+      "args": [
+        "switch",
+        "-c",
+        "receipt-review"
+      ]
+    },
+    {
+      "id": "07-switch-to-default-branch",
+      "kind": "git",
+      "args": [
+        "switch",
+        "main"
+      ]
+    },
+    {
+      "id": "08-advance-default-branch-policy",
+      "kind": "write",
+      "files": {
+        "tenet.yaml": "{\n  \"standard\": \"~0.1\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"R\"\n  },\n  \"owners\": [\n    {\n      \"id\": \"owner\",\n      \"name\": \"Scenario Owner\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ],\n  \"checks\": {\n    \"test\": {\n      \"run\": \"node -e \\\"process.exit(8)\\\"\",\n      \"report\": \"junit\",\n      \"report_from\": \"stdout\"\n    }\n  }\n}\n"
+      }
+    },
+    {
+      "id": "09-commit-default-branch-policy",
+      "kind": "git",
+      "args": [
+        "commit",
+        "-am",
+        "Advance the default branch policy"
+      ]
+    },
+    {
+      "id": "10-return-to-feature-branch",
+      "kind": "git",
+      "args": [
+        "switch",
+        "receipt-review"
+      ]
+    },
+    {
+      "id": "11-stage-a-failing-version",
+      "kind": "write",
+      "files": {
+        "test/receipt.test.mjs": "import assert from \"node:assert/strict\";\nimport { test } from \"node:test\";\n\ntest(\"[AB-1] [R-1] keeps a paper receipt\", () => {\n  const receipt = \"digital\";\n  assert.equal(receipt, \"paper\");\n});\n"
+      }
+    },
+    {
+      "id": "12-stage-tagged-test",
+      "kind": "git",
+      "args": [
+        "add",
+        "test/receipt.test.mjs"
+      ]
+    },
+    {
+      "id": "13-fix-the-working-tree-test",
+      "kind": "write",
+      "files": {
+        "test/receipt.test.mjs": "import assert from \"node:assert/strict\";\nimport { test } from \"node:test\";\n\ntest(\"[AB-1] [R-1] keeps a paper receipt\", () => {\n  const receipt = \"paper\";\n  assert.equal(receipt, \"paper\");\n});\n"
+      }
+    },
+    {
+      "id": "14-preview-working-tree",
+      "kind": "cli",
+      "args": [
+        "verify",
+        "--local"
+      ],
+      "expectExitCode": 0,
+      "expectedProjection": "expected/14-local-preview.json",
+      "withoutCiEvent": true
+    },
+    {
+      "id": "15-change-head-check-command",
+      "kind": "write",
+      "files": {
+        "tenet.yaml": "{\n  \"standard\": \"~0.1\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"R\"\n  },\n  \"owners\": [\n    {\n      \"id\": \"owner\",\n      \"name\": \"Scenario Owner\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ],\n  \"checks\": {\n    \"test\": {\n      \"run\": \"node -e \\\"process.exit(9)\\\"\",\n      \"report\": \"junit\",\n      \"report_from\": \"stdout\"\n    }\n  }\n}\n"
+      }
+    },
+    {
+      "id": "16-stage-feature",
+      "kind": "git",
+      "args": [
+        "add",
+        "-A"
+      ]
+    },
+    {
+      "id": "17-commit-feature",
+      "kind": "git",
+      "args": [
+        "commit",
+        "-m",
+        "Change the receipt check"
+      ]
+    },
+    {
+      "id": "18-preview-with-head-command-change",
+      "kind": "cli",
+      "args": [
+        "verify",
+        "--local"
+      ],
+      "expectExitCode": 0,
+      "expectedProjection": "expected/18-command-change.json",
+      "withoutCiEvent": true
+    }
+  ]
+}

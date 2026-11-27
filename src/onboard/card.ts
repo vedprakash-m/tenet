@@ -6,9 +6,9 @@ import { fail } from "../core/output.js";
 import { validate } from "../core/schema.js";
 import { loadPolicy } from "../policy/index.js";
 import { resolveCitations } from "../specs/citations.js";
-import type { ParsedDoc } from "../specs/parse.js";
+import { isOpenSpecItem, parseDoc, type ParsedDoc } from "../specs/parse.js";
 import type { Assignment, Inventory } from "../types/generated.js";
-import { isGovernedSection, measureStatements, parseBlessDocument, readCitationSource, readingMinutes, readSpecMatter, statements, writeSpecMatter } from "./bless.js";
+import { isGovernedSection, measureStatements, readCitationSource, readingMinutes, readSpecMatter, statements, writeSpecMatter } from "./bless.js";
 
 type CardOptions = { cwd?: string; pr?: number };
 type StructuredCardOptions = CardOptions & { format: "result" };
@@ -25,17 +25,24 @@ export const onboardingCardText = {
   title: (revision: string) => `### Tenet onboarding · drafted from ${revision} · nothing is in force until you bless it`,
   read: (items: string, skipped: string) => `Read: ${items} · Skipped: ${skipped}`,
   nothing: "none",
-  citations: (count: number) => `✓ all ${count} citations checked against the code`,
+  citations: (count: number) => `✓ ${count} ${count === 1 ? "citation resolves" : "citations resolve"} (file and lines exist)`,
   broken: (count: number, total: number) => `! ${count} of ${total} citations need attention`,
   finding: (file: string, line: number | null, words: string) => `  ! ${file}${line === null ? "" : `:${line}`} · ${words}`,
   conflicts: "Conflicts (settle these first)",
-  conflict: (id: string, text: string, resolution?: string) => `  ${resolution ? "✓" : "!"} ${id} ${text}${resolution ? ` · ${resolution}` : ""}`,
+  openItem: (id: string, text: string) => `  ! ${id} ${text}`,
+  questions: (count: number) => `Open questions (${count})`,
+  updated: "Updated the draft revision in:",
+  commitFiles: "Commit these files with the setup changes.",
+  commit: (pr?: number) => `→ Commit your changes, then rerun tenet onboard --card${pr === undefined ? "" : ` --pr ${pr}`}.`,
+  push: "→ Push this branch to set its upstream, or run tenet bless locally.",
+  detached: "→ Switch to a branch before opening a pull request, or run tenet bless locally.",
+  open: "→ Open a pull request, or run tenet bless locally.",
   sections: (minutes: number) => `Sections (about ${minutes} minute${minutes === 1 ? "" : "s"})`,
   section: (heading: string, count: number, origins: string, minutes: number) =>
     `  ${heading} · ${count} statement${count === 1 ? "" : "s"}${origins ? ` · ${origins}` : ""} · ${minutes} min`,
   missingDraft: "commit a specification draft before running onboard --card",
   noSections: "  No specification sections were found.",
-  checkout: (pr?: number) => `→ gh pr checkout ${pr ?? "<n>"}, then tenet bless in your terminal (or edit the files first)`,
+  checkout: (pr: number) => `→ gh pr checkout ${pr}, then tenet bless in your terminal (or edit the files first)`,
   incompatible: "--card cannot be combined with --inventory-only, --refresh or --layout",
 } as const;
 
@@ -73,20 +80,27 @@ function sourceList(inventory: Inventory): string {
   return onboardingCardText.read(groups.join(", "), skipped.join(", ") || onboardingCardText.nothing);
 }
 
-function composeCard(inventory: Inventory, docs: ParsedDoc[], read: (file: string) => string | null, pr?: number): string {
+function composeCard(inventory: Inventory, docs: ParsedDoc[], read: (file: string) => string | null, updated: string[], next: string): string {
   const governed = docs.flatMap((doc) => doc.sections.filter(isGovernedSection));
   const lines = [onboardingCardText.title(inventory.revision.slice(0, 7)), sourceList(inventory)];
   const cites = governed.flatMap(statements).flatMap((item) => item.cites);
   const findings = docs.flatMap((doc) => resolveCitations({ ...doc, sections: doc.sections.filter(isGovernedSection) }, read));
-  lines.push(findings.length ? onboardingCardText.broken(findings.length, cites.length) : onboardingCardText.citations(cites.length));
+  lines.push(onboardingCardText.citations(cites.length - findings.length));
+  if (findings.length) lines.push(onboardingCardText.broken(findings.length, cites.length));
   for (const finding of findings) {
     lines.push(onboardingCardText.finding(finding.file ?? "?", finding.line, finding.message));
   }
   const conflicts = docs.flatMap((doc) => doc.sections.flatMap((section) => section.conflicts))
-    .filter(({ checked, resolution }) => !checked || !resolution);
+    .filter((item) => isOpenSpecItem(item, "conflicts"));
   if (conflicts.length) {
     lines.push(onboardingCardText.conflicts);
-    for (const item of conflicts) lines.push(onboardingCardText.conflict(item.id, item.text, item.checked ? item.resolution : undefined));
+    for (const item of conflicts) lines.push(onboardingCardText.openItem(item.id, item.text));
+  }
+  const questions = docs.flatMap((doc) => doc.sections.flatMap((section) => section.questions))
+    .filter((item) => isOpenSpecItem(item, "questions"));
+  if (questions.length) {
+    lines.push(onboardingCardText.questions(questions.length));
+    for (const item of questions) lines.push(onboardingCardText.openItem(item.id, item.text));
   }
   lines.push(onboardingCardText.sections(governed.reduce((minutes, section) => minutes + readingMinutes(section.text), 0)));
   if (!governed.length) lines.push(onboardingCardText.noSections);
@@ -98,8 +112,19 @@ function composeCard(inventory: Inventory, docs: ParsedDoc[], read: (file: strin
     });
     lines.push(onboardingCardText.section(section.heading || section.slug, measured.length, origins.join(", "), readingMinutes(section.text)));
   }
-  lines.push(onboardingCardText.checkout(pr));
+  if (updated.length) {
+    lines.push(onboardingCardText.updated, ...updated.map((file) => `  ${file}`), onboardingCardText.commitFiles);
+  }
+  lines.push(next);
   return `${lines.join("\n")}\n`;
+}
+
+async function nextStep(cwd: string, changes: boolean, pr?: number): Promise<string> {
+  if (changes || (await git(["status", "--porcelain"], { cwd })).trim()) return onboardingCardText.commit(pr);
+  if (pr !== undefined) return onboardingCardText.checkout(pr);
+  if (await git(["rev-parse", "--verify", "@{upstream}"], { cwd }).catch(() => "")) return onboardingCardText.open;
+  const branch = await git(["symbolic-ref", "--quiet", "HEAD"], { cwd }).catch(() => "");
+  return branch ? onboardingCardText.push : onboardingCardText.detached;
 }
 
 export function onboardingCard(options: StructuredCardOptions, write?: typeof writeAtomic): Promise<OnboardingCardResult>;
@@ -130,14 +155,14 @@ export async function onboardingCard(
   const policy = await loadPolicy({ cwd }).catch((error: { finding?: unknown }) => { throw error.finding ?? error; });
   const docs: ParsedDoc[] = [];
   let existingStamp: string | undefined;
-  const patches: Array<{ filename: string; original: string; next: string }> = [];
+  const patches: Array<{ relative: string; filename: string; original: string; next: string }> = [];
   for (const { relative, filename } of drafts) {
     const records = policy.paths.records.replaceAll("\\", "/");
     if (!relative.startsWith(`${records}/`) || !relative.endsWith(".md") || relative.startsWith(`${records}/blessed/`)) {
       throw diagnostic("TN-SCHEMA", { path: assignmentPath, schema: "assignment", pointer: "/output/paths" });
     }
     const text = await readFile(filename, "utf8");
-    const parsed = parseBlessDocument(relative, text, policy.specs.id_prefix);
+    const parsed = parseDoc(relative, text, { prefix: policy.specs.id_prefix });
     const front = readSpecMatter(text);
     const tenet = parsed.front?.tenet as { spec?: unknown; drafted_at_rev?: unknown } | undefined;
     if (tenet?.spec !== 1) throw { ...diagnostic("TN-SPEC-NO-FRONT"), file: relative };
@@ -152,9 +177,10 @@ export async function onboardingCard(
       throw { ...diagnostic("TN-SUBJ-DIRTY", { command: "onboard --card" }), file: relative };
     }
     front.yaml.setIn(["tenet", "drafted_at_rev"], head);
-    patches.push({ filename, original: text, next: writeSpecMatter(front) });
+    patches.push({ relative, filename, original: text, next: writeSpecMatter(front) });
   }
-  const card = composeCard(inventory, docs, readCitationSource(cwd), options.pr);
+  const next = await nextStep(cwd, patches.length > 0, options.pr);
+  const card = composeCard(inventory, docs, readCitationSource(cwd), patches.map(({ relative }) => relative), next);
   const saved: typeof patches = [];
   try {
     for (const patch of patches) {

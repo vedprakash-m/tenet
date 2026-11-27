@@ -7,6 +7,8 @@ import { makeDoctorCommand } from "../../dist/commands/doctor.js";
 import { makeInitCommand } from "../../dist/commands/init.js";
 import { makeRemoveCommand } from "../../dist/commands/remove.js";
 import { makeUpgradeCommand } from "../../dist/commands/upgrade.js";
+import { packageVersion } from "../helpers/packageVersion.ts";
+import { tmpRepo } from "../helpers/tmpRepo.ts";
 
 function writer() {
   let text = "";
@@ -110,7 +112,7 @@ test("init command prompts, collects answers and returns the exact install resul
   });
   assert.equal(preflightCalls, 2);
   assert.match(request.captures.stdout.text(),
-    /Add a test reporter[\s\S]*Will create: \.github\/workflows\/ci.yml, tenet\.yaml/);
+    /Add a test reporter[\s\S]*Will edit: \.github\/workflows\/ci\.yml, tenet\.yaml/);
   assert.match(request.captures.stdout.text(), /Continue\? \[Y\/n\]/);
 });
 
@@ -154,6 +156,45 @@ test("init preflight text lists local host keys exactly", async () => {
   await command.run?.(request);
   assert.match(request.captures.stdout.text(),
     /Will edit locally \(outside repository\): vscode: C:\/Users\/fixture\/AppData\/Roaming\/Code\/User\/mcp\.json\/servers\/tenet/);
+});
+
+test("[AB-D10] [F-09] init plan decides create or edit from the working tree", async (t) => {
+  const repo = await tmpRepo("init-create-edit");
+  t.after(repo.cleanup);
+  await repo.write("tenet.yaml", "standard: 0.1.0-alpha.0\n");
+  await repo.write("AGENTS.md", "# Existing\n");
+  const setupPlan = {
+    ...plan,
+    created: ["tenet.yaml", ".github/workflows/tenet.yml"],
+    blocks: [{ path: "AGENTS.md", kind: "markdown" as const }],
+  };
+  const command = makeInitCommand({
+    terminal: true,
+    preflight: async () => ({
+      plan: setupPlan,
+      findings: [],
+      diagnostics: [],
+      prompts: [],
+      facts: {
+        repository: { cwd: repo.path, git: true, head: "abc", branch: "main", remote: null, forge: "github" as const, empty: false },
+        runner: null,
+        ci: { jobs: [], selected: null },
+        owners: [],
+        purpose: null,
+        kind: null,
+      },
+    }),
+    init: async () => ({
+      plan: setupPlan,
+      wrote: { created: [], blocks: [], keys: [], local_keys: [] },
+      findings: [],
+    }),
+  });
+  const request = context({ cwd: repo.path, options: { "--yes": true }, json: false });
+  await command.run?.(request);
+  const text = request.captures.stdout.text();
+  assert.match(text, /Will create: \.github\/workflows\/tenet\.yml/);
+  assert.match(text, /Will edit: tenet\.yaml, AGENTS\.md/);
 });
 
 test("init command asks before authorizing local host edits", async () => {
@@ -208,6 +249,101 @@ test("init command asks before authorizing local host edits", async () => {
   assert.match(request.captures.stdout.text(), /No local host settings changed/);
 });
 
+test("[AB-B4] [F-12] init explains every Claude Code host write in its plan", async () => {
+  const command = makeInitCommand({
+    terminal: false,
+    preflight: async () => ({
+      plan: {
+        ...plan,
+        created: [
+          ".claude/skills/tenet-draft-specs/SKILL.md",
+          ...plan.created,
+        ],
+        blocks: [
+          { path: "CLAUDE.md", kind: "markdown" as const },
+          ...plan.blocks,
+        ],
+        keys: [{ path: ".mcp.json", pointer: "/mcpServers/tenet" }],
+        hosts: [
+          { id: "agents", capability: "skills+mcp" as const },
+          { id: "claude", capability: "skills+mcp" as const },
+        ],
+      },
+      findings: [],
+      diagnostics: [],
+      prompts: [],
+      facts: {
+        repository: { cwd: ".", git: true, head: "abc", branch: "main", remote: null, forge: "none" as const, empty: false },
+        runner: null,
+        ci: { jobs: [], selected: null },
+        owners: [],
+        purpose: "fixture",
+        kind: "service",
+      },
+    }),
+    init: async () => ({
+      plan,
+      wrote: { created: [], blocks: [], keys: [], local_keys: [] },
+      findings: [],
+    }),
+  });
+  const request = context({ options: { "--yes": true } });
+  await command.run?.(request);
+  const output = request.captures.stdout.text();
+  assert.match(output, /\.claude\/skills\/tenet-draft-specs\/SKILL\.md — Claude Code skill/);
+  assert.match(output, /CLAUDE\.md — points Claude Code to AGENTS\.md/);
+  assert.match(output, /\.mcp\.json\/mcpServers\/tenet — registers the Tenet MCP server/);
+});
+
+test("[AB-B4] [F-21] init passes repeated --host selections and explains a host-neutral plan", async () => {
+  let preflightHosts: unknown;
+  let initHosts: unknown;
+  const command = makeInitCommand({
+    terminal: false,
+    preflight: async (options) => {
+      preflightHosts = options.hosts;
+      return {
+        plan,
+        findings: [],
+        diagnostics: [],
+        prompts: [],
+        facts: {
+          repository: { cwd: ".", git: true, head: "abc", branch: "main", remote: null, forge: "none" as const, empty: false },
+          runner: null,
+          ci: { jobs: [], selected: null },
+          owners: [],
+          purpose: "fixture",
+          kind: "service",
+        },
+      };
+    },
+    init: async (options) => {
+      initHosts = options.hosts;
+      return {
+        plan,
+        wrote: { created: [], blocks: [], keys: [], local_keys: [] },
+        findings: [],
+      };
+    },
+  });
+  const request = context({ options: {
+    "--yes": true,
+    "--host": ["claude", "vscode"],
+  } });
+  await command.run?.(request);
+  assert.deepEqual(preflightHosts, ["claude", "vscode"]);
+  assert.deepEqual(initHosts, ["claude", "vscode"]);
+  assert.match(
+    request.captures.stdout.text(),
+    /No agent host found; skills are in \.agents\/skills\/\. Rerun with `--host claude` to set up Claude Code\./,
+  );
+
+  const invalid = await command.run?.(context({
+    options: { "--yes": true, "--host": "unknown" },
+  })) as { findings: Array<{ code: string }> };
+  assert.equal(invalid.findings[0]?.code, "TN-USAGE-INIT");
+});
+
 test("init command turns policy failures into canonical findings", async () => {
   const command = makeInitCommand({
     preflight: async () => ({
@@ -241,7 +377,7 @@ test("init command turns policy failures into canonical findings", async () => {
 
 test("upgrade, remove and doctor wrappers preserve their public results", async () => {
   const upgradeValue = {
-    from: "0.1.0-alpha.0",
+    from: packageVersion,
     to: "0.1.0-alpha.1",
     changed: [{ path: "tenet.lock", action: "replaced" as const }],
   };

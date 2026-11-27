@@ -59,40 +59,71 @@ First findings: docs/architecture.md links 2 missing files · 3 skipped tests
 → next: tenet onboard drafts your specifications (about 15 minutes of agent time)
 ```
 
-Every file is listed before it is written, and recorded so `tenet remove` can undo exactly this (Part 4).
+Every file is listed before it is written, and recorded so `tenet remove` can undo exactly this (Part 4). When no test runner is detected, `init` asks *"What command runs your tests? (blank to skip)"* interactively, or writes no test check under `--yes` and tells you how to add one in `tenet.yaml`.
 
 **Step 2 · Your agent: draft your specifications.** `tenet onboard` builds an inventory of your project (modules, interfaces, configuration, tests, docs and their age, owners) and hands it to your agent with the `draft-specs` skill. Before drafting, your agent asks you what code can't tell it: what the project is for, who it serves, what it must never do, what matters most. It then drafts five views of your project (vision, requirements, design, experience, plan), one part of the codebase at a time, as one `tenet/intent.md` for a small project or separate documents for a larger one, and opens one onboarding pull request with the setup files. Nothing in it is in force yet.
 
 Each statement names its origin: *observed* in code or tests (cite file and lines or test), *documented* (cite the section), *asked* (your answer), or *inferred* (flagged). The draft lists conflicts and says “undecided, needs you” when sources give no answer. Drafting reads code through your agent and its model provider; `tenet onboard --inventory-only` stops before drafting.
 
-**Step 3 · You: read and bless.** `tenet onboard` writes this card into the onboarding pull request's description (CI cards start once the setup is merged):
+**Step 3 · You: read and bless.** Run `tenet onboard --card` after committing the drafts. Paste the card into the setup pull request if you use one. CI cards start once the setup is merged.
+
+> **Proposal · CP-0066 AB-A8–A10.** Onboarding card wording and next steps.
 
 ```markdown
 ### Tenet onboarding · drafted from 7c3e1a · nothing is in force until you bless it
-Read: README.md, docs/architecture.md, 2 ADRs, 214 source files, 88 tests · Skipped: .env*, vendor/
-✓ all 41 citations checked against the code
+Read: README.md, docs/architecture.md, 2 ADRs, 214 source files, 88 test files, 0 instruction files · Skipped: .env*, vendored files
+✓ 41 citations resolve (file and lines exist)
 Conflicts (settle these first)
-  ! README says "retried twice"; src/retry.ts:42 and its test retry once. Which is intended?
-Sections (about 25 minutes)
-  Vision          6 statements · 5 asked, 1 documented                          3 min
-  Requirements   14 · 9 observed (7 cite tests), 3 documented, 2 inferred     9 min
-  Design          8 · all observed                                              6 min
-  Experience     undecided: no user-facing docs found · needs you               1 min
-  Plan            4 open issues proposed as next work · nothing committed        3 min
-→ gh pr checkout 12, then tenet bless in your terminal (or edit the files first)
+  ! CF-1 README says "retried twice"; src/retry.ts:42 and its test retry once. Which is intended?
+Open questions (1)
+  ! Q-1 Which retry failures should we show to the shopper?
+Sections (about 22 minutes)
+  Vision · 6 statements · 5 asked, 1 documented · 3 min
+  Requirements · 14 statements · 3 documented, 9 observed, 2 inferred · 9 min
+  Design · 8 statements · 8 observed · 6 min
+  Experience · 1 statement · 1 unlabelled · 1 min
+  Plan · 4 statements · 4 asked · 3 min
+Updated the draft revision in:
+  tenet/vision.md
+  tenet/specs/prd.md
+Commit these files with the setup changes.
+→ Commit your changes, then rerun tenet onboard --card.
 ```
+
+The card lists any files it stamped on this run. It omits the conflicts and open-questions headings when their lists are empty. Its last line uses the first matching state below.
+
+| Local state | Last line |
+|---|---|
+| Changes to commit with `--pr 12` | `→ Commit your changes, then rerun tenet onboard --card --pr 12.` |
+| Changes to commit | `→ Commit your changes, then rerun tenet onboard --card.` |
+| Clean tree with `--pr 12` | `→ gh pr checkout 12, then tenet bless in your terminal (or edit the files first)` |
+| Clean branch without an upstream | `→ Push this branch to set its upstream, or run tenet bless locally.` |
+| Clean branch with an upstream, without a supplied pull request number | `→ Open a pull request, or run tenet bless locally.` |
+| Detached HEAD with a clean tree, without a supplied pull request number | `→ Switch to a branch before opening a pull request, or run tenet bless locally.` |
+
+For partially resolved citations, the count of citations that resolve comes first, then `! <count> of <total> citations need attention` and the findings. Tenet uses the supplied pull request number and local Git state.
+
+> **Proposal · CP-0066 AB-A1–A5.** Blessing session.
 
 ```text
 $ tenet bless
-Who is blessing? 1. ved  2. priya > 1
-Conflict 1 of 1: README says "retried twice"; src/retry.ts:42 and its test retry once.
-  1. Retry once is intended (the README is wrong)  2. Retry twice (the code is a defect)  3. Decide later
+Who is blessing? 1. ved (Enter) >
+Conflict CF-1: README says "retried twice"; src/retry.ts:42 and its test retry once.
+  1. Retry once is intended
+  2. Retry twice
+  3. Decide later
 > 1
-Vision (3 min) · bless / edit / reject / later? bless
-Requirements (9 min) · 2 inferred statements must be edited first → opened in your editor
+Does this choice contradict a drafted statement? Enter one of R-1, or type no > no
+Vision (3 min) · bless / edit / reject / defer? bless
+Question Q-1: Which retry failures should we show to the shopper?
+  1. Answer
+  2. Not a blocker
+  3. Skip section
+> 3
+Skipping Requirements · open items: Q-1
 ...
-✓ 4 sections blessed · 1 for later
-→ git add tenet/ && git commit -m "Bless specifications" && git push · then merge
+Blessed 4 of 5 sections
+→ git add -- "tenet" && git commit -m "Bless specifications"
 ```
 
 Only a person explicitly blesses, via `tenet bless` in a terminal or review from alpha.1. Merging setup or staying silent never blesses. Settling a conflict records your answer. Your agent fixes the README as a normal change. Alpha.0 records the person without proof and lists changed blessings and committers on cards. Review attribution starts in alpha.1 and signing in alpha.2. Blessing sets what is in force; correctness is your judgment. The blessed section remains binding while an edit awaits blessing. If cited code changes, the command shows the diff for one-key confirmation. Bless piecemeal. Agents treat unblessed sections as draft hints. Merge setup to get proof cards on subsequent pull requests.
@@ -153,19 +184,22 @@ Would have blocked: AB-2 has no test
 | `Would have blocked` | What a rule would stop if you turned it on |
 | `advisory` | CI produced this without signing it (verified work signs it) |
 
-Editing the description makes the card re-check without rerunning tests. Pull requests from forks get the same card. A tagged test counts only if this pull request added the tag, so an old test can't stand in for a new item.
+Editing the description makes the card re-check without rerunning tests. Pull requests from forks get the same card. A tagged test counts only if this pull request added the tag, so an old test can't stand in for a new item. Run `tenet verify --local` to preview the same proof card against your working tree before pushing.
 
 **Review and merge.** Your forge's normal approve button. Working alone, you accept your own changes; the board shows them as `self-accepted` (alpha.1).
 
 **See where things are.** In the first release `tenet board` shows your specifications: what waits for your blessing, what was edited or had its cited code change since you blessed it (the blessed text still applies), and spec debt. Pull requests, decisions and what is blocked join it in alpha.1, with a page view (`tenet board --open`).
 
+> **Proposal · CP-0066 AB-A11.** Group visible sections by file. The header names the checked-out branch and commit. Nonempty status counts share one line. Under a section with open items, show `    Open conflicts: CF-1, CF-2` and `    Open questions: Q-1` when applicable.
+
 ```text
 $ tenet board
 checkout · main 9f3c2e1 · level observe
-Waiting for your blessing (1)
-  Experience · undecided since onboarding
-Sources changed (1)
+Waiting for your blessing (1) · Sources changed (1)
+tenet/specs/prd.md
   Requirements › C-4 · src/retry.ts changed after you blessed it; the blessed text still applies
+tenet/specs/ux-spec.md
+  Experience · undecided since onboarding
 Spec debt (1)
   Design cites src/legacy/queue.ts, which no longer exists
 ```

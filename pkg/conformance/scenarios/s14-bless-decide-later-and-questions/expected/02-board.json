@@ -1,0 +1,41 @@
+{
+  "ok": true,
+  "command": "board",
+  "result": {
+    "specs": {
+      "$assert": "contains",
+      "value": [
+        {
+          "path": "tenet/vision.md",
+          "section": "purpose",
+          "state": "blessed"
+        },
+        {
+          "path": "tenet/vision.md",
+          "section": "boundaries",
+          "state": "blessed"
+        },
+        {
+          "path": "tenet/vision.md",
+          "section": "quality",
+          "state": "blessed"
+        },
+        {
+          "path": "tenet/specs/prd.md",
+          "section": "orders",
+          "state": "blessed"
+        },
+        {
+          "path": "tenet/specs/prd.md",
+          "section": "logging",
+          "state": "blessed"
+        },
+        {
+          "path": "tenet/specs/prd.md",
+          "section": "timeouts",
+          "state": "draft"
+        }
+      ]
+    }
+  }
+}

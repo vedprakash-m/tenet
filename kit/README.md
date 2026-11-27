@@ -12,7 +12,7 @@ This folder is the kit: everything here ships in `@vedprakash-m/tenet` (`kit/`) 
 | [practices/default.md](practices/default.md) | Default working rules embedded in `AGENTS.md` | Alpha.0 |
 | [templates/](templates/) | Document and prompt templates (`intent`, `vision`, `requirements`, `design`, `experience`, `plan`, `pull-request`, `agents-block`, `escalation`) | Alpha.0 |
 | [agents/](agents/) | Reference agent cards (`drafter`, `spec-reviewer` in alpha.0; careful-lane cards later) | Alpha.0 |
-| [skills/](skills/) | Open agent-skills (`draft-specs`, `work-a-change`, `review-with-findings`) | Alpha.0 |
+| [skills/](skills/) | Open agent-skills (`tenet-draft-specs`, `tenet-work-a-change`, `tenet-review-with-findings`) | Alpha.0 |
 | `kit.json` | Generated at release: version and SHA-256 of every file | Release build |
 
 Placeholders such as `<owner>` and `{records}` are filled by each project (`paths.records` defaults to `tenet`).

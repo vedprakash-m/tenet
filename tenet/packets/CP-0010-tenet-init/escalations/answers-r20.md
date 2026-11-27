@@ -6,6 +6,7 @@ Ruling on published prerelease lock pins, `x-integrity-source: "local"` verifica
 
 - **Gap (`src/install/integrity.ts:146`, `audit-r20.md` line 30):** `releaseIntegrity()` currently treats any version containing `-` as local/offline (`version.includes("-")`), skipping `npm view <pkg>@<version> dist.integrity --json` even for published prereleases (`0.1.0-alpha.0`, `-rc.1`).
 - **Rule:** Skip registry lookup only for `version === "0.0.0"` or `--offline` (when no `TENET_INSTALL_INTEGRITY` or `environment.registry` override is supplied). Published prereleases query `dist.integrity` from npm and record a standard registry lock (no `x-integrity-source: "local"`). Fall back to `x-integrity-source: "local"` only when `version === "0.0.0"`, `--offline`, or the registry lookup returns not-found (`E404` / unpublished tarball).
+- **Transport failure vs. local integrity:** A registry transport failure is `TN-ENV-REGISTRY` (environment, exit 3); only "not found" plus `0.0.0` or `--offline` leads to local integrity.
 
 ## 2. How CI acquires and verifies a `x-integrity-source: "local"` lock
 

@@ -44,6 +44,7 @@ import { localIntegrityWarning, releaseIntegrity } from "./integrity.js";
 
 export type WritePlanOptions = PreflightOptions & {
   force?: boolean;
+  command?: "init" | "upgrade";
 };
 
 export type ApplyPlanOptions = {
@@ -51,6 +52,7 @@ export type ApplyPlanOptions = {
     after?: "pending" | string | number;
   };
   localProfileRoot?: string;
+  offline?: boolean;
 };
 
 async function createdDirectories(cwd: string, paths: string[]): Promise<string[]> {
@@ -609,15 +611,17 @@ function buildPolicy(preflight: PreflightResult, setup: string[], reportPath: st
       id_prefix: "R",
     },
     ...(preflight.facts.owners.length > 0 ? { owners: preflight.facts.owners } : {}),
-    checks: {
-      test: {
-        setup,
-        run: preflight.facts.runner?.command ?? "npm test",
-        report: preflight.facts.runner?.report ?? "none",
-        report_from: preflight.facts.runner?.report_from ?? "file",
-        ...(reportPath ? { report_path: reportPath } : {}),
+    ...(preflight.facts.runner ? {
+      checks: {
+        test: {
+          setup,
+          run: preflight.facts.runner.command,
+          report: preflight.facts.runner.report,
+          report_from: preflight.facts.runner.report_from,
+          ...(reportPath ? { report_path: reportPath } : {}),
+        },
       },
-    },
+    } : {}),
     ...(preflight.plan?.ci_mode === "none" ? {} : {
       ci: {
         mode: preflight.plan?.ci_mode === "existing-ci" ? "existing-job" : "tenet-workflow",
@@ -654,7 +658,7 @@ export async function planWriteSet(
   }
   const cwd = path.resolve(options.cwd ?? preflight.facts.repository.cwd);
   const plan = clonePlan(preflight.plan);
-  const releaseInfo = await releaseIntegrity(options);
+  const releaseInfo = await releaseIntegrity(options, {}, options.command ?? "init");
   const kitPath = path.resolve(options.environment?.kitPath ?? installedKitPath());
   const allKitFiles = await kitFiles(kitPath);
   const digest = await kitDigest(allKitFiles);
@@ -704,21 +708,29 @@ export async function planWriteSet(
     const template = await readFile(path.join(kitPath, "templates", "intent.md"), "utf8");
     const project = path.basename(cwd);
     const owner = preflight.facts.owners[0]?.name ?? "Project Owner";
-    const purpose = preflight.facts.purpose ?? "Undecided · edit or run tenet onboard";
+    const purpose = options.answers?.purpose;
     files.set("tenet/intent.md", {
       path: "tenet/intent.md",
       content: `${seededIntent(template
         .replaceAll("<owner>", owner)
-        .replaceAll("<Project>", project)
-        .replace("Checkout recovers cleanly from transient gateway timeouts for returning shoppers.",
-          purpose))
+        .replaceAll("<Project>", project), purpose)
         .replace(/\r\n/g, "\n")
         .replace(/\n+$/, "")}\n`,
     });
   }
 
-  function seededIntent(source: string): string {
+  function seededIntent(source: string, purpose: string | undefined): string {
+    const vision = [
+      "<!-- Purpose, primary users, north star, value table, boundaries. Never name tools, files or vendors here. -->",
+      "",
+      "<!-- Add your vision here, or run tenet onboard. -->",
+      "",
+      "| ID | Purpose or boundary | Serves / Target | Origin |",
+      "|---|---|---|---|",
+      ...(purpose ? [`| V-1 | ${purpose} | Undecided | asked |`] : []),
+    ].join("\n");
     const emptySections = [
+      ["vision", vision],
       ["requirements", "<!-- Add only requirements supplied by the Owner. -->"],
       ["design", "<!-- Add grounded design facts after the Owner supplies requirements. -->"],
       ["experience", "<!-- Add grounded experience facts after the Owner supplies them. -->"],
@@ -753,7 +765,7 @@ export async function planWriteSet(
   const workflowBindings = {
     locked: releaseInfo.version,
     version: releaseInfo.version,
-    "default branch": preflight.facts.repository.branch ?? "main",
+    "default branch": preflight.facts.repository.default_branch ?? "main",
   };
   if (preflight.facts.repository.forge === "github") {
     let testWorkflowName = "Tenet tests";
@@ -793,9 +805,13 @@ export async function planWriteSet(
     "x-created-directories": [...new Set([
       ...(priorManifest?.["x-created-directories"] ?? []),
       ...await createdDirectories(cwd, [
-      ...plan.created,
-      ...plan.blocks.map((block) => block.path),
-      ...plan.keys.map((key) => key.path),
+        ...plan.created,
+        ...plan.blocks.map((block) => block.path),
+        ...plan.keys.map((key) => key.path),
+        ".tenet/onboard/inventory.json",
+        ".tenet/reports/test.xml",
+        ".tenet/cache/generated",
+        ".tenet/runs/generated",
       ]),
     ])].sort(compareUtf16),
   };
@@ -1109,7 +1125,7 @@ function completeWrote(plan: WriteSet, writes: PendingWrite[]): InitWrote {
   return wrote;
 }
 
-function pendingIntegrityFinding(pending: PendingManifest): InstallFinding[] {
+function pendingIntegrityFinding(pending: PendingManifest, offline = false): InstallFinding[] {
   const lock = pending.writes.find((write) => write.path === "tenet.lock");
   if (!lock?.content) return [];
   try {
@@ -1126,7 +1142,7 @@ function pendingIntegrityFinding(pending: PendingManifest): InstallFinding[] {
     return [{
       kind: "local-integrity",
       path: "tenet.lock",
-      message: localIntegrityWarning(value.package, value.version),
+      message: localIntegrityWarning(value.package, value.version, offline),
     }];
   } catch {
     return [];
@@ -1243,7 +1259,7 @@ export async function resumePendingPlan(
   return {
     plan: plan.plan,
     wrote,
-    findings: pendingIntegrityFinding(pending),
+    findings: pendingIntegrityFinding(pending, options.offline === true),
   };
 }
 

@@ -264,11 +264,12 @@ function checkReasons(card: ProofCard, findings: Finding[], acceptanceProblems: 
   return rules.map((rule, index) => ({ rule, mode: "advise", would_block: Boolean(reasons[index]), reason: reasons[index] ?? "" }));
 }
 
-function whyFor(card: ProofCard, host: string[]): ProofCard["why"] {
+function whyFor(card: ProofCard, host: string[], notes: string[] = []): ProofCard["why"] {
   return [
     ...(card.items.some((item) => item.result === "passed" && item.authorship === "written-here")
       ? [{ text: "tests written in this change require reviewer judgment", class: "judge" as const }] : []),
     ...card.weakening.not_checked.map((language) => ({ text: `${language} files not checked for test weakening`, class: "not-tenet" as const })),
+    ...notes.map((text) => ({ text, class: "host" as const })),
     ...host.map((text) => ({ text, class: "host" as const })),
   ];
 }
@@ -427,16 +428,34 @@ async function evaluate(event: VerifyEvent, pr: PullRequest | undefined, deps: V
   let deltas: Awaited<ReturnType<VerifyDeps["deltas"]>> = [];
   let declared: Awaited<ReturnType<typeof declaredTags>> = { acceptance: {}, requirement: {} };
   let weakened: Awaited<ReturnType<typeof weakening>> = { found: false, by: [], notes: [], not_checked: [] };
+  const notes: string[] = [];
   if (loaded?.warning) host.push(loaded.warning);
   if (!loaded) { unavailable = true; host.push("not checked: target policy or kit unavailable"); }
   if (loaded) {
     const { policy } = loaded;
+    const read = deps.policy ?? ((ref, project) => loadPolicy({ ref, cwd: project }));
+    const headPolicy = await read(tested.commit, cwd).catch(() => undefined);
+    const degradedChanged: string[] = [];
+    const infoChanged: string[] = [];
+    for (const [name, baseCheck] of Object.entries(policy.checks ?? {})) {
+      const headCheck = headPolicy?.checks?.[name];
+      if (!headCheck || headCheck.run === baseCheck.run) continue;
+      const failed = data.some(({ bundle }) =>
+        bundle.checks.some((entry) => entry.name === name && entry.outcome !== "success"));
+      if (failed) degradedChanged.push(name);
+      else infoChanged.push(name);
+    }
+    if (degradedChanged.length) {
+      host.push(`check command changed for ${degradedChanged.join(", ")}; runs base policy (takes effect after merge)`);
+    }
+    if (infoChanged.length) {
+      notes.push(`check command changed for ${infoChanged.join(", ")}; runs base policy (takes effect after merge)`);
+    }
     if (data.length) {
       try {
         const hasProposed = data.some(({ bundle }) => bundle.checks.some(proposedCheck));
-        const read = deps.policy ?? ((ref, project) => loadPolicy({ ref, cwd: project }));
         const proposal = hasProposed && (policy.level === "observe" || policy.level === "protect")
-          ? await read(tested.commit, cwd).catch(() => undefined) : undefined;
+          ? headPolicy : undefined;
         evidence = await readEvidence(data, policy, proposal?.checks);
       }
       catch (error) {
@@ -512,7 +531,7 @@ async function evaluate(event: VerifyEvent, pr: PullRequest | undefined, deps: V
   };
   const ruleOutcomes = checkReasons(card, reportFindings, problems, unavailable);
   card.rules = ruleOutcomes.filter((item) => item.would_block);
-  card.why = whyFor(card, host);
+  card.why = whyFor(card, host, notes);
   const conclusion: Conclusion = card.rules.length || card.degraded.length || card.tests.failed ? "neutral" : "success";
   return { card, conclusion, wrote: false, work, run, rules: ruleOutcomes, level: loaded?.policy.level ?? "observe" };
 }

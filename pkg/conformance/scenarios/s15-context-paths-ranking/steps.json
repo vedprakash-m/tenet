@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "scenario": "s15-context-paths-ranking",
+  "spec_refs": [
+    "tenet/packets/CP-0066-dogfood-0.1.1/definition.md#b--agents-get-the-right-context-and-can-find-the-skills-track-3"
+  ],
+  "steps": [
+    {
+      "id": "01-context-paths-json",
+      "kind": "cli",
+      "args": [
+        "context",
+        "--paths",
+        "app/core/x.py",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/01-context-paths.json"
+    },
+    {
+      "id": "02-context-paths-plain",
+      "kind": "cli",
+      "args": [
+        "context",
+        "--paths",
+        "app/core/x.py"
+      ],
+      "expectExitCode": 0,
+      "expectedStdoutIncludes": [
+        "R-7",
+        "Core module must validate config before running."
+      ]
+    },
+    {
+      "id": "03-context-paths-comma",
+      "kind": "cli",
+      "args": [
+        "context",
+        "--paths",
+        "app/core/x.py,b/two.py",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/03-context-multi.json"
+    },
+    {
+      "id": "04-context-paths-repeated",
+      "kind": "cli",
+      "args": [
+        "context",
+        "--paths",
+        "app/core/x.py",
+        "--paths",
+        "b/two.py",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/03-context-multi.json"
+    },
+    {
+      "id": "05-context-include-drafts-ids-json",
+      "kind": "cli",
+      "args": [
+        "context",
+        "--include-drafts",
+        "--ids",
+        "R-9",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/05-context-drafts.json"
+    },
+    {
+      "id": "06-context-include-drafts-ids-plain",
+      "kind": "cli",
+      "args": [
+        "context",
+        "--include-drafts",
+        "--ids",
+        "R-9"
+      ],
+      "expectExitCode": 0,
+      "expectedStdoutIncludes": [
+        "draft",
+        "tenet/specs/prd.md",
+        "R-9",
+        "Upcoming feature must emit structured events."
+      ]
+    },
+    {
+      "id": "07-mcp-include-drafts-ids",
+      "kind": "mcp",
+      "requests": [
+        {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "method": "initialize",
+          "params": {
+            "protocolVersion": "2025-11-25"
+          }
+        },
+        {
+          "jsonrpc": "2.0",
+          "id": 2,
+          "method": "tools/call",
+          "params": {
+            "name": "tenet_context",
+            "arguments": {
+              "include_drafts": true,
+              "ids": [
+                "R-9"
+              ]
+            }
+          }
+        }
+      ],
+      "expectedJsonMatch": "expected/07-mcp-drafts.json"
+    },
+    {
+      "id": "08-context-include-drafts-query-json",
+      "kind": "cli",
+      "args": [
+        "context",
+        "--include-drafts",
+        "--query",
+        "structured events",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/05-context-drafts.json"
+    }
+  ]
+}

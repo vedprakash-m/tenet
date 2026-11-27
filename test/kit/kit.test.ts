@@ -53,11 +53,35 @@ test("the minimal pack carries the alpha.0 pack fields (tech spec §6.2)", async
   assert.ok(!rules.includes("acceptance-proven"));
 });
 
-test("skills exist and stay within their 2,000-token budget", async () => {
+test("[AB-B4] [F-12] skills use installed names and stay within their 2,000-token budget", async () => {
   for (const name of ["draft-specs", "work-a-change", "review-with-findings"]) {
     const text = await read("skills", name, "SKILL.md");
     assert.ok(tokens(text) <= 2000, `${name}: ${tokens(text)} tokens`);
+    assert.equal(frontMatter(text) && (frontMatter(text) as Record<string, unknown>).name, `tenet-${name}`);
   }
+});
+
+test("[AB-D1] [F-01] user docs include release-tarball installation and SHA256SUMS", async () => {
+  const readme = await readFile(path.join(root, "README.md"), "utf8");
+  const gettingStarted = await readFile(path.join(root, "docs", "getting-started.md"), "utf8");
+  for (const text of [readme, gettingStarted]) {
+    assert.match(text, /release tarball/i);
+    assert.match(text, /SHA256SUMS/);
+  }
+});
+
+test("[AB-D9] [F-13] pull-request template has no live Implements example", async () => {
+  const template = await read("templates", "pull-request.md");
+  assert.doesNotMatch(template, /^Implements:\s*R-1$/m);
+  assert.doesNotMatch(template, /^Implements:\s*R-1/m);
+  assert.match(template, /<!--\s*Worked example:/);
+});
+
+test("[AB-D11] [F-02] FAQ and docs index are user-facing with no per-answer sources", async () => {
+  const faq = await readFile(path.join(root, "docs", "faq.md"), "utf8");
+  assert.doesNotMatch(faq, /^Source:/m);
+  const docsIndex = await readFile(path.join(root, "docs", "README.md"), "utf8");
+  assert.doesNotMatch(docsIndex, /Written from M1|CP-0013/);
 });
 
 test("agent cards and the default practices are present with front matter", async () => {

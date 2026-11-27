@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import { run } from "../../../dist/cli.js";
 import { runBless } from "../../../dist/onboard/bless.js";
-import { onboardingCard } from "../../../dist/onboard/card.js";
+import { onboardingCard, onboardingCardText } from "../../../dist/onboard/card.js";
 import { parseDoc } from "../../../dist/specs/parse.js";
 import { writeAtomic } from "../../../dist/core/fs.js";
 import { validate } from "../../../dist/core/schema.js";
@@ -198,6 +198,14 @@ test("confirm uses the anchor sidecar after a squash and preserves a separate te
   const blessed = await speak(seed, "1\nbless\n");
   assert.deepEqual(blessed.findings, []);
   const oldCopy = await raw(seed, copy);
+  const sidecar = JSON.parse(await raw(seed, `${copy}.anchors.json`));
+  assert.deepEqual(sidecar["src/retry.ts:1"], {
+    hash: "sha256:fd0f63a7afc28f164530786b92041b209669ba5fc08311ddcfbd5b59e04e53a8",
+    start: 1,
+    end: 1,
+    blessed_at_rev: oldHead,
+  });
+  assert.doesNotMatch(JSON.stringify(sidecar), /const times = 1/);
   await seed.write(filename, (await raw(seed)).replace("Retry once.", "Retry twice."));
   await seed.write("src/retry.ts", "const times = 2;\n");
   commit(seed, "update source and propose a draft");
@@ -213,7 +221,7 @@ test("confirm uses the anchor sidecar after a squash and preserves a separate te
   const result = await runBless({ cwd: cloned }, { ...tty, now: at });
   assert.deepEqual(result.findings, []);
   assert.equal(result.result?.confirmed, 1);
-  assert.match(tty.stdout.text, /Old src\/retry\.ts:1:\nconst times = 1;/);
+  assert.match(tty.stdout.text, /Old src\/retry\.ts:1:\nsrc\/retry\.ts:1-1/);
   assert.match(tty.stdout.text, /New src\/retry\.ts:1:\nconst times = 2;/);
   assert.equal(await readFile(path.join(cloned, copy), "utf8"), oldCopy);
   const live = parseDoc(filename, await readFile(path.join(cloned, filename), "utf8"));
@@ -221,6 +229,33 @@ test("confirm uses the anchor sidecar after a squash and preserves a separate te
   assert.equal(live.sections[0]?.blessed_at_rev, squashed);
   const last = JSON.parse((await readFile(path.join(cloned, log), "utf8")).trim().split("\n").at(-1));
   assert.equal(last.statements.drafted, null);
+});
+
+test("[AB-E2] [F-47] confirm reads old anchor text from the blessed commit", async (t) => {
+  const repo = await setup(t, `## Requirements\n${requirement}`);
+  const revision = repo.git(["rev-parse", "HEAD"]).trim();
+  assert.equal((await speak(repo, "1\nbless\n")).result?.blessed, 1);
+  await repo.write("src/retry.ts", "const times = 2;\n");
+  const tty = fakeTty("1\nconfirm\ny\n");
+  const result = await runBless({ cwd: repo.path }, { ...tty, now: at });
+  assert.deepEqual(result.findings, []);
+  assert.match(tty.stdout.text, /Old src\/retry\.ts:1:\nconst times = 1;/);
+  assert.match(tty.stdout.text, /New src\/retry\.ts:1:\nconst times = 2;/);
+  const sidecar = JSON.parse(await raw(repo, `${copy}.anchors.json`));
+  assert.equal(sidecar["src/retry.ts:1"]?.blessed_at_rev, revision);
+});
+
+test("[AB-E2] [F-47] confirm shows the range when the blessed commit has a different anchor", async (t) => {
+  const repo = await setup(t, `## Requirements\n${requirement}`);
+  await repo.write("src/retry.ts", "const times = 2;\n");
+  assert.equal((await speak(repo, "1\nbless\n")).result?.blessed, 1);
+  await repo.write("src/retry.ts", "const times = 3;\n");
+  const tty = fakeTty("1\nconfirm\ny\n");
+  const result = await runBless({ cwd: repo.path }, { ...tty, now: at });
+  assert.deepEqual(result.findings, []);
+  assert.match(tty.stdout.text, /Old src\/retry\.ts:1:\nsrc\/retry\.ts:1-1/);
+  assert.doesNotMatch(tty.stdout.text, /Old src\/retry\.ts:1:\nconst times = 1;/);
+  assert.match(tty.stdout.text, /New src\/retry\.ts:1:\nconst times = 3;/);
 });
 
 test("a failed log write does not leave the section blessed or publish a new sidecar", async (t) => {
@@ -261,23 +296,27 @@ test("onboard --card counts sources and origins, records the draft commit, and r
   assert.equal(card.card, [
     `### Tenet onboarding · drafted from ${inventoryRef.slice(0, 7)} · nothing is in force until you bless it`,
     "Read: 1 source file, 0 test files, 0 instruction files · Skipped: none",
-    "✓ all 1 citations checked against the code",
+    "✓ 1 citation resolves (file and lines exist)",
     "Conflicts (settle these first)",
     "  ! CF-1 Sources disagree.",
     "Sections (about 1 minute)",
     "  Requirements · 1 statement · 1 observed · 1 min",
-    "→ gh pr checkout 12, then tenet bless in your terminal (or edit the files first)",
+    "Updated the draft revision in:",
+    "  tenet/intent.md",
+    "Commit these files with the setup changes.",
+    "→ Commit your changes, then rerun tenet onboard --card --pr 12.",
     "",
   ].join("\n"));
   const marked = await raw(repo);
   assert.equal((parseDoc(filename, marked).front?.tenet as { drafted_at_rev: string } | undefined)?.drafted_at_rev, draft);
-  assert.deepEqual(await onboardingCard({ cwd: repo.path, pr: 12, format: "result" }), card);
-  assert.equal(await onboardingCard({ cwd: repo.path, pr: 12 }), card.card);
+  const repeat = await onboardingCard({ cwd: repo.path, pr: 12, format: "result" });
+  assert.deepEqual(repeat, { ...card, card: card.card.replace(/Updated the draft revision in:\n  tenet\/intent\.md\nCommit these files with the setup changes\.\n/, "") });
+  assert.equal(await onboardingCard({ cwd: repo.path, pr: 12 }), repeat.card);
   assert.equal(await raw(repo), marked);
   assert.equal(repo.git(["rev-parse", "HEAD"]).trim(), draft);
   const output = fakeTty();
   assert.equal(await run(["onboard", "--card"], { cwd: repo.path, ...output, checkEnvironment: false }), 0);
-  assert.match(output.stdout.text, /gh pr checkout <n>/);
+  assert.match(output.stdout.text, /Commit your changes, then rerun tenet onboard --card\./);
   const jsonOutput = fakeTty();
   assert.equal(await run(["--json", "onboard", "--card"], {
     cwd: repo.path, ...jsonOutput, checkEnvironment: false,
@@ -289,7 +328,7 @@ test("onboard --card counts sources and origins, records the draft commit, and r
   assert.deepEqual(jsonResult, result);
   assert.deepEqual(Object.keys(result).sort(), ["card", "drafted_at_rev"]);
   assert.equal(result.drafted_at_rev, draft);
-  assert.match(result.card, /gh pr checkout <n>/);
+  assert.match(result.card, /Commit your changes, then rerun tenet onboard --card\./);
   const ajv = new Ajv2020();
   for (const key of ["inventory", "assignment", "finding"]) {
     ajv.addSchema(JSON.parse(await readFile(`kit/schemas/${key}.json`, "utf8")));
@@ -412,7 +451,14 @@ test("confirm reports a missing anchor source and preserves both prior files", a
   await speak(repo, "1\nbless\n");
   const before = await raw(repo, copy);
   const sidecar = await raw(repo, `${copy}.anchors.json`);
-  assert.deepEqual(JSON.parse(sidecar), { "src/retry.ts:1": "const times = 1;" });
+  assert.deepEqual(JSON.parse(sidecar), {
+    "src/retry.ts:1": {
+      hash: "sha256:fd0f63a7afc28f164530786b92041b209669ba5fc08311ddcfbd5b59e04e53a8",
+      start: 1,
+      end: 1,
+      blessed_at_rev: repo.git(["rev-parse", "HEAD"]).trim(),
+    },
+  });
   await unlink(path.join(repo.path, "src/retry.ts"));
   const result = await speak(repo, "1\nconfirm\ny\n");
   assert.match(result.text, /New src\/retry.ts:1:\n\(unavailable\)/);
@@ -441,7 +487,7 @@ test("onboarding card ignores citations in special sections and omits resolved c
   await repo.write(filename, spec(`## Requirements\n${requirement}\n## Open questions\n- R-2 Legacy. {origin: observed; cites: missing.ts:1}\n## Conflicts\n- [x] CF-1 Settled. | Resolution: retry once`));
   const stamp = commit(repo, "draft");
   const first = await onboardingCard({ cwd: repo.path, format: "result" });
-  assert.match(first.card, /all 1 citations checked/);
+  assert.match(first.card, /1 citation resolves \(file and lines exist\)/);
   assert.doesNotMatch(first.card, /missing\.ts|Conflicts \(settle/);
   commit(repo, "record stamp");
   assert.equal((await onboardingCard({ cwd: repo.path, format: "result" })).drafted_at_rev, stamp);
@@ -465,4 +511,151 @@ test("onboarding card rolls back prior draft stamps when a later document write 
   assert.equal(calls, 2);
   assert.equal(await raw(repo, first), draft);
   assert.equal(await raw(repo, second), draft);
+});
+
+function numberedSections(label: string, count: number, itemPrefix: string) {
+  return Array.from({ length: count }, (_, index) =>
+    `## ${label} ${index + 1}\n- ${itemPrefix}-${index + 1} Keep a paper receipt. {origin: asked}`);
+}
+
+async function separateDrafts(t: TestContext) {
+  const repo = await setup(t);
+  await repo.write("tenet.yaml", config.replace("    - {path: intent.md, level: L1}", [
+    "    - {path: vision.md, level: L0}",
+    "    - {path: specs/prd.md, level: L1}",
+  ].join("\n")));
+  await repo.write("tenet/vision.md", spec(numberedSections("Goal", 9, "V").join("\n\n"))
+    .replace("doc: intent, level: L1", "doc: vision, level: L0"));
+  await repo.write("tenet/specs/prd.md", spec([
+    ...numberedSections("Policy", 10, "R"),
+    "## Conflicts",
+    ...[1, 3, 2].map((n) =>
+      `- [ ] CF-${n} (section: policy-${n}) Pick a channel. | 1: paper | 2: email`),
+    "## Open questions",
+    ...Array.from({ length: 7 }, (_, index) =>
+      `- [ ] Q-${index + 1} (section: policy-${index + 4}) Which format?`),
+  ].join("\n\n")).replace("doc: intent", "doc: prd"));
+  commit(repo, "draft receipt specifications");
+  return repo;
+}
+
+test("[AB-A1] [F-43] a postponed conflict leaves its section draft and review continues", async (t) => {
+  const repo = await separateDrafts(t);
+  const answers = ["1", "1", "no", "3", "2", "no", ...Array(11).fill("bless"), ...Array(7).fill("3")];
+  const result = await speak(repo, answers.join("\n") + "\n");
+  assert.equal(result.findings.some(({ severity }) => severity === "error"), false);
+  assert.equal(result.result?.blessed, 11);
+  assert.ok(result.text.indexOf("Conflict CF-2") > result.text.indexOf("Conflict CF-3"));
+  assert.match(result.text, /Goal 9 \(1 min\)/);
+  const prd = parseDoc("tenet/specs/prd.md", await raw(repo, "tenet/specs/prd.md"));
+  assert.deepEqual(prd.sections.slice(0, 3).map(({ state }) => state), ["blessed", "blessed", "draft"]);
+  assert.doesNotMatch(result.text, /Policy 3 \(1 min\)/);
+});
+
+test("[AB-A2] [F-44] questions can be answered, set aside as nonblocking, or left open", async (t) => {
+  const repo = await setup(t, [
+    "## Receipts", "Keep a printable receipt.", "## Register", "Keep a local register.",
+    "## Open questions",
+    "- [ ] Q-1 (section: receipts) Which format?",
+    "- [ ] Q-2 (section: Receipts) Which font?",
+    "- [ ] Q-3 (section: register) Which time zone?",
+  ].join("\n"));
+  const result = await speak(repo, "1\n1\nPlain text.\n2\nbless\n3\n");
+  assert.deepEqual(result.findings, []);
+  assert.equal(result.result?.blessed, 1);
+  assert.ok(result.text.indexOf("Question Q-2") < result.text.indexOf("Receipts ("));
+  const text = await raw(repo);
+  assert.match(text, /\[x\] Q-1.*answer: Plain text\./);
+  assert.match(text, /\[x\] Q-2.*answer: Not a blocker/);
+  assert.match(text, /\[ \] Q-3/);
+  assert.equal((await state(repo, "register"))?.state, "draft");
+});
+
+test("[AB-A3] [F-46] the CLI counts a zero-blessing session and prints its next step", async (t) => {
+  const repo = await setup(t, "## Receipts\nUse plain text.");
+  const shell = fakeTty("1\nlater\n");
+  const exit = await run(["bless"], { cwd: repo.path, ...shell, checkEnvironment: false });
+  assert.equal(exit, 0);
+  assert.match(shell.stdout.text, /Blessed 0 of 1 sections\nNothing is in force yet\n→ git add/);
+  const noChanges = await speak(repo, "1\n");
+  assert.match(noChanges.text, /Blessed 0 of 1 sections\nNothing is in force yet\n→ Run tenet bless/);
+});
+
+test("[AB-A4] [F-45] Enter chooses the only owner and the conflict shows statement IDs", async (t) => {
+  const repo = await setup(t, openConflict);
+  const result = await speak(repo, "\n2\nno\nbless\n");
+  assert.equal(result.result?.blessed, 1);
+  assert.doesNotMatch(result.text, /Choose one of the listed options/);
+  assert.match(result.text, /Does this choice contradict a drafted statement\? [^\n]*R-1/);
+});
+
+test("[AB-A5] [F-48] blessing log measures each section separately", async (t) => {
+  const repo = await setup(t, "## One\nOne receipt.\n## Two\nTwo receipts.");
+  const tty = fakeTty("1\nbless\nbless\n");
+  let elapsed = 0;
+  await runBless({ cwd: repo.path }, {
+    ...tty, now: () => new Date(at().valueOf() + elapsed),
+    stdout: {
+      write(value) {
+        if (value.startsWith("One (")) elapsed += 3_000;
+        if (value.startsWith("Two (")) elapsed += 4_000;
+        return tty.stdout.write(value);
+      },
+    },
+  });
+  const entries = (await raw(repo, log)).trim().split("\n").map((line) => JSON.parse(line));
+  assert.deepEqual(entries.map(({ minutes }) => minutes), [3 / 60, 4 / 60]);
+});
+
+test("[AB-A8] [F-30] the card lists open questions after conflicts", async (t) => {
+  const repo = await setup(t, openConflict + "\n## Open questions\n" +
+    "- [ ] Q-1 (section: requirements) Which format?\n" +
+    "- [x] Q-2 (section: requirements) Which colour? | answer: White");
+  assert.equal(await run(["onboard", "--inventory-only"], {
+    cwd: repo.path, ...fakeTty(), checkEnvironment: false,
+  }), 0);
+  const card = await onboardingCard({ cwd: repo.path });
+  assert.match(card, /Conflicts[^\n]*\n  ! CF-1[^\n]*\nOpen questions \(1\)\n  ! Q-1 Which format\?/);
+  assert.doesNotMatch(card, /Q-2/);
+});
+
+test("[AB-A9] [F-29] [F-34] the card describes stamps and gives the next step for each branch state", async (t) => {
+  const repo = await setup(t, "## Receipts\nUse plain text.");
+  assert.equal(await run(["onboard", "--inventory-only"], {
+    cwd: repo.path, ...fakeTty(), checkEnvironment: false,
+  }), 0);
+  const first = await onboardingCard({ cwd: repo.path });
+  assert.match(first, /Updated the draft revision in:\n  tenet\/intent\.md\nCommit these files/);
+  assert.match(first.trimEnd().split("\n").at(-1), /^→ Commit your changes/);
+  commit(repo, "pin receipt draft");
+  assert.match((await onboardingCard({ cwd: repo.path })).trimEnd().split("\n").at(-1), /^→ Push this branch/);
+  repo.git(["branch", "published"]);
+  repo.git(["branch", "--set-upstream-to", "published"]);
+  assert.match((await onboardingCard({ cwd: repo.path })).trimEnd().split("\n").at(-1), /^→ Open a pull request/);
+  const shell = fakeTty();
+  const exit = await run(["onboard", "--card", "--pr", "12"], {
+    cwd: repo.path, ...shell, checkEnvironment: false,
+  });
+  assert.equal(exit, 0, shell.stderr.text);
+  assert.match(shell.stdout.text.trimEnd().split("\n").at(-1), /^→ gh pr checkout 12/);
+});
+
+test("[CP-0066-R2] the card uses the singular only for one resolved citation", () => {
+  assert.deepEqual([0, 1, 2].map(onboardingCardText.citations), [
+    "✓ 0 citations resolve (file and lines exist)",
+    "✓ 1 citation resolves (file and lines exist)",
+    "✓ 2 citations resolve (file and lines exist)",
+  ]);
+});
+
+test("[AB-A10] [F-32] the card reports that a Markdown citation resolves", async (t) => {
+  const repo = await setup(t, "## Receipts\n- R-1 Keep a receipt. {origin: documented; cites: README.md:1}");
+  await repo.write("README.md", "# Receipt formats\n");
+  commit(repo, "receipt notes");
+  assert.equal(await run(["onboard", "--inventory-only"], {
+    cwd: repo.path, ...fakeTty(), checkEnvironment: false,
+  }), 0);
+  const card = await onboardingCard({ cwd: repo.path });
+  assert.match(card, /^✓ 1 citation resolves \(file and lines exist\)$/m);
+  assert.doesNotMatch(card, /checked against the code/);
 });

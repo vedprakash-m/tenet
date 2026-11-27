@@ -1,0 +1,2 @@
+Minimal design stub.
+

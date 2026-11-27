@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "command": "check",
+  "result": {
+    "findings": [
+      {
+        "severity": "warning",
+        "message": {
+          "$assert": "includes",
+          "value": "3 vision items wait for a blessed requirement; bless the PRD next"
+        }
+      }
+    ],
+    "summary": {
+      "errors": 0,
+      "warnings": 1
+    }
+  }
+}

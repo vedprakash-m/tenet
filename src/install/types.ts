@@ -3,6 +3,7 @@ import type { CheckResult } from "../specs/check.js";
 import type { LockVerification } from "../policy/index.js";
 
 export type HostCapability = "skills+mcp" | "mcp" | "instructions";
+export type SelectableHost = "claude" | "cursor" | "copilot" | "vscode";
 export type ProjectKind = "service" | "library" | "data" | "infrastructure" | "ml" | "other";
 export type RunnerKind = "vitest" | "jest" | "node:test" | "pytest" | "go" | "ctrf" | "other";
 export type CiMode = "existing-ci" | "tenet-workflow" | "none";
@@ -67,6 +68,7 @@ export type HostDescriptor = {
 export type PreflightAnswers = {
   purpose?: string;
   kind?: ProjectKind;
+  testCommand?: string;
   allowReporterEdit?: boolean;
   allowLocalHosts?: boolean;
   continue?: boolean;
@@ -104,6 +106,7 @@ export type PreflightEnvironment = {
 export type PreflightOptions = {
   cwd?: string;
   yes?: boolean;
+  hosts?: SelectableHost[];
   localHosts?: boolean;
   offline?: boolean;
   vendor?: boolean;
@@ -112,7 +115,7 @@ export type PreflightOptions = {
 };
 
 export type PreflightPrompt = {
-  key: "purpose" | "kind" | "reporterEdit" | "localHosts";
+  key: "purpose" | "kind" | "reporterEdit" | "localHosts" | "testCommand";
   question: string;
   options?: ProjectKind[];
   default?: string | boolean;
@@ -148,6 +151,7 @@ export type PreflightFacts = {
     git: boolean;
     head: string | null;
     branch: string | null;
+    default_branch?: string | null;
     remote: string | null;
     forge: "github" | "other" | "none";
     empty: boolean;
@@ -313,6 +317,7 @@ export type DoctorResult = {
 export type DoctorEvaluation = DoctorResult & {
   findings: Finding[];
   exitCode: 0 | 1 | 3;
+  notices?: string[];
 };
 
 export type DoctorTool = "node" | "git" | "ssh" | "gh";

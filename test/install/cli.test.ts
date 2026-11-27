@@ -1,13 +1,17 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { cp, mkdir, readFile, readdir, rm } from "node:fs/promises";
+import { cp, lstat, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { cleanupTestRoot, tmpRepo } from "../helpers/tmpRepo.ts";
+import { fakeTty } from "../helpers/fakeTty.ts";
+import { run as runCli } from "../../dist/cli.js";
 import { init } from "../../dist/install/init.js";
 import { remove } from "../../dist/install/remove.js";
+
+import { packageVersion } from "../helpers/packageVersion.ts";
 
 const cli = fileURLToPath(new URL("../../dist/cli.js", import.meta.url));
 
@@ -78,6 +82,28 @@ function runWithIntegrity(repo: string, integrity: string, ...args: string[]) {
     ok: boolean;
     errors: Array<{ code: string; message: string }>;
   } };
+}
+
+function runWithRegistryError(repo: string, error: string, ...args: string[]) {
+  const env = {
+    ...process.env,
+    TENET_TEST_REGISTRY_ERROR: error,
+  };
+  delete env.TENET_INSTALL_INTEGRITY;
+  const child = spawnSync(process.execPath, [cli, "--json", "--cwd", repo, ...args], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+    shell: false,
+    windowsHide: true,
+    env,
+  });
+  return {
+    child,
+    envelope: JSON.parse(child.stdout) as {
+      ok: boolean;
+      errors: Array<{ code: string; message: string }>;
+    },
+  };
 }
 
 async function packageIntegrity(): Promise<string> {
@@ -178,6 +204,7 @@ test("unpublished local versions use exact local integrity and warn", async (t) 
   t.after(repo.cleanup);
   repo.git(["config", "user.name", "Fixture Owner"]);
   repo.git(["config", "user.email", "fixture@example.invalid"]);
+  repo.git(["remote", "add", "origin", "https://github.com/fixture/local-integrity.git"]);
   await repo.write("README.md", "# Local build\n");
   repo.git(["add", "README.md"]);
   repo.git(["commit", "-qm", "fixture"]);
@@ -193,23 +220,66 @@ test("unpublished local versions use exact local integrity and warn", async (t) 
   assert.equal(lock.integrity, await packageIntegrity());
   assert.ok((output.envelope.result as { findings: Array<{ kind: string }> }).findings
     .some(({ kind }) => kind === "local-integrity"));
+  const doctor = runWithoutIntegrity(repo.path, "doctor");
+  assert.equal(doctor.child.status, 0, doctor.child.stderr);
+  assert.match(doctor.child.stderr, /local package integrity.*CI workflows cannot verify/i);
   const upgraded = runWithoutIntegrity(repo.path, "upgrade");
   assert.equal(upgraded.child.status, 0, upgraded.child.stderr);
   assert.match(upgraded.child.stderr, /not on the registry.*local package integrity/i);
 });
 
-test("empty-repo init seeds intent without dead file references", async (t) => {
+test("[AB-D3] [F-10] offline empty-repo init keeps local integrity and other findings", async (t) => {
   const repo = await tmpRepo("install-empty-intent");
   t.after(repo.cleanup);
   repo.git(["config", "user.name", "Fixture Owner"]);
   repo.git(["config", "user.email", "fixture@example.invalid"]);
 
-  const installed = run(repo.path, "init", "--yes");
+  const installed = runWithoutIntegrity(repo.path, "init", "--yes", "--offline");
   assert.equal(installed.child.status, 0, installed.child.stderr);
+  const findings = (installed.envelope.result as { findings: Array<{ kind: string }> }).findings;
+  assert.ok(findings.some(({ kind }) => kind === "local-integrity"));
+  assert.ok(findings.some(({ kind }) => kind === "no-test-report"));
+  assert.ok(!findings.some((finding) => JSON.stringify(finding).includes("not on the registry")));
   const intent = await readFile(path.join(repo.path, "tenet", "intent.md"), "utf8");
-  assert.doesNotMatch(intent, /src\/checkout\/(?:gateway|retry)\.ts/);
+  assert.match(intent, /^## Vision$/m);
+  assert.match(intent, /^\| ID \| Purpose or boundary \| Serves \/ Target \| Origin \|$/m);
+  assert.doesNotMatch(intent, /^\| V-\d+ /m);
+  assert.match(
+    intent,
+    /<!-- Add your vision here, or run tenet onboard\. -->\n\n\| ID \|/,
+  );
+  const starter = await readFile(path.resolve("examples/starter/tenet/intent.md"), "utf8");
+  const templateExamples = [
+    "Checkout recovers cleanly from transient gateway timeouts for returning shoppers.",
+    "≤1% checkout timeout failure",
+    "A payment request that times out is retried at most once, never twice.",
+    "Card numbers and verification codes are never written to logs or error messages.",
+    "src/checkout/gateway.ts",
+    "src/checkout/retry.ts",
+    "Checkout shows a single waiting indicator during a retry",
+    "First slice: implement single-retry timeout handling",
+  ];
+  for (const [name, seed] of [["generated seed", intent], ["starter", starter]] as const) {
+    for (const example of templateExamples) {
+      assert.equal(seed.includes(example), false, `${name} retained template example: ${example}`);
+    }
+    assert.match(seed, /^## Vision$/m);
+    assert.match(seed, /^\| ID \| Purpose or boundary \| Serves \/ Target \| Origin \|$/m);
+    assert.match(seed, /<!-- Add your vision here, or run tenet onboard\. -->\n\n\| ID \|/);
+    assert.doesNotMatch(
+      seed,
+      /\|---\|---\|---\|---\|\n<!-- Add your vision here, or run tenet onboard\. -->/,
+    );
+    assert.doesNotMatch(seed, /^\| V-\d+ /m);
+    assert.doesNotMatch(seed, /^\| V-\d+ .*\| asked \|$/m);
+    assert.doesNotMatch(seed, /\{origin:\s*asked(?:;|\})/);
+  }
   assert.doesNotMatch(intent, /^- R-\d+\b/m);
-  assert.doesNotMatch(intent, /payment request|verification codes|waiting indicator/i);
+
+  const checked = runWithoutIntegrity(repo.path, "check");
+  assert.equal(checked.child.status, 0, checked.child.stderr);
+  assert.equal(checked.envelope.ok, true);
+  assert.deepEqual(checked.envelope.errors, []);
 
   repo.git(["add", "-A"]);
   repo.git(["commit", "-qm", "install"]);
@@ -221,6 +291,52 @@ test("empty-repo init seeds intent without dead file references", async (t) => {
   assert.deepEqual(result.findings.filter((finding) => finding.kind === "dead-path"), []);
 });
 
+test("interactive purpose seed keeps the Vision row in the table", async (t) => {
+  const repo = await tmpRepo("install-interactive-intent");
+  t.after(repo.cleanup);
+  repo.git(["config", "user.name", "Fixture Owner"]);
+  repo.git(["config", "user.email", "fixture@example.invalid"]);
+  const io = fakeTty("Recover checked-out work safely.\n\n\n\n");
+  const priorRegistry = process.env.TENET_TEST_REGISTRY_INTEGRITY;
+  process.env.TENET_TEST_REGISTRY_INTEGRITY = "not-found";
+  try {
+    const exit = await runCli(
+      ["--offline", "init"],
+      { cwd: repo.path, ...io, checkEnvironment: false },
+    );
+    assert.equal(exit, 0, io.stderr.text);
+  } finally {
+    if (priorRegistry === undefined) delete process.env.TENET_TEST_REGISTRY_INTEGRITY;
+    else process.env.TENET_TEST_REGISTRY_INTEGRITY = priorRegistry;
+  }
+
+  const intent = await readFile(path.join(repo.path, "tenet", "intent.md"), "utf8");
+  assert.match(
+    intent,
+    /\|---\|---\|---\|---\|\n\| V-1 \| Recover checked-out work safely\. \| Undecided \| asked \|/,
+  );
+  assert.doesNotMatch(
+    intent,
+    /\|---\|---\|---\|---\|\n<!-- Add your vision here, or run tenet onboard\. -->\n\| V-1 /,
+  );
+
+  const checked = run(repo.path, "check");
+  assert.equal(checked.child.status, 0, checked.child.stderr);
+  assert.equal(checked.envelope.ok, true);
+  assert.deepEqual(checked.envelope.errors, []);
+
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "install"]);
+  const inventory = run(repo.path, "onboard", "--inventory-only");
+  assert.equal(inventory.child.status, 0, inventory.child.stderr || inventory.child.stdout);
+  const onboard = run(repo.path, "onboard", "--card");
+  assert.equal(onboard.child.status, 0, onboard.child.stderr || onboard.child.stdout);
+  assert.match(
+    (onboard.envelope.result as { card: string }).card,
+    /Vision · 1 statement · 1 asked · 1 min/,
+  );
+});
+
 test("malformed integrity overrides return TN-LOCK-INVALID", async (t) => {
   const repo = await tmpRepo("install-invalid-integrity");
   t.after(repo.cleanup);
@@ -230,6 +346,104 @@ test("malformed integrity overrides return TN-LOCK-INVALID", async (t) => {
   assert.equal(output.envelope.ok, false);
   assert.equal(output.envelope.errors[0]?.code, "TN-LOCK-INVALID");
   assert.doesNotMatch(output.envelope.errors[0]?.message ?? "", /TN-INTERNAL/);
+});
+
+test("registry transport failure writes nothing during init", async (t) => {
+  const repo = await tmpRepo("install-registry-transport-failure");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
+  const before = await tree(repo.path);
+
+  const output = runWithRegistryError(
+    repo.path,
+    "ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE",
+    "init",
+    "--yes",
+  );
+
+  assert.equal(output.child.status, 3, output.child.stdout);
+  assert.equal(output.envelope.ok, false);
+  assert.equal(output.envelope.errors[0]?.code, "TN-ENV-REGISTRY");
+  assert.equal(
+    output.envelope.errors[0]?.message,
+    `Could not reach the npm registry to verify @vedprakash-m/tenet@${packageVersion}: ` +
+      "the TLS or proxy handshake failed.",
+  );
+  assert.deepEqual(await tree(repo.path), before);
+});
+
+test("[AB-D3] [F-10] offline init replaces only local integrity and keeps first findings", async (t) => {
+  const repo = await tmpRepo("install-offline-registry-transport-failure");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
+
+  const output = runWithRegistryError(
+    repo.path,
+    "ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE",
+    "init",
+    "--yes",
+    "--offline",
+  );
+
+  assert.equal(output.child.status, 0, output.child.stderr);
+  assert.equal(output.envelope.ok, true);
+  const findings = (output.envelope.result as { findings: Array<{ kind: string }> }).findings;
+  assert.ok(findings.some(({ kind }) => kind === "local-integrity"));
+  assert.ok(findings.some(({ kind }) => kind === "no-test-report"));
+  assert.ok(!findings.some((finding) => JSON.stringify(finding).includes("not on the registry")));
+  const lock = JSON.parse(await readFile(path.join(repo.path, "tenet.lock"), "utf8")) as {
+    integrity: string;
+    "x-integrity-source": string;
+  };
+  assert.equal(lock["x-integrity-source"], "local");
+  assert.equal(lock.integrity, await packageIntegrity());
+});
+
+test("[AB-E1] [F-56] same-version upgrade ignores registry failure and writes nothing", async (t) => {
+  const repo = await tmpRepo("upgrade-registry-transport-failure");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
+  const installed = runWithoutIntegrity(repo.path, "init", "--yes");
+  assert.equal(installed.child.status, 0, installed.child.stderr);
+  const before = await tree(repo.path);
+
+  const output = runWithRegistryError(
+    repo.path,
+    "ETIMEDOUT",
+    "upgrade",
+  );
+
+  assert.equal(output.child.status, 0, output.child.stderr);
+  assert.equal(output.envelope.ok, true);
+  assert.deepEqual(output.envelope.errors, []);
+  assert.deepEqual(output.envelope.result, {
+    from: packageVersion,
+    to: packageVersion,
+    changed: [],
+  });
+  assert.deepEqual(await tree(repo.path), before);
+});
+
+test("init onboard remove restores the repository including generated directories", async (t) => {
+  const repo = await tmpRepo("install-onboard-remove-tree");
+  t.after(repo.cleanup);
+  repo.git(["config", "user.name", "Fixture Owner"]);
+  repo.git(["config", "user.email", "fixture@example.invalid"]);
+  repo.git(["remote", "add", "origin", "https://github.com/fixture/checkout.git"]);
+  await repo.write("README.md", "# Lifecycle fixture\n");
+  repo.git(["add", "README.md"]);
+  repo.git(["commit", "-qm", "fixture"]);
+  const before = await tree(repo.path);
+
+  const installed = run(repo.path, "init", "--yes");
+  assert.equal(installed.child.status, 0, installed.child.stderr);
+  const onboarded = run(repo.path, "onboard", "--inventory-only");
+  assert.equal(onboarded.child.status, 0, onboarded.child.stderr);
+  const removed = run(repo.path, "remove");
+  assert.equal(removed.child.status, 0, removed.child.stderr);
+
+  assert.deepEqual(await tree(repo.path), before);
+  await assert.rejects(lstat(path.join(repo.path, ".tenet")), { code: "ENOENT" });
 });
 
 test("real node-service fixture initializes, is idempotent and removes exactly", async (t) => {
@@ -278,7 +492,6 @@ test("real node-service fixture initializes, is idempotent and removes exactly",
   const first = invoke("init", "--yes");
   assert.equal(first.child.status, 0, first.child.stderr);
   assert.equal(first.envelope.ok, true);
-  assert.match(first.child.stderr, /local package integrity/i);
   assert.ok(Array.isArray((first.envelope.result.plan as { created: unknown[] }).created));
   assert.ok(((first.envelope.result.wrote as { created: unknown[] }).created).length > 0);
   assert.doesNotMatch(
@@ -320,7 +533,7 @@ test("local-host consent writes only Windows cmd shims and removes them", async 
           registry: {
             package: "@vedprakash-m/tenet",
             releases: {
-              "0.1.0-alpha.0": { integrity: `sha512-${"A".repeat(86)}==` },
+              [packageVersion]: { integrity: `sha512-${"A".repeat(86)}==` },
               "0.0.0": { integrity: `sha512-${"A".repeat(86)}==` },
             },
           },

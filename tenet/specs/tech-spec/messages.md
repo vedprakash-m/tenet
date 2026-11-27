@@ -41,6 +41,7 @@ sections:
 | `TN-ENV-NODE` | Node.js {found} is below required version 22. | Install Node.js 22 LTS or newer and retry. |
 | `TN-ENV-NOT-GIT` | Directory {path} is not a Git repository. | Run `git init` or run from inside a Git repository. |
 | `TN-ENV-OFFLINE` | Command `tenet {command}` requires network access, which is disabled by `--offline`. | Re-run `tenet {command}` without `--offline`. |
+| `TN-ENV-REGISTRY` | Could not reach the npm registry to verify {package}@{version}: {cause}. | Check your network or proxy, or run `tenet {command} --offline` to record local package integrity. |
 | `TN-EV-DUP` | Duplicate event ID {id} has conflicting content. | Keep one canonical event for {id} and remove the conflicting entry. |
 | `TN-EV-ORPHAN` | Event {id} references unknown predecessor {prev}. | Include or fetch event {prev} before reducing work item events. |
 | `TN-GATE-*` | Gate blocked or held by rule {rule}: {reason}. | Resolve {reason} and re-run the gate check. |
@@ -81,6 +82,7 @@ sections:
 | `TN-SPEC-NO-FRONT` | Specification file has no valid YAML front matter. | Add YAML front matter (`---`) with `tenet` and `sections`, or run `tenet fix`. |
 | `TN-SPEC-REQ-META` | Requirement metadata is malformed: check closing braces, allowed keys, and origin. | Fix the `{…}` metadata block with allowed keys and valid origin. |
 | `TN-SPEC-UNCOVERED-VISION` | Blessed vision item {id} is not served by a blessed requirement or listed under ## Not yet in scope. | Add serves: {id} to a blessed requirement or list {id} under a blessed ## Not yet in scope section. |
+| `TN-SPEC-VISION-WAITS-FOR-PRD` | {count} vision {items} for a blessed requirement; bless the PRD next | Run `tenet bless --doc prd` for separate files or `tenet bless --section requirements` for one file. |
 | `TN-SUBJ-DIRTY` | Working tree has uncommitted changes. | Commit or stash local changes before running `tenet {command}`. |
 | `TN-USAGE-*` | Invalid usage for `tenet {command}`: {detail}. | Run `tenet {command} --help` for valid arguments and flags. |
 | `TN-USAGE-BUDGET` | Context token budget {budget} must be a positive integer. | Pass a positive integer to `--budget-tokens` or `budget_tokens`. |

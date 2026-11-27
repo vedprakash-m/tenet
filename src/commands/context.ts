@@ -13,16 +13,17 @@ type CommandContext = {
 };
 
 function list(value: string | boolean | string[] | undefined): string[] | undefined {
-  if (typeof value !== "string") return undefined;
-  return value.split(",").map((part) => part.trim()).filter(Boolean);
+  if (typeof value === "boolean" || value === undefined) return undefined;
+  const values = Array.isArray(value) ? value : [value];
+  return values.flatMap((item) => item.split(",")).map((part) => part.trim()).filter(Boolean);
 }
 
 const command = {
   name: "context",
-  description: "Select blessed specification context",
-  usage: "tenet context [--paths <paths>] [--ids <ids>] [--query <text>] [--include-drafts] [--budget-tokens <n>]",
+  description: "Select specification context (--paths a,b or repeated --paths)",
+  usage: "tenet context [--paths <paths...>] [--ids <ids>] [--query <text>] [--include-drafts] [--budget-tokens <n>]",
   options: [
-    { flags: "--paths <paths>" },
+    { flags: "--paths <paths...>", description: "Paths, comma-separated or repeat --paths" },
     { flags: "--ids <ids>" },
     { flags: "--query <text>" },
     { flags: "--include-drafts" },

@@ -68,6 +68,10 @@ export const messageTemplates = {
     "message": "Directory {path} is not a Git repository.",
     "fix": "Run `git init` or run from inside a Git repository."
   },
+  "TN-ENV-REGISTRY": {
+    "message": "Could not reach the npm registry to verify {package}@{version}: {cause}.",
+    "fix": "Check your network or proxy, or run `tenet {command} --offline` to record local package integrity."
+  },
   "TN-ENV-OFFLINE": {
     "message": "Command `tenet {command}` requires network access, which is disabled by `--offline`.",
     "fix": "Re-run `tenet {command}` without `--offline`."
@@ -227,6 +231,10 @@ export const messageTemplates = {
   "TN-SPEC-REQ-META": {
     "message": "Requirement metadata is malformed: check closing braces, allowed keys, and origin.",
     "fix": "Fix the `{…}` metadata block with allowed keys and valid origin."
+  },
+  "TN-SPEC-VISION-WAITS-FOR-PRD": {
+    "message": "{count} vision {items} for a blessed requirement; bless the PRD next",
+    "fix": "Run `tenet bless --doc prd` for separate files or `tenet bless --section requirements` for one file."
   },
   "TN-SPEC-UNCOVERED-VISION": {
     "message": "Blessed vision item {id} is not served by a blessed requirement or listed under ## Not yet in scope.",

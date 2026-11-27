@@ -6,6 +6,8 @@ import test from "node:test";
 import { pathToFileURL } from "node:url";
 import { cleanupTestRoot, tmpRepo, type TemporaryRepository } from "../helpers/tmpRepo.ts";
 
+import { packageVersion } from "../helpers/packageVersion.ts";
+
 const output = path.resolve(`.install-conformance-dist-${process.pid}`);
 const compile = spawnSync(process.execPath, [
   path.resolve("node_modules/typescript/bin/tsc"),
@@ -33,7 +35,7 @@ const { exitCodeFor } = await import(pathToFileURL(path.join(output, "core", "ou
 const casesRoot = path.resolve("pkg/conformance/install");
 const kitPath = path.resolve("kit");
 const baseEnvironment = JSON.parse(
-  await readFile(path.join(casesRoot, "environment.json"), "utf8"),
+  (await readFile(path.join(casesRoot, "environment.json"), "utf8")).replaceAll("{{version}}", packageVersion),
 ) as Record<string, unknown>;
 
 type CaseArguments = {
@@ -253,7 +255,7 @@ for (const caseName of positiveCases) {
     await readFile(path.join(setup.repo.path, "tenet.lock"));
     const manifestPath = path.join(setup.repo.path, ".tenet", "manifest.json");
     const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as { version: string };
-    assert.equal(manifest.version, "0.1.0-alpha.0");
+    assert.equal(manifest.version, packageVersion);
     await assert.rejects(readFile(path.join(setup.repo.path, ".tenet", "manifest.pending.json")));
     assert.ok(result.plan.created
       .filter((itemPath) => /^\.(?:agents|claude)\/skills\//.test(itemPath))
@@ -317,7 +319,7 @@ for (const caseName of positiveCases) {
         "utf8",
       );
       assert.ok(workflow.startsWith(original));
-      assert.match(workflow, /# tenet:begin v0\.1\.0-alpha\.0/);
+      assert.ok(workflow.includes(`# tenet:begin v${packageVersion}\n`));
       assert.match(workflow, /outputFile\.junit=artifacts\/unit\.xml/);
     }
     if (caseName === "p04-node-matrix") {
@@ -650,6 +652,147 @@ test("remove deletes known generated .tenet state but preserves user state", asy
     "{\"keep\":true}\n",
   );
   assert.equal(await readFile(path.join(outside, "sentinel.txt"), "utf8"), "keep\n");
+  await assert.rejects(lstat(path.join(setup.repo.path, ".tenet", "cache")), { code: "ENOENT" });
+  await assert.rejects(lstat(path.join(setup.repo.path, ".tenet", "runs", "session")), { code: "ENOENT" });
+  await assert.rejects(lstat(path.join(setup.repo.path, ".tenet", "runs")), { code: "ENOENT" });
+});
+
+test("remove unlinks symlinked .tenet parents without touching their targets", async (t) => {
+  for (const location of ["inside", "outside"] as const) {
+    const setup = await makeCase("p02-node-vitest");
+    t.after(() => dispose(setup));
+    await init(setup.options);
+    const target = location === "inside"
+      ? path.join(setup.repo.path, "owner-notes")
+      : path.join(setup.sandbox, "outside-onboard");
+    await mkdir(target, { recursive: true });
+    await writeFile(path.join(target, "inventory.json"), `keep-${location}\n`);
+    await writeFile(path.join(target, "sentinel.txt"), "keep\n");
+    await symlink(target, path.join(setup.repo.path, ".tenet", "onboard"), "junction");
+
+    await remove(setup.options);
+
+    await assert.rejects(lstat(path.join(setup.repo.path, ".tenet", "onboard")), { code: "ENOENT" });
+    assert.equal(await readFile(path.join(target, "inventory.json"), "utf8"), `keep-${location}\n`);
+    assert.equal(await readFile(path.join(target, "sentinel.txt"), "utf8"), "keep\n");
+  }
+});
+
+test("remove validates generated report paths before changing the tree", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  await init(setup.options);
+  const policyPath = path.join(setup.repo.path, "tenet.yaml");
+  const policy = await readFile(policyPath, "utf8");
+  const edited = policy.replace(
+    "report_path: .tenet/reports/test.xml",
+    "report_path: .tenet/reports/../secrets.json",
+  );
+  assert.notEqual(edited, policy);
+  await writeFile(policyPath, edited);
+  await writeFile(path.join(setup.repo.path, ".tenet", "secrets.json"), "keep\n");
+  const before = await tree(setup.repo.path);
+
+  await assert.rejects(remove(setup.options), (error: unknown) =>
+    (error as { code?: string }).code === "TN-PATH-ESCAPE");
+
+  assert.deepEqual(await tree(setup.repo.path), before);
+});
+
+test("remove matches configured reports but preserves case-mismatched standard reports", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  await init(setup.options);
+  const policyPath = path.join(setup.repo.path, "tenet.yaml");
+  const policy = await readFile(policyPath, "utf8");
+  await writeFile(
+    policyPath,
+    policy.replace(
+      "report_path: .tenet/reports/test.xml",
+      "report_path: .tenet/Reports/CUSTOM.XML",
+    ),
+  );
+  await setup.repo.write(".tenet/Reports/CUSTOM.XML", "<testsuite/>\n");
+  await setup.repo.write(".tenet/reports/TEST.XML", "keep\n");
+
+  await remove({
+    ...setup.options,
+    environment: {
+      ...(setup.options.environment as Record<string, unknown>),
+      platform: "win32",
+    },
+  });
+
+  await assert.rejects(readFile(path.join(
+    setup.repo.path,
+    ".tenet",
+    "Reports",
+    "CUSTOM.XML",
+  )), { code: "ENOENT" });
+  assert.equal(
+    await readFile(path.join(setup.repo.path, ".tenet", "reports", "TEST.XML"), "utf8"),
+    "keep\n",
+  );
+});
+
+test("remove rejects a recorded file under a symlinked parent before any deletion", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  await init(setup.options);
+  const target = path.join(setup.sandbox, "recorded-parent");
+  await mkdir(target, { recursive: true });
+  await writeFile(path.join(target, "secret.txt"), "keep\n");
+  await symlink(target, path.join(setup.repo.path, "recorded-link"), "junction");
+  const manifestPath = path.join(setup.repo.path, ".tenet", "manifest.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
+    created: Array<{ path: string; sha256: string }>;
+  };
+  manifest.created.push({
+    path: "recorded-link/secret.txt",
+    sha256: "0".repeat(64),
+  });
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  const before = await tree(setup.repo.path);
+
+  await assert.rejects(remove(setup.options), (error: unknown) =>
+    (error as { code?: string }).code === "TN-PATH-ESCAPE");
+
+  assert.deepEqual(await tree(setup.repo.path), before);
+  assert.equal(await readFile(path.join(target, "secret.txt"), "utf8"), "keep\n");
+});
+
+test("remove preserves pre-existing empty generated-state directories", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  for (const relative of [".tenet/onboard", ".tenet/reports", ".tenet/cache", ".tenet/runs"]) {
+    await mkdir(path.join(setup.repo.path, ...relative.split("/")), { recursive: true });
+  }
+  await init(setup.options);
+
+  await remove(setup.options);
+
+  for (const relative of [".tenet/onboard", ".tenet/reports", ".tenet/cache", ".tenet/runs", ".tenet"]) {
+    const stat = await lstat(path.join(setup.repo.path, ...relative.split("/")));
+    assert.equal(stat.isDirectory(), true);
+    if (relative !== ".tenet") {
+      assert.deepEqual(await readdir(path.join(setup.repo.path, ...relative.split("/"))), []);
+    }
+  }
+});
+
+test("remove clears known generated state without a manifest", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  await setup.repo.write(".tenet/onboard/inventory.json", "{}\n");
+  await setup.repo.write(".tenet/onboard/assignment.json", "{}\n");
+  await setup.repo.write(".tenet/cache/session/output.txt", "generated\n");
+  await setup.repo.write(".tenet/runs/session/output.txt", "generated\n");
+
+  const result = await remove(setup.options);
+
+  assert.ok(result.removed.some((item) => item.path === ".tenet/onboard/inventory.json"));
+  assert.ok(result.removed.some((item) => item.path === ".tenet/onboard/assignment.json"));
+  await assert.rejects(lstat(path.join(setup.repo.path, ".tenet")), { code: "ENOENT" });
 });
 
 test("p17 loader upgrades owned pins without changing policy", async (t) => {
@@ -666,7 +809,7 @@ test("p17 loader upgrades owned pins without changing policy", async (t) => {
   }
 });
 
-test("upgrade refreshes a changed integrity pin", async (t) => {
+test("[AB-E1] [F-56] same-version upgrade leaves an edited integrity pin untouched", async (t) => {
   const setup = await makeCase("p01-empty");
   t.after(() => dispose(setup));
   const firstIntegrity = `sha512-${"A".repeat(86)}==`;
@@ -678,7 +821,7 @@ test("upgrade refreshes a changed integrity pin", async (t) => {
       ...(setup.options.environment as Record<string, unknown>),
       registry: {
         package: "@vedprakash-m/tenet",
-        releases: { "0.1.0-alpha.0": { integrity: firstIntegrity } },
+        releases: { [packageVersion]: { integrity: firstIntegrity } },
       },
     },
   };
@@ -694,16 +837,128 @@ test("upgrade refreshes a changed integrity pin", async (t) => {
       ...(setup.options.environment as Record<string, unknown>),
       registry: {
         package: "@vedprakash-m/tenet",
-        releases: { "0.1.0-alpha.0": { integrity: refreshedIntegrity } },
+        releases: { [packageVersion]: { integrity: refreshedIntegrity } },
       },
     },
   });
-  assert.ok(upgraded.changed.some((item) =>
-    item.path === "tenet.lock" && item.action === "replaced"));
+  assert.deepEqual(upgraded.changed, []);
   assert.equal(
     (JSON.parse(await readFile(lockPath, "utf8")) as { integrity: string }).integrity,
-    refreshedIntegrity,
+    editedIntegrity,
   );
+});
+
+test("[AB-E1] [F-56] same-version offline upgrade preserves the install manifest and remove set", async (t) => {
+  const setup = await makeCase("p09-init-repeat-upgrade-remove");
+  t.after(() => dispose(setup));
+  await init(setup.options);
+  const before = await tree(setup.repo.path);
+  const manifestPath = path.join(setup.repo.path, ".tenet", "manifest.json");
+  const manifest = await readFile(manifestPath, "utf8");
+  const result = await upgrade({
+    ...setup.options,
+    offline: true,
+    environment: {
+      ...(setup.options.environment as Record<string, unknown>),
+      installedVersion: packageVersion,
+    },
+  });
+  assert.equal(result.from, packageVersion);
+  assert.equal(result.to, packageVersion);
+  assert.deepEqual(result.changed, []);
+  assert.equal(await readFile(manifestPath, "utf8"), manifest);
+  assert.deepEqual(await tree(setup.repo.path), before);
+  const removed = await remove(setup.options);
+  for (const expected of [
+    ".github/pull_request_template.md",
+    ".github/workflows/tenet.yml",
+    ".github/workflows/tenet-tests.yml",
+  ]) {
+    assert.ok(removed.removed.some(({ path: itemPath }) => itemPath === expected));
+  }
+});
+
+test("[AB-E2] [F-47] same-version upgrade migrates legacy anchor text to hashes and ranges", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  const revision = setup.repo.git(["rev-parse", "HEAD"]).trim();
+  const body = "- R-1 Retry once. {origin: observed; cites: src/retry.ts:1}\n";
+  const copyPath = "tenet/blessed/intent/requirements.md";
+  await setup.repo.write("tenet/intent.md", [
+    "---",
+    `tenet: {spec: 1, doc: intent, level: L1}`,
+    `sections: {requirements: {state: blessed, digest: "sha256:copy", blessed_digest: "sha256:copy", blessed_at_rev: "${revision}", blessed_copy: "${copyPath}", anchors: {"src/retry.ts:1": "sha256:9a74cf030d03b1a7ce2bb020957fe891795bd801afad57ba43ed64776d2afced"}, flags: []}}`,
+    "---",
+    "## Requirements",
+    body,
+  ].join("\n"));
+  await setup.repo.write(copyPath, body);
+  await setup.repo.write(`${copyPath}.anchors.json`, '{"src/retry.ts:1":"export const retries = 1;"}\n');
+  await init(setup.options);
+  const result = await upgrade({
+    ...setup.options,
+    offline: true,
+    environment: {
+      ...(setup.options.environment as Record<string, unknown>),
+      installedVersion: packageVersion,
+    },
+  });
+  assert.deepEqual(result.changed, [{ path: `${copyPath}.anchors.json`, action: "replaced" }]);
+  const migrated = JSON.parse(await readFile(
+    path.join(setup.repo.path, ...`${copyPath}.anchors.json`.split("/")),
+    "utf8",
+  ));
+  assert.deepEqual(Object.keys(migrated["src/retry.ts:1"]).sort(), [
+    "blessed_at_rev", "end", "hash", "start",
+  ]);
+  assert.equal(migrated["src/retry.ts:1"].start, 1);
+  assert.equal(migrated["src/retry.ts:1"].end, 1);
+  assert.equal(migrated["src/retry.ts:1"].blessed_at_rev, revision);
+  assert.doesNotMatch(JSON.stringify(migrated), /export const retries/);
+});
+
+test("[AB-E2] [F-47] legacy migration keeps the stored hash when the blessing commit is unavailable", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  const missingRevision = "0123456789012345678901234567890123456789";
+  const storedHash = "sha256:9a74cf030d03b1a7ce2bb020957fe891795bd801afad57ba43ed64776d2afced";
+  const body = "- R-1 Retry once. {origin: observed; cites: src/retry.ts:1-1}\n";
+  const copyPath = "tenet/blessed/intent/requirements.md";
+  await setup.repo.write("tenet/intent.md", [
+    "---",
+    "tenet: {spec: 1, doc: intent, level: L1}",
+    `sections: {requirements: {state: blessed, digest: "sha256:copy", blessed_digest: "sha256:copy", blessed_at_rev: "${missingRevision}", blessed_copy: "${copyPath}", anchors: {"src/retry.ts:1-1": "${storedHash}"}, flags: []}}`,
+    "---",
+    "## Requirements",
+    body,
+  ].join("\n"));
+  await setup.repo.write(copyPath, body);
+  await setup.repo.write(
+    `${copyPath}.anchors.json`,
+    '{"src/retry.ts:1-1":"export const retries = 1;"}\n',
+  );
+  await setup.repo.write("src/retry.ts", "export const retries = 2;\n");
+  await init(setup.options);
+  const result = await upgrade({
+    ...setup.options,
+    offline: true,
+    environment: {
+      ...(setup.options.environment as Record<string, unknown>),
+      installedVersion: packageVersion,
+    },
+  });
+  assert.deepEqual(result.changed, [{ path: `${copyPath}.anchors.json`, action: "replaced" }]);
+  const migrated = JSON.parse(await readFile(
+    path.join(setup.repo.path, ...`${copyPath}.anchors.json`.split("/")),
+    "utf8",
+  ));
+  assert.deepEqual(migrated["src/retry.ts:1-1"], {
+    hash: storedHash,
+    start: 1,
+    end: 1,
+    blessed_at_rev: missingRevision,
+  });
+  assert.doesNotMatch(JSON.stringify(migrated), /export const retries = 1;/);
 });
 
 test("p17 lexical JSON formatting survives owned pin replacement", async (t) => {
@@ -714,7 +969,7 @@ test("p17 lexical JSON formatting survives owned pin replacement", async (t) => 
     "{\r\n",
     "\t\"mcpServers\": {\r\n",
     "\t\t\"search\"  :  { \"command\" : \"node\", \"args\" : [\"search.js\"] },\r\n",
-    "\t\t\"tenet\": {\"command\":\"npx\",\"args\":[\"-y\",\"@vedprakash-m/tenet@0.1.0-alpha.0\",\"mcp\"]}\r\n",
+    `\t\t\"tenet\": {\"command\":\"npx\",\"args\":[\"-y\",\"@vedprakash-m/tenet@${packageVersion}\",\"mcp\"]}\r\n`,
     "\t}\r\n",
     "}\r\n",
   ].join("");
@@ -722,7 +977,7 @@ test("p17 lexical JSON formatting survives owned pin replacement", async (t) => 
   await upgrade(await optionsForStep(setup, 1));
   assert.equal(
     await readFile(path.join(setup.repo.path, ".mcp.json"), "utf8"),
-    lexical.replace("@vedprakash-m/tenet@0.1.0-alpha.0", "@vedprakash-m/tenet@0.1.0-alpha.1"),
+    lexical.replace(`@vedprakash-m/tenet@${packageVersion}`, "@vedprakash-m/tenet@0.1.0-alpha.1"),
   );
 });
 
@@ -733,7 +988,7 @@ test("remove deletes a newly owned MCP key without rewriting sibling JSON", asyn
   const lexical = [
     "{\r\n",
     "  \"mcpServers\": { \"tenet\":",
-    " {\"command\":\"npx\",\"args\":[\"-y\",\"@vedprakash-m/tenet@0.1.0-alpha.0\",\"mcp\"]},",
+    ` {\"command\":\"npx\",\"args\":[\"-y\",\"@vedprakash-m/tenet@${packageVersion}\",\"mcp\"]},`,
     " \"owner\" : { \"command\" : \"node\" } }\r\n",
     "}\r\n",
   ].join("");
@@ -769,7 +1024,7 @@ test("upgrade resumes from the original manifest and excludes pending bookkeepin
   );
   assert.match(pending, /0\.1\.0-alpha\.1/);
   const resumed = await upgrade(options);
-  assert.equal(resumed.from, "0.1.0-alpha.0");
+  assert.equal(resumed.from, packageVersion);
   assert.equal(resumed.to, "0.1.0-alpha.1");
   assert.ok(resumed.changed.every((item) => item.path !== ".tenet/manifest.pending.json"));
 });
@@ -853,7 +1108,7 @@ test("upgrade resumes a valid pending plan after the active manifest is missing"
   );
   await rm(path.join(setup.repo.path, ".tenet", "manifest.json"));
   const result = await upgrade(options);
-  assert.equal(result.from, "0.1.0-alpha.0");
+  assert.equal(result.from, packageVersion);
   assert.equal(result.to, "0.1.0-alpha.1");
   await readFile(path.join(setup.repo.path, ".tenet", "manifest.json"));
 });

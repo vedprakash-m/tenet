@@ -17,31 +17,31 @@
           {
             "path": ".agents/skills/tenet-draft-specs/SKILL.md",
             "kind": "config",
-            "sha256": "2e9ce5b69a7792ef5ed51cc2754450cdde80f24250f2b5994f98d2c021093ff9",
+            "sha256": "46a53dd2b0a90992221a7ea543f99781be76399aca98cccb67a572b5d6c9d725",
             "lines": 38
           },
           {
             "path": ".agents/skills/tenet-review-with-findings/SKILL.md",
             "kind": "config",
-            "sha256": "cea7b0c9d11b1731c8610e20c6294b5712868fd3b105ae0b3028afe693c7f64e",
-            "lines": 21
+            "sha256": "d08cf8fe9a0154428e61ef8998dba29b19386dc87c110ea058c93171499e1647",
+            "lines": 22
           },
           {
             "path": ".agents/skills/tenet-work-a-change/SKILL.md",
             "kind": "config",
-            "sha256": "d57058ba233bd9cdfe5f1a581e72d126599563fd9f4f4a83328231fac9398fc5",
+            "sha256": "aac61a360469eab5cce564fd4c58bdd928d7cc5dd245d1eacdaa717d130f816c",
             "lines": 30
           },
           {
             "path": ".gitattributes",
             "kind": "config",
-            "sha256": "ae94419756d2baa20f07e82c1d7b4cddc7876ebf996c37b25bc3109b333a174b",
+            "sha256": "1d356d209df557b2107ac7ebe7332a917b7d9907e701cd9f22002b9e188bc621",
             "lines": 12
           },
           {
             "path": ".gitignore",
             "kind": "config",
-            "sha256": "6fbf7a115420a8cd8505de69714d9e0b1d4ffe05f2e3849161e365bb2d241f03",
+            "sha256": "b34625591b1938316459605a0433362f905d5b8e72a4fea757e0606d490bce4a",
             "lines": 6
           },
           {
@@ -54,12 +54,12 @@
             "path": ".tenet/manifest.json",
             "kind": "config",
             "sha256": "{{any:string}}",
-            "lines": 75
+            "lines": 79
           },
           {
             "path": "AGENTS.md",
             "kind": "config",
-            "sha256": "5c4a4253094e6b3841a4792feec584963772f0b9b2cdfc6f342d7997adf96dd8",
+            "sha256": "ebca14647ce5640be40b8d3b4e35221849037ad3c1f849f5741eb0873405478c",
             "lines": 43
           },
           {
@@ -71,14 +71,14 @@
           {
             "path": "tenet.yaml",
             "kind": "config",
-            "sha256": "6d708a35a6eaf362472484a55d9bc7b3d78bdc5e1eea52bad268bfd26beeb863",
-            "lines": 27
+            "sha256": "704e0b48e8005eab6ad82fee674e55909cd6049fc404567f35a20a16c3fd2cf4",
+            "lines": 21
           },
           {
             "path": "tenet/intent.md",
             "kind": "doc",
-            "sha256": "ac80ffbe319ac3a263bb708c3912ef64079f0434acd0340c428b2ec108a6d732",
-            "lines": 55
+            "sha256": "0667872ecb16fda61d9806519afbe9514a72616391258c9435375d1f857f3f77",
+            "lines": 56
           }
         ],
         "skipped": []

@@ -10,6 +10,7 @@ export type Finding = {
   line: number | null;
   message: string;
   fix: string;
+  detail?: string;
 };
 
 export type Envelope<T = unknown> = {
@@ -88,6 +89,7 @@ export function exitCodeFor(findings: Finding[]): 0 | 1 | 2 | 3 | 4 {
         "TN-ENV-NOT-GIT",
         "TN-POLICY-MISSING",
         "TN-ENV-OFFLINE",
+        "TN-ENV-REGISTRY",
       ].includes(code),
     )
   ) {

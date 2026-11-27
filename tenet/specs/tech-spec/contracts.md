@@ -63,7 +63,7 @@ sections:
     digest: sha256:0dbd08e5ad469fb93440fa5489aae662f07dd294fd2dc68cbf202b6df6527bae         # current text (ALG-02); null until `tenet fix` computes it
     blessed_digest: sha256:0dbd08e5ad469fb93440fa5489aae662f07dd294fd2dc68cbf202b6df6527bae # text last blessed; null until blessed
     blessed_at_rev: 9f3c2e1         # HEAD when blessed; null until blessed; information only, never required to exist
-    anchors: {"src/retry.ts:40-48": "sha256:cb3a0834537f84c19727dce128035f7a9f16972c94a9253d457c0812e3e70328"}   # one per citation, set when blessed; the cited text is kept beside the blessed copy (ALG-03)
+    anchors: {"src/retry.ts:40-48": "sha256:cb3a0834537f84c19727dce128035f7a9f16972c94a9253d457c0812e3e70328"}   # one per citation, set when blessed
     applies_to: ["src/checkout/**"] # optional; prose sections reach context through it (ALG-10)
     blessed_copy: tenet/blessed/<doc>/<slug>.md   # text in force (ALG-03)
     flags: []                       # edited | sources-changed
@@ -72,6 +72,8 @@ sections:
     blessed_by: ved
     blessed_at: 2026-11-23T10:00:00Z
 ```
+
+**Proposal (CP-0066 AB-E2):** `<blessed copy>.anchors.json` contains one record per citation: `{hash, start, end, blessed_at_rev}`. `hash` is the existing `sha256:…` value, `start` and `end` are nullable 1-based inclusive line numbers when a historical range cannot be recovered, and `blessed_at_rev` is the blessing commit. The sidecar never contains cited source text.
 
 **Requirement line** (in a list item or a table's Requirement cell):
 
@@ -102,7 +104,7 @@ Parsed entries: `{id, checked: bool, section: string|null, text, resolution?: st
 
 **Proof card** (`kit/schemas/proof-card.json`): `{schema_version, evaluation_id, tested: {commit, kind: merge-candidate|head, head, base}, acceptance_digest, requirements: [{id, excerpt, state, recorded, flags, why: implements|cited-code-changed|text-changed|same-area, tests: {expected, passed, failed, skipped, not_run}}], items: [{id, text, result: passed|failed|not-run|no-test|skipped, coverage: confirmed|not-confirmed, tests: {expected, passed, failed, skipped, not_run}, names: [full_name], authorship: written-here|tag-added-here|unknown, first_failure?}], tests: {report: ok|missing|malformed, total, passed, failed, skipped, failing: [full_name]}, weakening: {found, by: [{finding, file, names}], not_checked: [language]}, workflow_changed, protected: [path], blessings_changed: [{doc, section, blessed_by, commit_author}], deltas: [{doc, added, modified, removed}], health?: {totals: {holding, improved, regressed, waived, unknown, n_a}, sections: {blocking_regressed, tamper_watch, stale, config_changed, unknown, waived, advisory_regressed, improved, holding}}, tamper?: [path], overflow_ref?: string, rules: [{rule, mode, would_block, reason}], badge: advisory|verified-on-ci|intent-not-yet-blessed, why: [{text, class: checked|judge|host|not-tenet}], degraded: [reason]}`. `rules` keeps only `would_block === true` (pack order). `renderCard(model)` emits LF lines in order (UX Part 1A; templates in `plan/alpha.0b.md` CP-0051): (1) `### Tenet proof · <tested.commit.slice(0, 6)> (<merge candidate|head>) · <advisory|verified on CI|advisory · intent not yet blessed>`; (2) `Your intent this change touches` (non-`same-area`, then collapsed `same-area`); (3) `Acceptance` (or `! no acceptance items`); (4–6) `Tests … · … · …`, optional `Health:` / `! Tamper watch:` / sections (`overflow_ref` `proof/<work>/<evaluation_id>/<run_id>-<attempt>-card.md` on `refs/tenet/records` over `60,000` chars, [health.md](health.md)), optional `Blessings changed:`; (7) `Spec deltas:`; (8) `Would have blocked:`; (9) `Degraded:` and `Why:`. Goldens: `pkg/conformance/card{,s}/`.
 
-**`board.json`** (`schema_version` 1; `--since <rev>` returns changes only): `{schema_version, as_of, read: {main, branches, records}, pack: {phases}, specs: [{path, section, level, state, flags, recorded?}], pending_blessings: [{path, section, conflicts, open_questions}], spec_debt?: [{kind: broken-citation|untested-requirement|over-budget, path, id: string|null, message}], items: [{id, title, lane, station, status, branch, age, depends_on, replay, lease, next_actions: [{who, action, reason, command, dispatch?}], claims: {applicable, satisfied, waived, unsatisfied}, guarantee, cost: {amount, unit, status: known|estimated|unavailable, source}}], decision_queue, review_queue, campaigns, active_runs?, areas: [{name, owner, promises, health, readiness, quarantined, waivers}], conflicts, flow, escalations}`. Alpha.0 fills `as_of`, `read` (`{main: <HEAD|null>, branches: [], records: null}`), `specs` (`recorded` when `blessed`), `pending_blessings`, and `spec_debt`.
+**`board.json`** (`schema_version` 1; `--since <rev>` returns changes only): `{schema_version, as_of, read: {main, branches, records}, pack: {phases}, specs: [{path, section, level, state, flags, recorded?}], pending_blessings: [{path, section, conflicts, open_questions}], spec_debt?: [{kind: broken-citation|untested-requirement|over-budget, path, id: string|null, message}], items: [{id, title, lane, station, status, branch, age, depends_on, replay, lease, next_actions: [{who, action, reason, command, dispatch?}], claims: {applicable, satisfied, waived, unsatisfied}, guarantee, cost: {amount, unit, status: known|estimated|unavailable, source}}], decision_queue, review_queue, campaigns, active_runs?, areas: [{name, owner, promises, health, readiness, quarantined, waivers}], conflicts, flow, escalations}`. Alpha.0 fills `as_of`, `read` (`{main: <default branch commit|null>, branches: [], records: null}`), `specs` (`recorded` when `blessed`), `pending_blessings`, and `spec_debt`. **Proposal · CP-0066 AB-A11.** Resolve `read.main` from the local `origin/HEAD` ref when available, then known local or remote-tracking default-branch candidates. Use `null` if none resolve. The working-tree view's header separately names the checked-out branch and its commit.
 
 ## 6. Test reports
 
@@ -124,7 +126,7 @@ Moved to [ci.md](ci.md) under the rollover rule: the test job and recorder, runn
 | `board` | alpha.0 | — | `--all`; `--open`, `--since`, `--fetch` from alpha.1 |
 | `upgrade`, `remove`, `doctor`, `mcp` | alpha.0 | lock, block, keys; nothing for `doctor`, `mcp` | |
 | `level`, `rules` | alpha.1 | `tenet.yaml` | |
-| `verify --run-checks`, `verify --bundle`, `verify --record` | alpha.0 | `tenet-bundle/`; the check run; the records ref | CI only (ci.md), except `--run-checks --local` (0.1.0), which writes a local advisory card for the runner; `--record` signs from `verify` |
+| `verify --local`, `verify --run-checks`, `verify --bundle`, `verify --record` | alpha.0 (`--local` in 0.1.1) | `tenet-bundle/` (except `--local`, which cleans up its temporary bundle); the check run; the records ref | `--local` runs configured checks on the working tree against the default branch's merge base with no CI event file and no network, printing a local preview proof card (`{card, markdown, conclusion, bundle}` under `--json`); the other modes are CI only (ci.md); `--record` signs from `verify` |
 | `new`, `move`, `status`, `task done`, `close`, `resume`, `decide`, `resolve`, `escalate`, `lease`, `release`, `assign`, `result`, `inspect`, `record`, `agent check`, `skill list`, `build --target agents-md` | 0.1.0 | packets and events | |
 | `tenet-runner start`, `status`, `stop`, `doctor` | 0.1.0 | worktrees under `.tenet/runs/`; run events | separate package (agents.md §6) |
 | `import` | 0.1.x | packets | |
@@ -139,6 +141,8 @@ In [mcp.md §1](mcp.md#1-mcp), moved under the rollover rule.
 ## 10. Install manifest and hosts
 
 In [onboarding.md §2](onboarding.md#2-install-and-upgrade), moved under the rollover rule.
+
+**Proposal (CP-0066 AB-B4):** `tenet init` accepts repeatable `--host <name>` values from `claude`, `cursor`, `copilot`, and `vscode`. Each selection plans that host's repository writes exactly as if its marker existed; an omitted, undetected host contributes no writes. Unknown names are `TN-USAGE-INIT` (exit 2).
 
 ## 11. Determinism
 
@@ -157,7 +161,7 @@ Message and fix text for every code: [messages.md](messages.md).
 | Codes | Kind | Exit |
 |---|---|---|
 | `TN-USAGE-*`, `TN-USAGE-REF`, `TN-USAGE-BUDGET`, `TN-BLESS-NO-TTY` | usage | 2 |
-| `TN-ENV-NODE`, `TN-ENV-GIT`, `TN-ENV-NO-COMMIT`, `TN-ENV-NOT-GIT`, `TN-ENV-OFFLINE`, `TN-POLICY-MISSING` | environment | 3 |
+| `TN-ENV-NODE`, `TN-ENV-GIT`, `TN-ENV-NO-COMMIT`, `TN-ENV-NOT-GIT`, `TN-ENV-OFFLINE`, `TN-ENV-REGISTRY`, `TN-POLICY-MISSING` | environment | 3 |
 | `TN-POLICY-LOOSEN`, `TN-POLICY-INCOMPATIBLE`, `TN-POLICY-RULE`, `TN-POLICY-RULE-DECISION`, `TN-INIT-EXISTS`, `TN-BLESS-OPEN-CONFLICT`, `TN-BLESS-INFERRED` | policy refusal | 4 |
 | `TN-SCHEMA`, `TN-POLICY-SCHEMA`, `TN-BACKTEST-INCOMPLETE`, `TN-SEALED-DIRTY`, `TN-PATH-ESCAPE`, `TN-SPEC-NO-FRONT`, `TN-SPEC-DUP-SECTION`, `TN-SPEC-DUP-ID`, `TN-SPEC-MISSING-ID`, `TN-SPEC-REQ-META`, `TN-SPEC-BLESSED-COPY`, `TN-SPEC-UNCOVERED-VISION`, `TN-KIT-EDITED`, `TN-KIT-INVALID`, `TN-KIT-MISSING`, `TN-LOCK-INVALID`, `TN-LOCK-MISSING`, `TN-EV-DUP`, `TN-EV-CYCLE`, `TN-EV-CROSS-WORK`, `TN-EV-NO-CREATE`, `TN-EV-RESOLVE`, `TN-DEC-ACTOR`, `TN-DEC-CONFLICT`, `TN-DEC-KEY-REVOKED`, `TN-DEC-SELF-VERIFY`, `TN-ACC-MISSING-ID`, `TN-ACC-DUP-ID`, `TN-INTERNAL` | structural | 1 |
 | `TN-CITE-FILE`, `TN-CITE-RANGE`, `TN-CITE-HEADING`, `TN-CITE-TEST` (rule `citations-valid`); `TN-BUDGET` (`budget`); `TN-WEAK-*` (`tests-not-weakened`); `TN-PROTECTED` (`protected-surfaces`); `TN-ACC-UNPASSED` (`acceptance-passed`); `TN-HEALTH-*` (`TN-HEALTH-BASELINE`, `TN-HEALTH-CONFIG-CHANGED`, `TN-HEALTH-INCOMPATIBLE`, `TN-HEALTH-PROVENANCE`, `TN-HEALTH-REGRESSED`) and `TN-WAIVER-EXPIRED` (`health-ratchet`); `TN-GATE-*` (`TN-GATE-SELF-WAIVE`, the row's rule) | rule (`severity: "error"` in `enforce`, `"advise"` in `advise`) | 1 in `enforce`, else 0 |

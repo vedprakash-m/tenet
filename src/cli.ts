@@ -55,7 +55,7 @@ export type CommandSpec = {
   description?: string;
   usage?: string;
   options?: CommandOption[] | string[];
-  network?: boolean;
+  network?: boolean | ((options: CommandContext["options"]) => boolean);
   checkEnvironment?: boolean;
   run?: (context: CommandContext) => unknown | Promise<unknown>;
   handler?: (context: CommandContext) => unknown | Promise<unknown>;
@@ -173,7 +173,7 @@ function usage(): string {
     "  --json          Write one JSON envelope to stdout",
     "  --quiet         Suppress successful human output",
     "  --verbose       Show additional human output",
-    "  --offline       Refuse commands that use the network",
+    "  --offline       Work without the network: skip registry lookups, or refuse commands that need it",
     "  --version       Print the installed version",
     "  --help, -h      Print this help",
     "",
@@ -181,8 +181,30 @@ function usage(): string {
   ].join("\n");
 }
 
+function commandUsage(spec: CommandSpec): string {
+  const options = (spec.options ?? []).map((option) => {
+    const flags = typeof option === "string" ? option : option.flags;
+    const description = typeof option === "string" ? "" : option.description;
+    return `  ${flags.padEnd(20)} ${description ?? ""}`.trimEnd();
+  });
+  return [
+    `Usage: ${spec.usage ?? `tenet ${spec.name}`}`,
+    "",
+    spec.description ?? "",
+    ...(options.length > 0 ? ["", "Options:", ...options] : []),
+    "",
+    "Global options:",
+    "  --cwd <path>    Run in another repository",
+    "  --json          Write one JSON envelope to stdout",
+    "  --quiet         Suppress successful human output",
+    "  --verbose       Show additional human output",
+    "  --offline       Work without the network: skip registry lookups, or refuse commands that need it",
+  ].join("\n");
+}
+
 type ParsedOption = {
   value: "none" | "required" | "optional";
+  variadic: boolean;
 };
 
 function optionDeclarations(spec: CommandSpec): Map<string, ParsedOption> {
@@ -190,11 +212,26 @@ function optionDeclarations(spec: CommandSpec): Map<string, ParsedOption> {
   for (const option of spec.options ?? []) {
     const flags = typeof option === "string" ? option : option.flags;
     const value = /<[^>]+>/.test(flags) ? "required" : /\[[^\]]+\]/.test(flags) ? "optional" : "none";
+    const variadic = /<[^>]*\.\.\.>/.test(flags);
     for (const match of flags.matchAll(/--?[A-Za-z0-9][A-Za-z0-9-]*/g)) {
-      declarations.set(match[0], { value });
+      declarations.set(match[0], { value, variadic });
     }
   }
   return declarations;
+}
+
+function collectOption(
+  options: CommandContext["options"],
+  flag: string,
+  value: string | string[],
+): void {
+  const previous = options[flag];
+  if (previous === undefined || typeof previous === "boolean") {
+    options[flag] = value;
+    return;
+  }
+  const incoming = Array.isArray(value) ? value : [value];
+  options[flag] = [...(Array.isArray(previous) ? previous : [previous]), ...incoming];
 }
 
 function parseCommandArgs(spec: CommandSpec, argv: string[]): { args: string[]; options: CommandContext["options"] } {
@@ -221,13 +258,24 @@ function parseCommandArgs(spec: CommandSpec, argv: string[]): { args: string[]; 
       if (inline === "" && declaration.value === "required") {
         throw fail("TN-USAGE-OPTION-VALUE", `${flag} needs a value`, "Pass a value after the option.");
       }
-      options[flag] = inline;
+      collectOption(options, flag, inline);
       continue;
     }
-    const next = argv[index + 1];
-    if (next !== undefined && !next.startsWith("-")) {
-      options[flag] = next;
-      index += 1;
+    const values: string[] = [];
+    if (declaration.variadic) {
+      while (argv[index + 1] !== undefined && !(argv[index + 1] ?? "").startsWith("-")) {
+        values.push(argv[index + 1] ?? "");
+        index += 1;
+      }
+    } else {
+      const next = argv[index + 1];
+      if (next !== undefined && !next.startsWith("-")) {
+        values.push(next);
+        index += 1;
+      }
+    }
+    if (values.length > 0) {
+      collectOption(options, flag, declaration.variadic ? values : values[0] ?? "");
     } else if (declaration.value === "required") {
       throw fail("TN-USAGE-OPTION-VALUE", `${flag} needs a value`, "Pass a value after the option.");
     } else {
@@ -269,7 +317,7 @@ function emitJson(output: Writable, command: string, value: unknown, findings: F
   line(output, JSON.stringify(result(command, value, findings)));
 }
 
-function emitHuman(io: ReturnType<typeof defaultIo>, value: unknown, findings: Finding[], quiet: boolean): void {
+function emitHuman(io: ReturnType<typeof defaultIo>, value: unknown, findings: Finding[], quiet: boolean, verbose = false): void {
   for (const finding of findings) {
     const location =
       finding.file === null
@@ -278,6 +326,7 @@ function emitHuman(io: ReturnType<typeof defaultIo>, value: unknown, findings: F
     line(io.stderr, `${finding.message}${location}`);
     line(io.stderr, `why: ${finding.rule ?? finding.code}`);
     line(io.stderr, `→ ${finding.fix}`);
+    if (verbose && finding.detail) line(io.stderr, `detail: ${finding.detail}`);
   }
   if (quiet || findings.some((finding) => finding.severity === "error")) return;
   if (typeof value === "string") line(io.stdout, value);
@@ -332,13 +381,16 @@ export async function run(argv: readonly string[], input: CliIo = {}): Promise<0
     let command = parsed.special ?? (parsed.argv[0] ?? "");
     let spec: CommandSpec | undefined;
     let commandArgs: { args: string[]; options: CommandContext["options"] } | undefined;
-    if (parsed.special === "help" && parsed.argv[1]) command = parsed.argv[1] ?? command;
+    if (parsed.special === "help" && parsed.argv.length > 0) {
+      command = parsed.argv[0] ?? command;
+      spec = registry.get(command);
+    }
     if (parsed.special === null && parsed.argv.length > 0) {
       spec = registry.get(command);
       if (!spec) {
         const finding = fail("TN-USAGE-COMMAND", `Unknown command: ${command}`, "Run tenet --help.");
         if (parsed.json) emitJson(io.stdout, command, null, [finding]);
-        else emitHuman(io, null, [finding], false);
+        else emitHuman(io, null, [finding], false, parsed.verbose);
         return 2;
       }
       commandArgs = parseCommandArgs(spec, parsed.argv.slice(1));
@@ -346,7 +398,7 @@ export async function run(argv: readonly string[], input: CliIo = {}): Promise<0
       const argument = parsed.argv.find((value) => value.startsWith("-")) ?? "";
       const finding = fail("TN-USAGE-UNKNOWN-FLAG", `Unknown flag: ${argument}`, "Run tenet --help.");
       if (parsed.json) emitJson(io.stdout, parsed.special, null, [finding]);
-      else emitHuman(io, null, [finding], false);
+      else emitHuman(io, null, [finding], false, parsed.verbose);
       return 2;
     }
 
@@ -354,7 +406,7 @@ export async function run(argv: readonly string[], input: CliIo = {}): Promise<0
       const environment = await environmentFindings(io);
       if (environment.length > 0) {
         if (parsed.json) emitJson(io.stdout, command || "tenet", null, environment);
-        else emitHuman(io, null, environment, false);
+        else emitHuman(io, null, environment, false, parsed.verbose);
         return exitCodeFor(environment);
       }
     }
@@ -365,16 +417,20 @@ export async function run(argv: readonly string[], input: CliIo = {}): Promise<0
       return 0;
     }
     if (parsed.special === "help" || parsed.argv.length === 0) {
-      if (parsed.json) emitJson(io.stdout, "help", { text: usage() }, []);
-      else line(io.stdout, usage());
+      const text = spec ? commandUsage(spec) : usage();
+      if (parsed.json) emitJson(io.stdout, spec?.name ?? "help", { text }, []);
+      else line(io.stdout, text);
       return 0;
     }
 
     if (!spec || !commandArgs) throw fail("TN-USAGE-COMMAND", "No command was selected", "Run tenet --help.");
-    if (parsed.offline && spec.network) {
+    const needsNetwork = typeof spec.network === "function"
+      ? spec.network(commandArgs.options)
+      : spec.network === true;
+    if (parsed.offline && needsNetwork) {
       const finding = fail("TN-ENV-OFFLINE", `${command} needs the network`, "Run without --offline.");
       if (parsed.json) emitJson(io.stdout, command, null, [finding]);
-      else emitHuman(io, null, [finding], false);
+      else emitHuman(io, null, [finding], false, parsed.verbose);
       return 3;
     }
 
@@ -401,15 +457,16 @@ export async function run(argv: readonly string[], input: CliIo = {}): Promise<0
       return precedence(right) - precedence(left);
     })[0] as 0 | 1 | 2 | 3 | 4;
     if (parsed.json) emitJson(io.stdout, command, outcome.value, outcome.findings);
-    else emitHuman(io, outcome.value, outcome.findings, parsed.quiet);
+    else emitHuman(io, outcome.value, outcome.findings, parsed.quiet, parsed.verbose);
     return code;
   } catch (error) {
     const detail = internalMessage(error);
     const words = message("TN-INTERNAL", { detail });
     const finding = errorFinding(error) ?? fail("TN-INTERNAL", words.message, words.fix);
     const parsedJson = argv.includes("--json");
+    const parsedVerbose = argv.includes("--verbose");
     if (parsedJson) emitJson(io.stdout, "tenet", null, [finding]);
-    else emitHuman(io, null, [finding], false);
+    else emitHuman(io, null, [finding], false, parsedVerbose);
     return exitCodeFor([finding]);
   }
 }

@@ -10,9 +10,11 @@ import { flags } from "../specs/flags.js";
 import { ladder } from "../specs/ladder.js";
 import {
 	type ParsedDoc,
+	openItemsFor,
 	parseDoc,
 	type Requirement,
 	type SpecSection,
+	specificationBody,
 } from "../specs/parse.js";
 
 type Level = "L0" | "L1" | "L2" | "L3" | "L4";
@@ -133,10 +135,6 @@ function defaultBudget(filename: string): number | null {
 	return null;
 }
 
-function normalizedCharCount(text: string): number {
-	return text.replace(/\r\n?/g, "\n").length;
-}
-
 function levelOrder(level: string | null): number {
 	if (level === null) return 5;
 	return /^(L[0-4])$/.test(level) ? Number(level.slice(1)) : 5;
@@ -169,26 +167,22 @@ async function revision(cwd: string): Promise<{
 	};
 }
 
-function unresolvedIds(
-	doc: ParsedDoc,
-	section: string,
-	field: "conflicts" | "questions",
-): string[] {
-	const special = doc.sections.find(
-		(candidate) =>
-			candidate.slug ===
-			(field === "conflicts" ? "conflicts" : "open-questions"),
-	);
-	if (!special) return [];
-	return special[field]
-		.filter(
-			(item) =>
-				!item.checked &&
-				!(field === "conflicts" ? item.resolution : item.answer) &&
-				item.section === section,
-		)
-		.map((item) => item.id)
-		.sort();
+async function defaultRevision(cwd: string): Promise<string | null> {
+	const remoteDefault = (await git(["symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"], { cwd }).catch(() => "")).trim();
+	const initialBranch = (await git(["config", "--get", "init.defaultBranch"], { cwd }).catch(() => "")).trim();
+	const candidates = [
+		remoteDefault,
+		"refs/remotes/origin/main",
+		"refs/heads/main",
+		...(initialBranch ? [`refs/heads/${initialBranch}`] : []),
+		"refs/remotes/origin/master",
+		"refs/heads/master",
+	];
+	for (const ref of new Set(candidates.filter(Boolean))) {
+		const sha = (await git(["rev-parse", "--verify", "--quiet", `${ref}^{commit}`], { cwd }).catch(() => "")).trim();
+		if (sha) return sha;
+	}
+	return null;
 }
 
 function isFlag(
@@ -313,7 +307,7 @@ function debtOrder(left: SpecDebt, right: SpecDebt): number {
 export async function board(options: BoardOptions = {}): Promise<SpecsBoard> {
 	const cwd = path.resolve(options.cwd ?? process.cwd());
 	const policy = await loadPolicy({ cwd });
-	const subject = await revision(cwd);
+	const [subject, main] = await Promise.all([revision(cwd), defaultRevision(cwd)]);
 	const readFileAt = readAt(cwd);
 	const configured = policy.specs.documents.map((document) => {
 		const filename = portable(
@@ -407,17 +401,14 @@ export async function board(options: BoardOptions = {}): Promise<SpecsBoard> {
 						? changedSource(section, readFileAt)
 						: null,
 			});
-			if (
-				state === "draft" ||
-				(state === "blessed" &&
-					(sectionFlags.includes("edited") ||
-						sectionFlags.includes("sources-changed")))
-			) {
+			const conflicts = openItemsFor(entry.doc, section, "conflicts").map(({ id }) => id).sort();
+			const questions = openItemsFor(entry.doc, section, "questions").map(({ id }) => id).sort();
+			if (state === "draft" || sectionFlags.length || conflicts.length || questions.length) {
 				pending.push({
 					path: entry.path,
 					section: section.slug,
-					conflicts: unresolvedIds(entry.doc, section.slug, "conflicts"),
-					open_questions: unresolvedIds(entry.doc, section.slug, "questions"),
+					conflicts,
+					open_questions: questions,
 				});
 			}
 			specDebt.push(...debtForBrokenCitations(entry.doc, section, readFileAt));
@@ -471,7 +462,7 @@ export async function board(options: BoardOptions = {}): Promise<SpecsBoard> {
 			throw error;
 		});
 		if (text === null) continue;
-		const tokens = Math.ceil(normalizedCharCount(text) / 4);
+		const tokens = Math.ceil(specificationBody(text).length / 4);
 		if (tokens > document.budget) {
 			specDebt.push({
 				kind: "over-budget",
@@ -498,7 +489,7 @@ export async function board(options: BoardOptions = {}): Promise<SpecsBoard> {
 		schema_version: 1,
 		as_of: asOf(options),
 		read: {
-			main: subject.full,
+			main,
 			branches: [],
 			records: null,
 		},
@@ -539,58 +530,49 @@ export function renderSpecsBoard(board: SpecsBoard): string {
 		);
 	}
 
-	const drafts = board.specs.filter((spec) => spec.state === "draft");
-	const sourcesChanged = board.specs.filter((spec) =>
-		spec.flags.includes("sources-changed"),
-	);
-	const edited = board.specs.filter((spec) => spec.flags.includes("edited"));
-	const cleanBlessed = board.specs.filter(
-		(spec) => spec.state === "blessed" && spec.flags.length === 0,
-	);
+	const counts = [
+		["Waiting for your blessing", board.specs.filter(({ state }) => state === "draft").length],
+		["Sources changed", board.specs.filter(({ flags }) => flags.includes("sources-changed")).length],
+		["Edited", board.specs.filter(({ flags }) => flags.includes("edited")).length],
+		["Blessed", details?.all ? board.specs.filter(({ state, flags }) => state === "blessed" && !flags.length).length : 0],
+	].filter(([, count]) => count);
+	if (counts.length) lines.push(counts.map(([label, count]) => `${label} (${count})`).join(" · "));
 
-	if (drafts.length > 0) {
-		lines.push(`Waiting for your blessing (${drafts.length})`);
-		for (const spec of drafts) {
-			const detail = details?.sections.get(sectionKey(spec.path, spec.section));
-			const onboarding =
-				detail?.draftedFrom === true ||
-				/^Undecided since onboarding\.\r?\n?$/i.test(detail?.body ?? "");
-			lines.push(
-				`  ${headingFor(spec, details)} · ${onboarding ? "undecided since onboarding" : "draft"}`,
-			);
+	const pending = new Map(board.pending_blessings.map((item) => [sectionKey(item.path, item.section), item]));
+	let file: string | undefined;
+	for (const spec of board.specs) {
+		const key = sectionKey(spec.path, spec.section);
+		const item = pending.get(key);
+		const hasOpenItems = Boolean(item?.conflicts.length || item?.open_questions.length);
+		if (spec.state !== "draft" && !spec.flags.length && !hasOpenItems &&
+			!(details?.all && spec.state === "blessed")) continue;
+
+		if (file !== spec.path) {
+			file = spec.path;
+			lines.push(file);
 		}
-	}
-	if (sourcesChanged.length > 0) {
-		lines.push(`Sources changed (${sourcesChanged.length})`);
-		for (const spec of sourcesChanged) {
-			const source = details?.sections.get(
-				sectionKey(spec.path, spec.section),
-			)?.changedSource;
-			lines.push(
-				source
-					? `  ${headingFor(spec, details)} › ${source.id} · ${source.path} changed after you blessed it; the blessed text still applies`
-					: `  ${headingFor(spec, details)} · sources changed after you blessed it; the blessed text still applies`,
-			);
+		const detail = details?.sections.get(key);
+		const heading = headingFor(spec, details);
+		if (spec.flags.includes("sources-changed")) {
+			const source = detail?.changedSource;
+			lines.push(source
+				? `  ${heading} › ${source.id} · ${source.path} changed after you blessed it; the blessed text still applies`
+				: `  ${heading} · sources changed after you blessed it; the blessed text still applies`);
 		}
-	}
-	if (edited.length > 0) {
-		lines.push(`Edited (${edited.length})`);
-		for (const spec of edited) {
-			lines.push(
-				`  ${headingFor(spec, details)} · edited since blessing; the blessed text still applies`,
-			);
+		if (spec.flags.includes("edited")) lines.push(`  ${heading} · edited since blessing; the blessed text still applies`);
+		if (!spec.flags.length) {
+			const onboarding = spec.state === "draft" &&
+				(detail?.draftedFrom || /^Undecided since onboarding\.\r?\n?$/i.test(detail?.body ?? ""));
+			lines.push(`  ${heading} · ${onboarding ? "undecided since onboarding" : spec.state}`);
 		}
+		if (item?.conflicts.length) lines.push(`    Open conflicts: ${item.conflicts.join(", ")}`);
+		if (item?.open_questions.length) lines.push(`    Open questions: ${item.open_questions.join(", ")}`);
 	}
 	if (board.spec_debt.length > 0) {
 		lines.push(`Spec debt (${board.spec_debt.length})`);
 		for (const debt of board.spec_debt) lines.push(`  ${debt.message}`);
 	}
-	if (details?.all && cleanBlessed.length > 0) {
-		lines.push(`Blessed (${cleanBlessed.length})`);
-		for (const spec of cleanBlessed)
-			lines.push(`  ${headingFor(spec, details)} · blessed`);
-	}
-	if (lines.length === 1) lines.push("All blessed specifications are current.");
+	if (file === undefined && !board.spec_debt.length) lines.push("All blessed specifications are current.");
 	return `${lines.join("\n")}\n`;
 }
 

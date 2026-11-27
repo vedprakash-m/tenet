@@ -1,9 +1,11 @@
 <!-- Summary of what changed and why. -->
 
-<!-- tenet:begin v0.1.0-alpha.0 -->
+<!-- tenet:begin v0.1.1 -->
+<!--
 ## Acceptance
-Implements: R-1
+Implements: <requirement IDs>
 - [AB-1] <what must hold>
+-->
 <!-- tenet:end -->
 
 ## Spec change

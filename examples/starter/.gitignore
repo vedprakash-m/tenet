@@ -1,4 +1,4 @@
-# tenet:begin v0.1.0-alpha.0
+# tenet:begin v0.1.1
 .tenet/*
 !.tenet/manifest.json
 !.tenet/manifest.local.json

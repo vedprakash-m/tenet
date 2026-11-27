@@ -7,15 +7,16 @@ Written independently from the `CP-0052` build contract (`tenet/specs/plan/alpha
 Each scenario folder contains:
 - `before/` — starting repository tree materialized into a fresh temporary Git repository (`main` branch, one initial commit unless `before/` holds only `.gitkeep`).
 - `steps.json` — ordered sequence of deterministic steps across `git`, `write`, `cli`, `sdk`, `mcp`, and `verify`:
+  - `pending`: optional reason string when a scenario awaits an unmerged change (`test/onboard/scenarios.test.ts` reports it as TODO until `pending` is removed).
   - `git` / `git-squash-shallow-clone`: repository mutations, squash-merge, or `git clone --depth 1` into `workdir`.
   - `write`: exact UTF-8 working-tree file updates.
-  - `cli`: invokes `tenet <args...>` (with optional `fakeTty` prompt answers, `interrupt` fault injection for interrupted install checkpoints, `workdir`, and `expectExitCode`).
+  - `cli`: invokes `tenet <args...>` (with optional `fakeTty` prompt answers, `interrupt` fault injection for interrupted install checkpoints, `workdir`, `expectExitCode` / `expectExitCodes`, `expectedStdoutIncludes` / `expectedStderrIncludes` / `expectedTextIncludes`, and `expectedFilesInclude`). `withoutCiEvent` clears `GITHUB_EVENT_PATH` for one command. `expectedProjection` reads a file with `stdoutMatches` regular expressions (case-insensitive and multiline) or `absentYamlPaths` with YAML key paths grouped by file.
   - `sdk`: calls an exported Tenet SDK function (`context`, `board`, `onboard`, `record`, `renderCard`, or the `ALG-07` gate fixture evaluator).
   - `mcp`: sends newline-delimited JSON-RPC 2.0 requests to `serveMcp` and checks ordered responses and parity with CLI/SDK.
   - `verify`: evaluates a `VerifyEvent` (`workflow_run`, `edited`, or `pull_request` closed) with bundle/JUnit inputs and renders the proof card Markdown.
-- `expected/` — exact JSON results, log lines, tree equivalence snapshots, and rendered `.md` cards for every interactive/verification step per `answers-r8.md`.
+- `expected/` — exact JSON results (`expectedJson`), partial structural assertions (`expectedJsonMatch` with `$assert` projections where exact rendering is left open), log lines, tree equivalence snapshots, and rendered `.md` cards.
 
-## Scenarios (13 folders covering all 11 contract items; all expected outputs populated)
+## Scenarios (16 folders: 13 populated, 3 pending CP-0066)
 
 | Scenario | Contract bullet | Surfaces | Spec lines exercised | Expected files |
 |---|---|---|---|---|
@@ -32,3 +33,6 @@ Each scenario folder contains:
 | [s11-readme-walkthrough](s11-readme-walkthrough/steps.json) | README walkthrough verbatim | `cli`, `write`, `git`, `fakeTty`, `card` | `README.md:15–30`, `CP-0052` (`alpha.0b.md:125`) | `expected/01-init.json`, `expected/02-onboard-inventory.json`, `expected/06-onboard-card.json`, `expected/06-card.md`, `expected/07-bless.json`, `expected/08-remove.json`, `before/` restoration |
 | [s12-ux-walkthrough-existing](s12-ux-walkthrough-existing/steps.json) | UX Part 1A & Part 2 walkthrough verbatim (existing repo) | `cli`, `write`, `git`, `fakeTty`, `card` | `ux-spec.md:34–115, 148–158`, `CP-0052` (`alpha.0b.md:125`) | `expected/01-init.json`, `expected/02-onboard-inventory.json`, `expected/06-onboard-card.json`, `expected/06-card.md`, `expected/07-bless.json`, `expected/08-board.json` |
 | [s13-ux-walkthrough-new](s13-ux-walkthrough-new/steps.json) | UX Part 1B walkthrough verbatim (new project) | `cli`, `git`, `fakeTty`, `card` | `ux-spec.md:119–125`, `CP-0052` (`alpha.0b.md:125`) | `expected/01-init.json`, `expected/04-onboard-inventory.json`, `expected/05-onboard-card.json`, `expected/05-card.md`, `expected/06-bless.json` |
+| [s14-bless-decide-later-and-questions](s14-bless-decide-later-and-questions/steps.json) | Bless decide later, open questions, closing summary, grouped vision warning | `cli`, `git`, `fakeTty` | `CP-0066` AB-A1–A3, A7 (`definition.md`) | `expected/02-board.json`, `expected/09-check.json` |
+| [s15-context-paths-ranking](s15-context-paths-ranking/steps.json) | Context `applies_to` path ranking, `"**"` budget handling, `--paths` forms, `--include-drafts` | `cli`, `mcp` | `CP-0066` AB-B1–B3 (`definition.md`) | `expected/01-context-paths.json`, `expected/03-context-multi.json`, `expected/05-context-drafts.json`, `expected/07-mcp-drafts.json` |
+| [s16-verify-local-preview](s16-verify-local-preview/steps.json) | Init without a test runner, working-tree preview, and changed command notice | `cli`, `git`, `write` | `CP-0066` AB-C1–C3 (`definition.md`) | `expected/01-init.json`, `expected/14-local-preview.json`, `expected/18-command-change.json` |

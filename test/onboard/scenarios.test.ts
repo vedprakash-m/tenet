@@ -6,6 +6,7 @@ import path from "node:path";
 import { PassThrough } from "node:stream";
 import { test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { parse as parseYaml } from "yaml";
 import { run } from "../../dist/cli.js";
 import { context } from "../../dist/context/index.js";
 import { serveMcp } from "../../dist/mcp/index.js";
@@ -23,7 +24,7 @@ import type { RecordsStore } from "../../dist/verify/records.js";
 import { board } from "../../dist/views/specs-board.js";
 import { onboard } from "../../dist/onboard/assignment.js";
 import { fakeTty } from "../helpers/fakeTty.ts";
-import { assertGolden, isolateScenarioGit } from "./scenario-support.ts";
+import { assertGolden, assertJsonMatch, isolateScenarioGit } from "./scenario-support.ts";
 
 const suite = fileURLToPath(new URL("../../pkg/conformance/scenarios/", import.meta.url));
 const cli = fileURLToPath(new URL("../../dist/cli.js", import.meta.url));
@@ -45,7 +46,18 @@ function compareGolden(actual: unknown, expected: unknown): void {
   assertGolden(actual, expected, () => { placeholderUses += 1; });
 }
 test.after(() => console.log(`Scenario golden placeholder uses: ${placeholderUses}`));
-type Golden = { expectedJson?: string; expectedCard?: string; expectedLogEntry?: string; expectedTree?: "before" };
+type Golden = {
+  expectedJson?: string;
+  expectedJsonMatch?: string;
+  expectedCard?: string;
+  expectedLogEntry?: string;
+  expectedTree?: "before";
+  expectedStdoutIncludes?: string[];
+  expectedStderrIncludes?: string[];
+  expectedTextIncludes?: string[];
+  expectedStdoutOrder?: string[];
+  expectedFilesInclude?: Record<string, string[]>;
+};
 type Claim = {
   id: string; applicable: boolean; kind: string;
   mode: "enforce" | "advise" | "observe"; result: string;
@@ -62,13 +74,18 @@ type Step = Golden & { id: string; workdir?: string } & (
   | { kind: "git"; args: string[] }
   | { kind: "git-squash-shallow-clone"; branch: string; cloneDepth: number; targetDir: string }
   | { kind: "write"; files: Record<string, string> }
-  | { kind: "cli"; args: string[]; fakeTty?: string[]; expectExitCode?: number;
+  | { kind: "cli"; args: string[]; fakeTty?: string[]; expectExitCode?: number; expectExitCodes?: number[];
+      expectedProjection?: string; withoutCiEvent?: boolean;
       interrupt?: { at: string; oneFreshCopyPerPoint: boolean }; compareTreeToCleanRun?: boolean }
   | { kind: "mcp"; requests: object[] }
   | { kind: "sdk"; export: string; input: Record<string, unknown> }
   | { kind: "verify"; event: ForgeEvent; bundle?: BundleFixture; reuseBundleRunId?: string; assertRecordsTipUnchanged?: boolean }
 );
-type Scenario = { schema: number; scenario: string; steps: Step[] };
+type Scenario = { schema: number; scenario: string; pending?: string; steps: Step[] };
+type CliProjection = {
+  stdoutMatches?: string[];
+  absentYamlPaths?: Record<string, string[][]>;
+};
 type CliStep = Extract<Step, { kind: "cli" }>;
 type VerifyStep = Extract<Step, { kind: "verify" }>;
 
@@ -181,11 +198,52 @@ function scenarioTty(step: CliStep) {
   return { ...tty, stdin };
 }
 
+async function withoutNodeTestContext<T>(runStep: () => Promise<T>): Promise<T> {
+  const previous = process.env.NODE_TEST_CONTEXT;
+  // A child Node test runner skips its tests if it inherits the parent runner's context.
+  delete process.env.NODE_TEST_CONTEXT;
+  try {
+    return await runStep();
+  } finally {
+    if (previous === undefined) delete process.env.NODE_TEST_CONTEXT;
+    else process.env.NODE_TEST_CONTEXT = previous;
+  }
+}
+
 async function cliStep(step: CliStep, cwd: string) {
   const tty = scenarioTty(step);
-  const exit = await run(step.args, { ...tty, cwd, now, checkEnvironment: false });
-  const json = tty.stdout.text.trim() ? JSON.parse(tty.stdout.text) : undefined;
-  return { exit, json, stderr: tty.stderr.text };
+  const priorRegistryIntegrity = process.env.TENET_TEST_REGISTRY_INTEGRITY;
+  const priorCiEvent = process.env.GITHUB_EVENT_PATH;
+  if (priorRegistryIntegrity === undefined) process.env.TENET_TEST_REGISTRY_INTEGRITY = "not-found";
+  if (step.withoutCiEvent) delete process.env.GITHUB_EVENT_PATH;
+  try {
+    const execute = () => run(step.args, { ...tty, cwd, now, checkEnvironment: false });
+    const exit = step.args[0] === "verify" ? await withoutNodeTestContext(execute) : await execute();
+    const stdout = tty.stdout.text;
+    const json = step.args.includes("--json") && stdout.trim() ? JSON.parse(stdout) : undefined;
+    return { exit, json, stdout, stderr: tty.stderr.text };
+  } finally {
+    if (priorRegistryIntegrity === undefined) delete process.env.TENET_TEST_REGISTRY_INTEGRITY;
+    else process.env.TENET_TEST_REGISTRY_INTEGRITY = priorRegistryIntegrity;
+    if (step.withoutCiEvent && priorCiEvent !== undefined) process.env.GITHUB_EVENT_PATH = priorCiEvent;
+  }
+}
+
+async function assertCliProjection(cwd: string, stdout: string, projection: CliProjection): Promise<void> {
+  for (const pattern of projection.stdoutMatches ?? []) {
+    assert.match(stdout, new RegExp(pattern, "im"));
+  }
+  for (const [file, paths] of Object.entries(projection.absentYamlPaths ?? {})) {
+    const document: unknown = parseYaml(await readFile(path.join(cwd, file), "utf8"));
+    for (const keys of paths) {
+      let value = document;
+      for (const key of keys) {
+        value = value !== null && typeof value === "object" && Object.hasOwn(value, key)
+          ? Reflect.get(value, key) : undefined;
+      }
+      assert.equal(value, undefined, `${file} unexpectedly sets ${keys.join(".")}`);
+    }
+  }
 }
 
 type Records = { tip: string | null; files: Record<string, string> };
@@ -326,7 +384,13 @@ syncBuiltinESMExports();
 
 function faultRun(step: CliStep, cwd: string, trace: string, stop = 0) {
   const child = spawnSync(process.execPath, ["--import", `data:text/javascript,${encodeURIComponent(faultModule)}`, cli, ...step.args], {
-    cwd, env: { ...process.env, ...commitEnv, TENET_SCENARIO_WRITE_TRACE: trace, TENET_SCENARIO_INTERRUPT: String(stop) },
+    cwd, env: {
+      ...process.env,
+      ...commitEnv,
+      TENET_SCENARIO_WRITE_TRACE: trace,
+      TENET_SCENARIO_INTERRUPT: String(stop),
+      TENET_TEST_REGISTRY_INTEGRITY: process.env.TENET_TEST_REGISTRY_INTEGRITY ?? "not-found",
+    },
     encoding: "utf8", input: step.fakeTty?.join("\n"), windowsHide: true,
   });
   assert.ifError(child.error);
@@ -369,12 +433,16 @@ const names = (await readdir(suite, { withFileTypes: true })).filter((entry) => 
 assert.ok(names.length > 0, "No independent scenarios discovered");
 
 for (const name of names) {
+  const dir = path.join(suite, name);
+  const source = path.join(dir, "before");
+  const readText = async (file: string) => (await readFile(path.join(dir, file), "utf8")).replaceAll("{{version}}", packageVersion);
+  const readGolden = async (file: string) => JSON.parse(await readText(file));
+  const scenario: Scenario = await readGolden("steps.json");
+  if (scenario.pending) {
+    test(name, { todo: scenario.pending }, () => {});
+    continue;
+  }
   test(name, async (t) => {
-    const dir = path.join(suite, name);
-    const source = path.join(dir, "before");
-    const readText = async (file: string) => (await readFile(path.join(dir, file), "utf8")).replaceAll("{{version}}", packageVersion);
-    const readGolden = async (file: string) => JSON.parse(await readText(file));
-    const scenario: Scenario = await readGolden("steps.json");
     assert.equal(scenario.schema, 1);
     assert.equal(scenario.scenario, name);
     const scratch = await mkdtemp(path.join(os.tmpdir(), "tenet-scenario-"));
@@ -423,7 +491,33 @@ for (const name of names) {
             }
             if (step.compareTreeToCleanRun) break; // Every resumed run was asserted at the interrupt step.
             const result = await cliStep(step, cwd);
-            assert.equal(result.exit, step.expectExitCode ?? 0, [result.stderr, JSON.stringify(result.json)].filter(Boolean).join("\n"));
+            if (step.expectExitCodes) {
+              assert.ok(step.expectExitCodes.includes(result.exit),
+                `Expected exit in [${step.expectExitCodes.join(", ")}], got ${result.exit}\n${[result.stderr, result.stdout].filter(Boolean).join("\n")}`);
+            } else {
+              assert.equal(result.exit, step.expectExitCode ?? 0, [result.stderr, result.stdout].filter(Boolean).join("\n"));
+            }
+            for (const fragment of step.expectedStdoutIncludes ?? []) {
+              assert.ok(result.stdout.includes(fragment), `Expected stdout to include ${JSON.stringify(fragment)}\n${result.stdout}`);
+            }
+            for (const fragment of step.expectedStderrIncludes ?? []) {
+              assert.ok(result.stderr.includes(fragment), `Expected stderr to include ${JSON.stringify(fragment)}\n${result.stderr}`);
+            }
+            for (const fragment of step.expectedTextIncludes ?? []) {
+              const combined = `${result.stdout}\n${result.stderr}`;
+              assert.ok(combined.includes(fragment), `Expected output to include ${JSON.stringify(fragment)}\n${combined}`);
+            }
+            if (step.expectedStdoutOrder?.length) {
+              let cursor = 0;
+              for (const fragment of step.expectedStdoutOrder) {
+                const index = result.stdout.indexOf(fragment, cursor);
+                assert.ok(index >= 0, `Expected stdout to include ${JSON.stringify(fragment)} after offset ${cursor}\n${result.stdout}`);
+                cursor = index + fragment.length;
+              }
+            }
+            if (step.expectedProjection) {
+              await assertCliProjection(cwd, result.stdout, await readGolden(step.expectedProjection));
+            }
             actual = result.json;
             if (step.expectedLogEntry) {
               const log = await readFile(path.join(cwd, "tenet/blessed/log.jsonl"), "utf8");
@@ -462,9 +556,17 @@ for (const name of names) {
             break;
           }
           case "verify":
-            await checkVerification(step, expected, expectedCard, cwd, bundles, records);
+            await withoutNodeTestContext(() => checkVerification(step, expected, expectedCard, cwd, bundles, records));
             break;
           default: assert.fail(`Unknown scenario step: ${JSON.stringify(step)}`);
+        }
+        if (step.expectedFilesInclude) {
+          for (const [relative, fragments] of Object.entries(step.expectedFilesInclude)) {
+            const contents = await readFile(path.resolve(cwd, relative), "utf8");
+            for (const fragment of fragments) {
+              assert.ok(contents.includes(fragment), `Expected ${relative} to include ${JSON.stringify(fragment)}`);
+            }
+          }
         }
         if (step.expectedJson && step.kind !== "verify" &&
             !(step.kind === "cli" && (step.interrupt || step.compareTreeToCleanRun))) {
@@ -472,6 +574,9 @@ for (const name of names) {
             bindRevisionFields(expected, actual, git(cwd, "rev-parse", "HEAD"), refs);
           }
           compareGolden(actual, replaceRefs(expected, expectedRefs));
+        }
+        if (step.expectedJsonMatch && step.kind !== "verify") {
+          assertJsonMatch(actual, replaceRefs(await readGolden(step.expectedJsonMatch), expectedRefs));
         }
       } catch (error) {
         throw new Error(`${step.id} (${step.kind}): ${error instanceof Error ? error.message : String(error)}`, { cause: error });

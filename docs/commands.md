@@ -1,57 +1,64 @@
-# Alpha.0 command reference
+# Tenet commands
 
-Source: [command contract §8](../tenet/specs/tech-spec/contracts.md#8-commands), [error contract §13](../tenet/specs/tech-spec/contracts.md#13-error-codes).
-
-**Draft for 0.1.0-alpha.0**
+Run `tenet --help` for the command list and `tenet --version` for the installed version.
 
 ## Repository commands
 
-Source: [contracts §§8 and 10](../tenet/specs/tech-spec/contracts.md#8-commands), [onboarding](../tenet/specs/tech-spec/onboarding.md), [alpha.0 build contracts](../tenet/specs/plan/alpha.0.md), [alpha.0 continuation](../tenet/specs/plan/alpha.0b.md), [ALG-11](../tenet/specs/tech-spec/algorithms.md#alg-11).
-
-The table gives command-specific options specified for alpha.0. The common exits below apply to each command.
-
-| Command | Options or inputs | Writes |
-|---|---|---|
-| `tenet init` | `--yes`, `--vendor`, `--force` | Files announced in preflight, including setup, the lock and install manifest. |
-| `tenet onboard` | `--inventory-only`, `--refresh`, layout override `--layout`, onboarding card `--card` | Inventory and assignment under `.tenet/onboard/`. Your agent writes drafted documents. The card operation records the revision holding the draft. |
-| `tenet bless` | Interactive actions: bless, confirm, edit, reject or defer | Section metadata, blessed copies and the blessing log. Without a terminal it exits 2. An open conflict or unresolved inference can cause a policy refusal. |
-| `tenet context` | `--paths`, `--ids`, `--query` for titles, `--include-drafts` | None. |
-| `tenet check` | `--pack`. The build contract uses `--ci --base` for CI budget comparisons. | None. |
-| `tenet fix` | Local mechanical repairs | IDs, metadata, digests and citation repairs in local specification files. |
-| `tenet split` | Document and section | Moves the section into a part, leaves a pointer and updates links. |
-| `tenet board` | `--all` | None. Prints the specification board or its JSON result. |
-| `tenet upgrade` | Upgrade for the installed version | Updates the lock and regenerates the recorded integration, including workflows, skills and the managed instruction block. |
-| `tenet remove` | Reads the install manifest | Removes managed additions and reports files or settings it kept. |
-| `tenet doctor` | Checks the local setup | None. |
-| `tenet mcp` | Starts the local stdio server | The launch itself writes no files. A tool operation that is supported by the host has its own contract. |
-| `tenet --version`, `tenet help` | CLI version and help | None. |
+| Command | Options and behavior |
+|---|---|
+| `tenet init` | Lists setup writes and asks for confirmation. `--yes` accepts defaults, `--local-hosts` explicitly allows supported local host edits, and `--vendor` copies the kit into the repository. `--force` can replace colliding setup files. **Proposal:** repeat `--host <name>` to select `claude`, `cursor`, `copilot` or `vscode` when its marker is absent. With no detected or selected host, portable skills remain under `.agents/skills/`. |
+| `tenet onboard` | Reads committed files and writes an inventory and drafting assignment under `.tenet/onboard/`. `--inventory-only` is the local inspection step. `--layout one-file` and `--layout separate` override layout selection. `--refresh` requests an updated assignment. |
+| `tenet onboard --card` | Checks that citations resolve, records the draft revision and lists changed files. Pass `--pr <number>` when a pull request is open. |
+| `tenet bless` | Reviews and approves sections in a terminal. Use `--doc <path>` or `--section <slug>` to narrow the session. |
+| `tenet check` | Reports structural, citation and integrity findings. Pass paths for a focused check or `--pack` to validate a pack. |
+| `tenet fix` | Repairs mechanical specification metadata and IDs. Use `--dry-run` to see proposed changes. |
+| `tenet split <document> <section>` | Moves a section to a separate document, leaves a pointer and updates links. |
+| `tenet board` | Groups specification sections by file and shows open conflicts, open questions and spec debt. `--all` includes clean blessed sections. |
+| `tenet context` | Selects relevant specification context. Use `--paths app.py,src/lib.py`, repeat `--paths` (for example `--paths app.py --paths src/lib.py`), or use separate values after one flag (`--paths app.py src/lib.py`). Use `--ids`, `--query` or `--budget-tokens` to narrow or budget the result. Add `--include-drafts` to select labeled draft text with the same rules. |
+| `tenet mcp` | Starts a local MCP server on standard input and output. It exposes context, check and status tools to a compatible host. |
+| `tenet upgrade` | Refreshes the lock and managed files for the installed package version. |
+| `tenet remove` | Removes managed setup and generated working state, and reports what it kept. |
+| `tenet doctor` | Reports tool availability, lock verification and workflow status. |
 
 ## CI commands
 
-Source: [command contract §8](../tenet/specs/tech-spec/contracts.md#8-commands), [CI §§1–4 and 10](../tenet/specs/tech-spec/ci.md#1-one-shape-for-every-release).
+The GitHub Actions workflows configure and run these commands for you.
 
-| Command | Writes |
+| Command | Behavior |
 |---|---|
-| `tenet verify --run-checks` | Runs configured checks and creates the bundle in `tenet-bundle/`. |
-| `tenet verify --bundle` | Collects existing CI reports into the bundle. |
-| `tenet verify --record` | Posts or updates the forge check and writes to the records ref. |
+| `tenet verify --local` | Runs configured checks on the working tree against the default branch's merge base, builds the bundle without network calls, and prints a local preview proof card. |
+| `tenet verify --run-checks` | Runs configured checks and creates an evidence bundle. |
+| `tenet verify --bundle` | Collects evidence from existing CI reports. |
+| `tenet verify --record` | Posts or updates the GitHub check and keeps a proof record. |
 
-These are CI operations in alpha.0. The forge check's conclusion follows the CI outcome table. The local advisory `--run-checks --local` option arrives in 0.1.0.
+The proof card is advisory in this release. Use repository branch protection to decide which checks are required.
 
-## Global options and exit codes
+## Network access and output
 
-Source: [command contract §8](../tenet/specs/tech-spec/contracts.md#8-commands), [error contract §13](../tenet/specs/tech-spec/contracts.md#13-error-codes).
+Use `onboard.exclude` in `tenet.yaml` to keep matching folders out of onboarding inventory:
 
-Global options are `--json`, `--cwd`, `--quiet`, `--verbose` and `--offline`. With `--json`, standard output contains one object with `ok`, `command`, `version`, `result` and `errors`. Human-readable output goes to standard error.
+~~~yaml
+onboard:
+  exclude:
+    - "archive/**"
+    - ".archive/**"
+    - "old/**"
+~~~
 
-Exit precedence is the order below when more than one result applies.
+- npm install and uncached npx invocations reach the registry. A host that launches MCP through npx may need the registry too. The installed `tenet mcp` executable serves context locally.
+- `init` and `upgrade` normally look up the package's integrity on npm. If you get `TN-ENV-REGISTRY`, retry the installed command with `--offline` to record local integrity. When the registry becomes reachable, use `tenet upgrade` to refresh the pin for GitHub CI.
+- Inventory, blessing, specification checks, the board, context, doctor and removal use local data. Your agent may use its model provider. The GitHub CI commands need their workflow environment and reject `--offline`.
 
-| Code | Meaning |
+Global options include `--cwd <path>`, `--json`, `--quiet`, `--verbose` and `--offline`. With `--json`, stdout contains one object with `ok`, `command`, `version`, `result` and `errors`. Human notices go to stderr in that mode.
+
+| Exit | Meaning |
 |---|---|
+| 0 | Success, including advisory findings |
+| 1 | A check failed |
 | 2 | Invalid usage, including blessing without a terminal |
-| 3 | Environment problem, such as no Git repository or a missing policy |
-| 4 | Policy refusal |
-| 1 | Failed gate or check. Structural findings fail `check`. |
-| 0 | Success or a non-blocking advisory or warning |
+| 3 | An environment problem, such as a missing repository or an unavailable registry |
+| 4 | A policy refusal |
 
-A rule finding counts as a failed check only when its rule is enforced. Alpha.0's advisory card and a structural CLI error can therefore report different kinds of result.
+A blessing session exits 0 when it finishes without errors, even when it blesses nothing or you choose to skip sections. Unresolved review errors exit 1. Blessing needs a terminal and exits 2 without one.
+
+See the [command contract](../tenet/specs/tech-spec/contracts.md#8-commands) for exact output shapes and error codes.
