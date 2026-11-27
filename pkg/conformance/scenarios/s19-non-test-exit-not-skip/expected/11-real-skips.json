@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "command": "verify",
+  "result": {
+    "card": {
+      "weakening": {
+        "found": true,
+        "by": {
+          "$assert": "contains",
+          "value": [
+            {
+              "finding": "skip-added",
+              "file": "tests/test_sample.py"
+            },
+            {
+              "finding": "skip-added",
+              "file": "tests/sample.test.mjs"
+            },
+            {
+              "finding": "skip-added",
+              "file": "pkg/sample/sample_test.go"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

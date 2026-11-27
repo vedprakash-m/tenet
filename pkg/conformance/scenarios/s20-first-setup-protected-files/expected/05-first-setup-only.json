@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "command": "verify",
+  "result": {
+    "card": {
+      "protected": {
+        "$assert": "size",
+        "value": 0
+      }
+    },
+    "markdown": {
+      "$assert": "includes",
+      "value": "First-time setup: protected Tenet files are expected in this pull request."
+    }
+  }
+}

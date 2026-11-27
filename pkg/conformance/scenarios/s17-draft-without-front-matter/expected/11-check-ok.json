@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "command": "check",
+  "result": {
+    "summary": {
+      "errors": 0
+    }
+  }
+}
