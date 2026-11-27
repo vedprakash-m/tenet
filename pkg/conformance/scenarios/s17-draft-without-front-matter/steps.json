@@ -56,8 +56,9 @@
     {
       "id": "09-board-no-front-matter",
       "kind": "cli",
-      "args": ["board"],
-      "expectExitCode": 0,
+      "args": ["board", "--json"],
+      "expectExitCode": 1,
+      "expectedJsonMatch": "expected/09-board-error.json",
       "expectedProjection": "expected/09-board-projection.json"
     },
     {
