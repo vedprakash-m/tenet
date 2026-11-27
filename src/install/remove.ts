@@ -543,7 +543,9 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
       ".tenet/manifest.pending.json",
       ".tenet/manifest.local.json",
     ]) {
-      await removeRegularFile(cwd, relative, removed, caseInsensitive);
+      const link = await symlinkPath(cwd, relative);
+      if (link) await rm(link.filename, { force: true });
+      else await rm(await confine(relative, cwd), { force: true });
     }
     await removeGeneratedWorkingState(
       cwd,
@@ -688,10 +690,10 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
     removed.push({ path: key.path, kind: "key" });
   }
 
-  await removeRegularFile(cwd, ".tenet/manifest.json", removed, caseInsensitive);
-  await removeRegularFile(cwd, ".tenet/manifest.pending.json", removed, caseInsensitive);
+  await rm(await confine(".tenet/manifest.json", cwd), { force: true });
+  await rm(await confine(".tenet/manifest.pending.json", cwd), { force: true });
   if (!keptCreated.has(".tenet/manifest.local.json")) {
-    await removeRegularFile(cwd, ".tenet/manifest.local.json", removed, caseInsensitive);
+    await rm(await confine(".tenet/manifest.local.json", cwd), { force: true });
   }
   const createdDirectories = manifest["x-created-directories"] ?? [];
   await removeGeneratedWorkingState(
