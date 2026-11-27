@@ -19,17 +19,8 @@
           "const": 1
         },
         "doc": {
-          "enum": [
-            "intent",
-            "vision",
-            "requirements",
-            "design",
-            "experience",
-            "plan",
-            "prd",
-            "tech-spec",
-            "ux-spec"
-          ]
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
         },
         "level": {
           "enum": [
@@ -67,7 +58,6 @@
     },
     "sections": {
       "type": "object",
-      "minProperties": 1,
       "additionalProperties": false,
       "patternProperties": {
         "^x-": {},
@@ -202,7 +192,6 @@
               "blessed_copy": {}
             },
             "required": [
-              "recorded",
               "blessed_digest",
               "blessed_copy"
             ]

@@ -79,7 +79,7 @@ sections:
 | `TN-SPEC-DUP-ID` | Duplicate specification ID {id}. | Run `tenet fix` to assign a new ID, or remove the duplicate {id}. |
 | `TN-SPEC-DUP-SECTION` | Duplicate section slug {slug}. | Rename or merge the repeated {slug} heading. |
 | `TN-SPEC-MISSING-ID` | Specification line needs an ID. | Run `tenet fix` or prefix the line with an unused ID. |
-| `TN-SPEC-NO-FRONT` | Specification file has no valid YAML front matter. | Add YAML front matter (`---`) with `tenet` and `sections`, or run `tenet fix`. |
+| `TN-SPEC-NO-FRONT` | Specification file has no YAML front matter. | Run `tenet fix` to add the front matter. |
 | `TN-SPEC-REQ-META` | Requirement metadata is malformed: check closing braces, allowed keys, and origin. | Fix the `{…}` metadata block with allowed keys and valid origin. |
 | `TN-SPEC-UNCOVERED-VISION` | Blessed vision item {id} is not served by a blessed requirement or listed under ## Not yet in scope. | Add serves: {id} to a blessed requirement or list {id} under a blessed ## Not yet in scope section. |
 | `TN-SPEC-VISION-WAITS-FOR-PRD` | {count} vision {items} for a blessed requirement; bless the PRD next | Run `tenet bless --doc prd` for separate files or `tenet bless --section requirements` for one file. |
@@ -88,6 +88,8 @@ sections:
 | `TN-USAGE-BUDGET` | Context token budget {budget} must be a positive integer. | Pass a positive integer to `--budget-tokens` or `budget_tokens`. |
 | `TN-USAGE-REF` | The git ref is invalid. | Pass a repository ref. |
 | `TN-WEAK-*` | Possible test weakening ({finding}) in {file}: {names}. | Restore removed tests or remove skip markers in {file}, or ask for a waiver. |
+
+**Proposal · CP-0068 AC-A4–A5.** For specification front matter, `TN-SCHEMA` lists each failing JSON Pointer and the expected shape. It directs the user to `tenet fix` for missing fields, or to correct invalid fields first. Card diagnostics direct the user to commit the repaired draft before retrying.
 
 ## 3. Alpha.1 message templates
 

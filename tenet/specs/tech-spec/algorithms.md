@@ -49,6 +49,7 @@ Fixtures: CRLF and LF give one digest; editing one section leaves the others unc
 
 **Blessing and flags.**
 - **`bless(section)`** requires:
+  - **Proposal · CP-0068 AC-A4.** valid specification front matter before the first question, using contracts §3
   - an interactive terminal (else `TN-BLESS-NO-TTY`)
   - no open conflict or question naming the section (`TN-BLESS-OPEN-CONFLICT`)
   - no `origin: inferred` statement left (`TN-BLESS-INFERRED`; each is edited, or adopted, which sets `origin: asked; adopted_by`)

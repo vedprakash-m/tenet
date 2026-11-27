@@ -2,7 +2,6 @@ import { spawn } from "node:child_process";
 import { readFileSync, realpathSync } from "node:fs";
 import { appendFile, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
-import { isMap, parseDocument } from "yaml";
 import { utcSeconds } from "../core/clock.js";
 import { confine, writeAtomic } from "../core/fs.js";
 import { git } from "../core/git.js";
@@ -13,7 +12,8 @@ import type { TenetYaml } from "../types/generated.js";
 import { anchorBlock, anchorRecordsFor, citationParts } from "../specs/anchors.js";
 import { resolveCitations } from "../specs/citations.js";
 import { flags } from "../specs/flags.js";
-import { parseDoc, sectionLocation } from "../specs/parse.js";
+import { draftOutputPaths, readSpecMatter, validateSpecMatter, writeSpecMatter } from "../specs/front-matter.js";
+import { parseDoc, sectionLocation, specMatter } from "../specs/parse.js";
 import { sectionDigest } from "../specs/sections.js";
 import { createInterface } from "node:readline";
 import { message } from "../core/messages.js";
@@ -331,16 +331,15 @@ const normalize = (text: string) => text.replaceAll("\r\n", "\n").replaceAll("\r
 const cleanText = (text: string) => text.replace(/\{[^{}]*\}/g, "").trim().replace(/\s+/g, " ");
 const portable = (value: string) => value.replaceAll("\\", "/").replace(/^\.\//, "");
 
-function matter(text: string) {
-  const match = /^---\n([\s\S]*?)\n---(?:\n|$)/.exec(normalize(text));
-  if (!match?.[1]) throw diagnostic("TN-SPEC-NO-FRONT");
-  const yaml = parseDocument(match[1], { uniqueKeys: true });
-  if (yaml.errors.length || !isMap(yaml.contents)) throw diagnostic("TN-SPEC-NO-FRONT");
-  return { yaml, body: normalize(text).slice(match[0].length) };
+function matter(file: string, text: string) {
+  const front = readSpecMatter(text);
+  const validation = validateSpecMatter(file, front);
+  if (validation.finding) throw validation.finding;
+  return { yaml: validation.yaml, body: front.body };
 }
 
 function documentText({ yaml, body }: Front): string {
-  return `---\n${yaml.toString({ lineWidth: 0 })}---\n${body}`;
+  return writeSpecMatter(yaml, body);
 }
 
 function governing(section: SpecSection): boolean {
@@ -587,7 +586,7 @@ async function writeAction(ws: Workspace, entry: SectionState, action: Completed
     const inferred = statements(section).filter(({ origin }) => origin === "inferred");
     if (action === "bless" && inferred.length) return [diagnostic("TN-BLESS-INFERRED", { slug: section.slug, ids: inferred.map(({ id }) => id).join(", ") })];
     const read = reader(ws.cwd);
-    const front = matter(checked.text);
+    const front = matter(entry.doc.path, checked.text);
     const sectionPath = ["sections", section.slug];
     const set = (key: string, value: unknown) => front.yaml.setIn([...sectionPath, key], value);
     const patches: Patch[] = [];
@@ -618,7 +617,7 @@ async function writeAction(ws: Workspace, entry: SectionState, action: Completed
     } else if (section.blessed_digest) {
       if (restore) {
         const restored = reparseSection(checked, replaceBody(checked, await copyFor(checked, read)), ws.prefix);
-        front.body = matter(restored.text).body;
+        front.body = matter(entry.doc.path, restored.text).body;
         set("digest", restored.section.digest);
         set("flags", flags(restored.section, read));
         measured = restored.section;
@@ -731,10 +730,18 @@ export async function runBless(options: BlessOptions = {}, io: BlessIO = {}): Pr
     const raw = await readYaml(await confine("tenet.yaml", cwd)) as TenetYaml;
     const intent = raw.specs?.documents?.length ? null : await load(`${records}/intent.md`);
     const paths = [...new Set(policy.specs.documents.map((doc) => `${records}/${portable(doc.path)}`))];
-    const docs = intent ? [intent] : (await Promise.all(paths.map(load))).filter((doc) => doc !== null);
+    const draftPaths = await draftOutputPaths(cwd, records);
+    const candidates = intent ? [intent.doc.path] : paths;
+    const docs = (await Promise.all([...new Set([...candidates, ...draftPaths])].map((file) =>
+      intent?.doc.path === file ? intent : load(file)))).filter((doc) => doc !== null);
     const selected = options.doc === undefined ? docs : docs.filter(({ doc }) =>
       doc.path === portable(options.doc ?? "") || doc.path === `${records}/${portable(options.doc ?? "")}` ||
       (doc.front?.tenet as { doc?: string } | undefined)?.doc === options.doc);
+    const frontFindings = selected.flatMap(({ doc }) => {
+      const { finding } = validateSpecMatter(doc.path, specMatter(doc));
+      return finding ? [finding] : [];
+    });
+    if (frontFindings.length) return { result: null, findings: frontFindings };
     const targets = selected.flatMap(({ doc }) => doc.sections.filter((section) => {
       if (!governing(section)) return false;
       if (options.section) return [section.slug, section.heading].includes(options.section);
@@ -787,4 +794,4 @@ export async function bless(options: BlessOptions = {}, io: BlessIO = {}): Promi
   return result.result;
 }
 
-export { measures as measureStatements, reader as readCitationSource, matter as readSpecMatter, documentText as writeSpecMatter, governing as isGovernedSection };
+export { measures as measureStatements, reader as readCitationSource, governing as isGovernedSection };

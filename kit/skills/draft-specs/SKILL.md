@@ -24,7 +24,7 @@ Follow these steps in order when onboarding a repository to Tenet:
    - From existing instruction files (inventory kind `instructions`, such as `copilot-instructions.md`, `CLAUDE.md`, `GEMINI.md`, or editor rules): turn project rules into requirements (`origin: documented`, `scope: global`, citing the file) and working rules into a `## Working rules` design section, without copying anything that is a secret or a personal detail.
 
 4. **Normalize IDs and verify citations.**
-   Run `tenet fix`, then `tenet check`, and fix every citation finding until checks pass on the draft.
+   Don't write YAML front matter by hand. Run `tenet fix` to add it, then run `tenet check` and fix every citation finding until checks pass on the draft.
 
 5. **Run a self-check pass.**
    Review each drafted statement against its citation. List any statement whose citation does not support it, then either correct the statement/citation or mark it `origin: inferred`. Label this pass in the pull request as a **self-check** (an independent review requires a separate `spec-reviewer` assignment).

@@ -457,7 +457,7 @@ export type ProofCard = {
 export type SpecFrontMatter = {
   tenet: {
   spec: 1;
-  doc: "intent" | "vision" | "requirements" | "design" | "experience" | "plan" | "prd" | "tech-spec" | "ux-spec";
+  doc: string;
   level: "L0" | "L1" | "L2" | "L3" | "L4";
   version: string;
   owner: string;
