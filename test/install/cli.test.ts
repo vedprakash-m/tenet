@@ -189,6 +189,36 @@ test("dist CLI runs init, repeat init, doctor, upgrade and remove", async (t) =>
   assert.equal(await readFile(path.join(repo.path, "README.md"), "utf8"), "# CLI fixture\n");
 });
 
+test("[AC-C1] [R2-19] one-file onboarding keeps a same-version upgrade unchanged", async (t) => {
+  const repo = await tmpRepo("install-upgrade-onboard-layout");
+  t.after(repo.cleanup);
+  repo.git(["config", "user.name", "Fixture Owner"]);
+  repo.git(["config", "user.email", "fixture@example.invalid"]);
+  repo.git(["remote", "add", "origin", "https://github.com/fixture/checkout.git"]);
+  await repo.write("README.md", "# Layout fixture\n");
+  repo.git(["add", "README.md"]);
+  repo.git(["commit", "-qm", "fixture"]);
+
+  assert.equal(run(repo.path, "init", "--yes").child.status, 0);
+  const onboarded = run(repo.path, "onboard", "--inventory-only");
+  assert.equal(onboarded.child.status, 0, onboarded.child.stderr);
+  const assignment = (onboarded.envelope.result as {
+    assignment: { layout: string };
+  }).assignment;
+  assert.equal(assignment.layout, "one-file");
+  await repo.write("tenet/intent.md", "# Synthetic one-file intent\n");
+  const before = await tree(repo.path);
+
+  const upgraded = run(repo.path, "upgrade");
+  assert.equal(upgraded.child.status, 0, upgraded.child.stderr);
+  assert.deepEqual(upgraded.envelope.result, {
+    from: packageVersion,
+    to: packageVersion,
+    changed: [],
+  });
+  assert.deepEqual(await tree(repo.path), before);
+});
+
 test("dist CLI reports canonical command usage failures", async (t) => {
   const repo = await tmpRepo("install-cli-usage");
   t.after(repo.cleanup);

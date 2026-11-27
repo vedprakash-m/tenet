@@ -102,7 +102,7 @@ Parsed entries: `{id, checked: bool, section: string|null, text, resolution?: st
 
 `.tenet/onboard/interview.json` (written by the agent): `{questions: [{id, text, answer, answered_at}]}`.
 
-`.tenet/onboard/assignment.json`: `{schema_version, inventory, skill: "draft-specs", project_kind, views: [vision, requirements, design, experience, plan], layout, units, question_limit: 10, output: {paths}, rules: [no intent from code alone, every observed or documented statement cites, never resolve a conflict, never bless]}`.
+**Proposal · CP-0068 AC-D2.** `.tenet/onboard/assignment.json`: `{schema_version, inventory, skill: "draft-specs", project_kind, views: [vision, requirements, design, experience, plan], layout, units, question_limit: 10, questions: {project_kind: [question], generic: [question]}, output: {paths}, rules: [no intent from code alone, every observed or documented statement cites, never resolve a conflict, never bless]}`. `questions.project_kind` is the set for the detected kind; `questions.generic` is always present. Each set has at most 10 questions. Ask at most `question_limit` questions in total, taking project-kind questions first and then non-repeating generic questions.
 
 ## 5. Proof card and board models
 

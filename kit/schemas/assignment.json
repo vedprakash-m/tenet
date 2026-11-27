@@ -79,6 +79,23 @@
     "question_limit": {
       "const": 10
     },
+    "questions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "project_kind": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "maxItems": 10
+        },
+        "generic": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "maxItems": 10
+        }
+      },
+      "required": ["project_kind", "generic"]
+    },
     "output": {
       "type": "object",
       "additionalProperties": false,
@@ -122,6 +139,7 @@
     "layout",
     "units",
     "question_limit",
+    "questions",
     "output",
     "rules"
   ]

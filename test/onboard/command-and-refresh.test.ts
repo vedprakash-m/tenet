@@ -5,7 +5,10 @@ import path from "node:path";
 import { test } from "node:test";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import { run } from "../../dist/cli.js";
-import { onboard } from "../../dist/onboard/assignment.js";
+import {
+  interviewQuestions,
+  onboard,
+} from "../../dist/onboard/assignment.js";
 import type { OnboardDeps } from "../../dist/onboard/refresh.js";
 import { tmpRepo } from "../helpers/tmpRepo.ts";
 
@@ -107,6 +110,39 @@ test("onboard recognizes Python and Go modules and scans their real tests", asyn
   ]);
   assert.deepEqual(result.inventory.tests.map(({ runner, cases }) => [runner, cases]), [["go", 1], ["pytest", 1]]);
   assert.ok(result.findings.some(({ kind }) => kind === "skipped-tests"));
+});
+
+test("[AC-D2] [R2-12] assignments carry kind and generic interview question sets", async (t) => {
+  const repo = await tmpRepo("onboard-questions");
+  t.after(repo.cleanup);
+  await repo.write("index.html", "<main>Application</main>\n");
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "application"]);
+
+  const result = await onboard({ cwd: repo.path });
+  assert.equal(result.assignment.project_kind, "application");
+  assert.deepEqual(
+    result.assignment.questions,
+    interviewQuestions("application"),
+  );
+  for (const kind of [
+    "cli",
+    "service",
+    "library",
+    "data",
+    "infrastructure",
+    "application",
+  ]) {
+    const questions = interviewQuestions(kind);
+    assert.ok(questions.project_kind.length > 0);
+    assert.ok(questions.project_kind.length <= 10);
+    assert.ok(questions.generic.length > 0);
+    assert.ok(questions.generic.length <= 10);
+  }
+  assert.deepEqual(interviewQuestions("unknown"), {
+    project_kind: [],
+    generic: interviewQuestions("application").generic,
+  });
 });
 
 async function cli(args: string[], cwd: string) {
