@@ -1,6 +1,5 @@
 {
   "ok": false,
-  "command": "board",
   "errors": {
     "$assert": "contains",
     "value": [
