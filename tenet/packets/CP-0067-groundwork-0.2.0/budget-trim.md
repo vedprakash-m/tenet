@@ -2,29 +2,49 @@
 ## Summary
 | File | Tokens before | Tokens after | % of 6,000 |
 |---|---:|---:|---:|
-| `tenet/specs/tech-spec/onboarding.md` | 5,517 | 4,798 | 79.97% |
-| `tenet/specs/ux-spec.md` | 5,539 | 4,795 | 79.92% |
+| `tenet/specs/tech-spec/onboarding.md` | 5,517 | 4,797 | 79.95% |
+| `tenet/specs/ux-spec.md` | 5,539 | 4,799 | 79.98% |
+
+`node dist/cli.js check --json` exposed no budget finding or token count. I used Tenet's `specificationBody(text).length / 4` implementation, not a whole-file chars/4 script: onboarding 4,797 and UX 4,799.
 
 ## `tenet/specs/tech-spec/onboarding.md`
 | Section (heading) | Tokens before | Tokens after | What was cut | Where it is still said |
 |---|---:|---:|---|---|
 | `_preamble` | 112 | 112 | None | same section |
-| `1. Onboarding and blessing (R-223)` | 2,303 | 2,070 | Shortened context, inventory, project-kind, draft-format and blessing prose | same section |
-| `2. Install and upgrade` | 2,394 | 2,052 | Shortened host, upgrade, path, replay and removal prose | same section |
-| `3. Onboarding measures (ALG-13)` | 415 | 340 | Shortened kept, recall and invented definitions | same section |
-| `4. Release procedure` | 211 | 164 | Shortened release steps without changing the sequence | same section |
+| `1. Onboarding and blessing (R-223)` | 2,303 | 2,085 | Restored skipped-path, project-kind, instruction, card and blessing facts; shortened redundant prose | same section |
+| `2. Install and upgrade` | 2,394 | 2,100 | Restored apply, remove and host facts; shortened repeated prose | same section |
+| `3. Onboarding measures (ALG-13)` | 415 | 317 | Shortened kept, recall and invented definitions | same section |
+| `4. Release procedure` | 211 | 175 | Restored release retry rule; shortened release steps | same section |
 
 ## `tenet/specs/ux-spec.md`
 | Section (heading) | Tokens before | Tokens after | What was cut | Where it is still said |
 |---|---:|---|---|---|
-| Preamble | 170 | 154 | Shortened context and actor prose | same section |
-| `Part 0: get Tenet` | 429 | 395 | Shortened requirements and install wording | same section |
-| `Part 1: start here` | 1,571 | 1,419 | Shortened onboarding, drafting, blessing and next-step prose | same section |
-| `Part 2: the daily loop` | 763 | 695 | Shortened card, review and board prose | same section |
-| `Part 3: when you want more` | 456 | 360 | Shortened rules, decisions, lanes and verification prose | same section |
-| `Part 4: keeping Tenet current` | 261 | 227 | Shortened upgrade and removal prose | same section |
-| `Part 5: the agent's side` | 381 | 309 | Shortened agent-context and host prose | same section |
-| `Part 6: reference` | 985 | 786 | Shortened principles, board, output and wording text | same section |
+| Preamble | 170 | 150 | Restored required context where needed; shortened surrounding prose | same section |
+| `Part 0: get Tenet` | 429 | 394 | Restored init-runner text; shortened repeated install prose | same section |
+| `Part 1: start here` | 1,571 | 1,421 | Restored drafting citations and init wording; shortened repeated onboarding prose | same section |
+| `Part 2: the daily loop` | 763 | 676 | Shortened card, review and board prose | same section |
+| `Part 3: when you want more` | 456 | 364 | Restored risky-change examples; shortened rules and verification prose | same section |
+| `Part 4: keeping Tenet current` | 261 | 237 | Restored mismatch and CI upgrade rules; shortened surrounding prose | same section |
+| `Part 5: the agent's side` | 381 | 314 | Restored context rule; shortened host prose | same section |
+| `Part 6: reference` | 985 | 797 | Restored badges and board.json rule; shortened principles and wording text | same section |
+
+## Restored coordinator items
+| File | Coordinator item | Final text retained |
+|---|---|---|
+| onboarding.md | 1. Skipped paths | `sources.files` retains `(kind: "test")`; test files are excluded only from `size.source_lines`. |
+| onboarding.md | 2. Project kind | Restored all `cli`, `library`, `data` and `infrastructure` detection details, including `package.json`, `pyproject.toml`, `Cargo.toml`, `*.ipynb` and `apiVersion:` + `kind:`. |
+| onboarding.md | 3. Instruction files | Restored `AGENTS.md outside Tenet's block`. |
+| onboarding.md | 4. Onboarding card | Restored literal `"Sections (about <n> minutes)"` and its sum of section minutes. |
+| onboarding.md | 5. Apply step 2 | Restored `manifest.blocks[]` for blocks, `manifest.keys[]` for keys, and preserving surrounding bytes including CRLF. |
+| onboarding.md | 6. Remove rules | Restored report-first ordering, `.tenet/reports/` scope, `lstat` confinement without symlink traversal, and reporting every deleted working-state file in `removed`. |
+| onboarding.md | 7. Release retry | Restored: if one package publishes and another fails, release is retried with the same version. |
+| ux-spec.md | 8. Drafting origins | Restored `observed` citation duty (file and lines or test) and `documented` section citation duty. |
+| ux-spec.md | 9. Careful lanes | Restored risky changes examples: authentication, data and payments. |
+| ux-spec.md | 10. Badges | Restored "one badge per result". |
+| ux-spec.md | 11. Context | Restored "Context always starts with global rules". |
+| ux-spec.md | 12. UX-3 | Restored `board.json` and "the same facts". |
+| ux-spec.md | 13. Upgrade | Restored `tenet check` mismatch reporting and M4 CI scheduled upgrade pull requests. |
+| ux-spec.md | 14. Init without runner | Restored that `--yes` explains how to add one in `tenet.yaml`. |
 
 ## Sentences removed
 For each removed sentence, the retained sentence or link carries the meaning.
