@@ -1,5 +1,5 @@
 {
   "op": "readProofRecord",
   "path": "proof/pr-5/0123456789abcdef/1001-1.json",
-  "content": "{\"schema_version\":99,\"evaluation_id\":\"0123456789abcdef\",\"conclusion\":\"success\"}"
+  "content": "{\"acceptance_digest\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"badge\":\"advisory\",\"blessings_changed\":[],\"degraded\":[],\"deltas\":[],\"evaluation_id\":\"0123456789abcdef\",\"items\":[],\"protected\":[],\"requirements\":[],\"rules\":[],\"schema_version\":99,\"tested\":{\"base\":\"0000000000000000000000000000000000000000\",\"commit\":\"1111111111111111111111111111111111111111\",\"head\":\"1111111111111111111111111111111111111111\",\"kind\":\"head\"},\"tests\":{\"failed\":0,\"failing\":[],\"passed\":1,\"report\":\"ok\",\"skipped\":0,\"total\":1},\"weakening\":{\"by\":[],\"found\":false,\"not_checked\":[]},\"why\":[],\"workflow_changed\":false}"
 }
