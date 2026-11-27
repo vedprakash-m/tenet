@@ -44,7 +44,7 @@ A medium model ran 0.1.1 on a private existing project as a new user, blind to t
 ### C · Upgrade, remove and messages (R2-19, R2-21, R2-05, R2-06)
 
 - **AC-C1:** **A same-version `upgrade` after onboarding changes nothing.** When onboarding picks a layout, the `AGENTS.md` block that `init` writes either already matches it or is updated by onboarding. This closes the case CP-0066 AB-E1 didn't cover.
-- **AC-C2:** **`remove` deletes every piece of generated working state under `.tenet/`** and lists each removed file. It keeps `.tenet/onboard/interview.json`, lists it in `kept` with the reason `"Owner interview answers"`, and prints the matching human line because that file holds the Owner's answers rather than generated state (Owner decision, 2026-11-27). The FAQ and `commands.md` match.
+- **AC-C2:** **`remove` deletes every piece of generated working state under `.tenet/`** and lists each removed file. It keeps `.tenet/onboard/interview.json`, lists it in `kept` with the reason `"owner-answers"`, and prints "Owner interview answers" because that file holds the Owner's answers rather than generated state (Owner decision, 2026-11-27). The FAQ and `commands.md` match.
 - **AC-C3:** **Without a terminal, `init` names itself:** *"`tenet init` needs an interactive terminal to confirm its plan. Run it in a terminal, or pass `--yes` to accept the plan."* No command shows another command's message.
 - **AC-C4:** **`init`'s plan gives a short purpose for every path it writes**, not only for host files.
 

@@ -813,7 +813,7 @@ test("[AC-C2] [R2-21] remove keeps Owner interview answers and lists every gener
 
   assert.deepEqual(result.kept, [{
     path: ".tenet/onboard/interview.json",
-    reason: "Owner interview answers",
+    reason: "owner-answers",
   }]);
   assert.equal(
     await readFile(path.join(setup.repo.path, ".tenet/onboard/interview.json"), "utf8"),

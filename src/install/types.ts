@@ -288,7 +288,7 @@ export type RemoveOptions = PreflightOptions;
 
 export type RemoveKept = {
   path: string;
-  reason: "edited-by-you" | "spec-or-records" | "Owner interview answers";
+  reason: "edited-by-you" | "spec-or-records" | "owner-answers";
 };
 
 export type RemoveRemoved = {

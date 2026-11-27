@@ -555,7 +555,7 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
       caseInsensitive,
     );
     if (await interviewAnswersExist(cwd, caseInsensitive)) {
-      kept.set(".tenet/onboard/interview.json", "Owner interview answers");
+      kept.set(".tenet/onboard/interview.json", "owner-answers");
     }
     return {
       removed: removed.sort((left, right) =>
@@ -710,7 +710,7 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
     }
   }
   if (await interviewAnswersExist(cwd, caseInsensitive)) {
-    kept.set(".tenet/onboard/interview.json", "Owner interview answers");
+    kept.set(".tenet/onboard/interview.json", "owner-answers");
   }
   return {
     removed: [...new Map(removed.map((item) =>

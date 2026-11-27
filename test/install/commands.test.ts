@@ -420,7 +420,7 @@ test("[AC-C2] [R2-21] remove human output lists deleted files and kept interview
       ],
       kept: [{
         path: ".tenet/onboard/interview.json",
-        reason: "Owner interview answers",
+        reason: "owner-answers",
       }],
       reminder: null,
     }),
@@ -449,7 +449,7 @@ test("install result schemas accept the exact public shapes", async () => {
       removed: [],
       kept: [{
         path: ".tenet/onboard/interview.json",
-        reason: "Owner interview answers",
+        reason: "owner-answers",
       }],
       reminder: null,
     },

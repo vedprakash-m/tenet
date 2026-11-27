@@ -47,7 +47,10 @@ export function makeRemoveCommand(dependencies: RemoveDependencies = {}): Comman
             context.stdout.write(`Removed: ${item.path} (${item.kind})\n`);
           }
           for (const item of value.kept) {
-            context.stdout.write(`Kept: ${item.path} — ${item.reason}\n`);
+            const reason = item.reason === "owner-answers"
+              ? "Owner interview answers"
+              : item.reason;
+            context.stdout.write(`Kept: ${item.path} — ${reason}\n`);
           }
           if (value.reminder) context.stdout.write(`${value.reminder}\n`);
         }
