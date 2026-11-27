@@ -6,7 +6,7 @@ import { onboardText } from "../core/messages.js";
 import { readReport, scanTests } from "../reports/index.js";
 import type { TestReport } from "../reports/types.js";
 import type { Inventory } from "../types/generated.js";
-import { ascii, object, ownerMatcher, type Facts } from "./inventory.js";
+import { ascii, language, object, ownerMatcher, type Facts } from "./inventory.js";
 
 type FirstFinding = Inventory["findings"][number];
 type Report = Inventory["observations"]["reports"][number];
@@ -29,16 +29,27 @@ function referencedPaths(text: string): string[] {
     .flatMap((entry) => entry[1] ?? entry[2] ?? []);
   const named = [...markdown.matchAll(/(?<!`)`([^`\n]+)`(?!`)/g)]
     .map((entry) => entry[1] ?? "")
-    .filter((entry) => /^(?:\.\.?\/)?[\w.@/-]+\.[\w-]+(?::\d+(?:-\d+)?)?$/.test(entry));
+    .filter((entry) => /^(?!@)(?:\.\.?\/)?[\w./-]+(?::\d+(?:-\d+)?)?$/.test(entry))
+    .filter((entry) => looksLikePath(entry.replace(/:\d+(?:-\d+)?$/, ""), false));
   return [...new Set([...links, ...named])];
+}
+
+const commonFile = /(?:\.(?:mdx?|rst|txt|jsonc?|ya?ml|toml|ini|cfg|conf|xml|csv|sql|sh|ps1|html?|css|lock|log|svg|png|jpe?g|pdf|ipynb|mod|sum)$|^(?:README|LICENSE|CHANGELOG|Makefile|Dockerfile|CODEOWNERS|Gemfile|\.gitignore|\.gitattributes|\.editorconfig)$)/i;
+
+function looksLikePath(value: string, link: boolean): boolean {
+  return value.includes("/") || commonFile.test(value) || Boolean(language(value)) ||
+    (link && /^[\w.-]+\.[\w-]+$/.test(value));
 }
 
 function localTarget(value: string): string | undefined {
   if (/^(?:#|\/\/|[a-z][a-z+\d.-]*:)/i.test(value)) return undefined;
   const bare = value.split(/[?#]/, 1)[0]?.replace(/:\d+(?:-\d+)?$/, "");
   if (!bare) return undefined;
-  try { return decodeURIComponent(bare); }
-  catch { return bare; }
+  let target = bare;
+  try { target = decodeURIComponent(bare); }
+  catch { /* Keep the literal target if it contains an invalid escape. */ }
+  if (!looksLikePath(target, true)) return undefined;
+  return target;
 }
 
 function deadPaths(facts: Facts, tracked: Set<string>): FirstFinding[] {

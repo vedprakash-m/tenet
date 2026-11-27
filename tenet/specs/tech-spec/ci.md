@@ -234,6 +234,10 @@ In [onboarding.md §4](onboarding.md#4-release-procedure), moved under the rollo
 
 ## 10. Outcomes
 
+**Proposal · CP-0068 AC-B1.** When the base commit has no `tenet.yaml`, the proof card exempts only changed protected paths listed in the tested commit’s version 1 `.tenet/manifest.json` under `created`, `blocks` or `keys`. It reports one informational note for those paths. “First-time setup: protected Tenet files are expected in this pull request.” All other protected changes use the usual rule. Once the base has `tenet.yaml`, the usual rule applies to every protected path.
+
+**Proposal · CP-0068 AC-B2.** `skip-added` considers only conventional test paths and any extra file globs in the target check definitions’ `x-test-files` lists. Process exits in scripts do not count as test skips (ALG-09).
+
 One table decides what every situation concludes. "Advisory" means the item, rule or card says so and nothing blocks.
 
 | Situation | `observe`, `protect` | `verify`, `assure` | CLI `check` exit | Badge or line |

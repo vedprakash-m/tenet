@@ -104,7 +104,7 @@ Separately, the attest job observes **whether merging requires the Tenet status*
 
 ## 5. Weakening (ALG-09)
 
-- **Test files:** `**/*.{test,spec}.{ts,tsx,js,jsx,mjs,cjs}`, `**/test_*.py`, `**/*_test.py`, `**/*_test.go`, `**/*Test.java`, `**/tests/**/*.rs` (configurable).
+- **Test files:** `**/*.{test,spec}.{ts,tsx,js,jsx,mjs,cjs}`, `**/test_*.py`, `**/*_test.py`, `**/*_test.go`, `**/*Test.java`, `**/tests/**/*.rs`. **Proposal · CP-0068 AC-B2.** Add repo-relative globs from `checks.<name>.x-test-files` in the target policy to those conventions.
 - **Declarations:** `(?:^|[^\w$.])(?:it|test)(?:\.each\([^)]*\))?\s*\(`, `^\s*def\s+test_\w*\s*\(`, `^\s*func\s+Test\w*\s*\(`, `\bt\.Run\s*\(`, `^\s*@Test\b` (method on a following line) and `^\s*#\[test\]` (`fn` on a following line).
 
 Over `git diff -M -U0 <base>..<tested>`:
@@ -113,7 +113,7 @@ Over `git diff -M -U0 <base>..<tested>`:
 |---|---|
 | `removed-tests` | Tagless `name` on a removed line is declared on no added line anywhere (moves between files are not removals); emit deduped tagless `name` |
 | `tests-consolidated` (in `notes[]`; suppresses `removed-tests` in that file, leaving `found: false` alone) | Un-redeclared removed tagless names in a file also adding `.each(`, `@pytest.mark.parametrize` or `t.Run(` |
-| `skip-added` | Added line (not `//` or `.py` `#` comment) contains `.skip(`, `.only(`, `.todo(`, `.skipIf(`, `xit(`, `xdescribe(`, `@pytest.mark.skip`, `@pytest.mark.xfail`, `pytest.skip(`, `@unittest.skip`, `t.Skip(`, `@Disabled`, `@Ignore` or `#[ignore]`; `names` = innermost enclosing declaration or next within 3 lines, else trimmed line |
+| `skip-added` | Added line in a test file (excluding `//` and `.py` `#` comments) contains `.skip(`, `.only(`, `.todo(`, `.skipIf(`, standalone `xit(` or `xdescribe(`, `@pytest.mark.skip`, `@pytest.mark.xfail`, `pytest.skip(`, `@unittest.skip`, `t.Skip(`, `@Disabled`, `@Ignore` or `#[ignore]`; `names` = innermost enclosing declaration or next within 3 lines, else trimmed line |
 | `file-deleted` | A test file is deleted with no rename; `names` = deduped tagless names at `base` (suppresses `removed-tests` for that file) |
 
 For `not_checked`: map changed code extensions at `head` (`.rb` ruby, `.cs` csharp, `.php` php, `.kt` kotlin, `.swift` swift, `.scala` scala, `.c/.h/.cc/.cpp/.hpp` c/c++, `.ts/.tsx/.js/.jsx/.mjs/.cjs` javascript/typescript, `.py` python, `.go` go, `.java` java, `.rs` rust) and emit any changed language lacking recognized test files at `head`. Say "no weakening detected by these checks", never "no weakening". Fixtures: deleting `init(`; moving a test file; consolidating 3 tests into `it.each`.

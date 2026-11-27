@@ -579,3 +579,32 @@ test("[AB-C5] [F-58] review-with-findings skill covers reviewing when no proof c
   assert.match(skill, /tenet context --ids/);
   assert.match(skill, /verify --local/);
 });
+
+test("[AC-B1] [R2-15] first setup exempts only manifest paths in the proof card", async (t) => {
+  const repo = await tmpRepo("first-setup");
+  t.after(repo.cleanup);
+  repo.git(["remote", "add", "origin", "https://github.com/fixture/queue.git"]);
+  await repo.write("README.md", "# Queue\n");
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "base"]);
+  repo.git(["branch", "-M", "main"]);
+  repo.git(["checkout", "-b", "setup"]);
+  const setup = runCli(repo.path, ["--offline", "init", "--yes"]);
+  assert.equal(setup.status, 0, setup.stderr);
+  await repo.write("CODEOWNERS", "* @reviewers\n");
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "setup"]);
+  const note = "First-time setup: protected Tenet files are expected in this pull request.";
+  const first = runCli(repo.path, ["--offline", "verify", "--local"]);
+  assert.doesNotMatch(first.stderr, /Internal failure/);
+  assert.equal(first.stdout.split(note).length - 1, 1, first.stdout);
+  assert.match(first.stdout, /protected files modified: CODEOWNERS · no acceptance items/);
+  assert.doesNotMatch(first.stdout, /protected files modified: .*tenet\.(?:yaml|lock)/);
+
+  repo.git(["branch", "-f", "main", "HEAD"]);
+  const policy = await readFile(path.join(repo.path, "tenet.yaml"), "utf8");
+  await repo.write("tenet.yaml", `${policy.trimEnd()}\n# later change\n`);
+  const later = runCli(repo.path, ["--offline", "verify", "--local"]);
+  assert.doesNotMatch(later.stdout, /First-time setup/);
+  assert.match(later.stdout, /protected files modified: tenet\.yaml/, later.stderr);
+});

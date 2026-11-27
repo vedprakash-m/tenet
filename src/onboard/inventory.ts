@@ -39,7 +39,7 @@ export function ascii(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
-function language(file: string): string | undefined {
+export function language(file: string): string | undefined {
   const extension = path.posix.extname(file).slice(1);
   return Object.hasOwn(languages, extension) ? languages[extension] : undefined;
 }
