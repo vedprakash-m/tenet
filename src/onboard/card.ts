@@ -19,7 +19,8 @@ const inventoryPath = ".tenet/onboard/inventory.json";
 const assignmentPath = ".tenet/onboard/assignment.json";
 const skipLabels: Readonly<Record<string, string>> = {
   env: ".env*", credentials: "credentials", vendored: "vendored files",
-  generated: "generated files", excluded: "excluded paths", binary: "binary files", oversize: "oversized files",
+  archive: "archive folders", generated: "generated files", excluded: "excluded paths",
+  binary: "binary files", oversize: "oversized files",
 };
 
 export const onboardingCardText = {

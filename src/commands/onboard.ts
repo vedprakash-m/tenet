@@ -32,18 +32,9 @@ function handled(error: unknown): Finding {
 }
 
 function archiveHint(value: Awaited<ReturnType<typeof prepareOnboard>>["value"]): string | null {
-  const counts = new Map<string, number>();
-  for (const file of value.inventory.sources.files) {
-    const parts = file.path.split("/");
-    for (let index = 0; index < parts.length - 1; index += 1) {
-      const folder = parts[index]?.toLowerCase();
-      if (folder === "archive" || folder === ".archive" || folder === "old") {
-        counts.set(folder, (counts.get(folder) ?? 0) + 1);
-      }
-    }
-  }
-  const entry = [...counts.entries()].sort((left, right) => left[0].localeCompare(right[0])).find(([, count]) => count > 10);
-  return entry ? `Hint: ${entry[1]} inventoried files are under ${entry[0]}/. Review onboard.exclude if this folder should be skipped.` : null;
+  return value.inventory.sources.skipped.some(({ reason }) => reason === "archive")
+    ? "To include archived folders again, add `!**/{.archive,archive,old}/**` to `onboard.exclude`."
+    : null;
 }
 
 async function draftingPrompt(cwd: string): Promise<string> {
