@@ -4,7 +4,6 @@
   "spec_refs": [
     "tenet/packets/CP-0068-dogfood-fixes-0.2.0/definition.md#e--round-1-items-deferred-for-012-l-0041-now-020"
   ],
-  "pending": "Waiting for CP-0068 Group E Track 1 (AC-E2 remove plan, TTY prompt, and --yes flag)",
   "steps": [
     {
       "id": "01-init",

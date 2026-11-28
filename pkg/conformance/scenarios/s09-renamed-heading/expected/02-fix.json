@@ -9,23 +9,7 @@
         "action": "move-blessed-copy"
       },
       {
-        "path": "tenet/specs/plan.md",
-        "action": "repair"
-      },
-      {
         "path": "tenet/specs/prd.md",
-        "action": "repair"
-      },
-      {
-        "path": "tenet/specs/tech-spec.md",
-        "action": "repair"
-      },
-      {
-        "path": "tenet/specs/ux-spec.md",
-        "action": "repair"
-      },
-      {
-        "path": "tenet/vision.md",
         "action": "repair"
       }
     ]
