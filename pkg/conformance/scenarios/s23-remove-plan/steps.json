@@ -32,7 +32,7 @@
     {
       "id": "05-setup-intact-after-refusal",
       "kind": "cli",
-      "args": ["check", "--json"],
+      "args": ["doctor", "--json"],
       "expectExitCode": 0,
       "expectedFilesInclude": {
         "tenet.yaml": ["standard:"],
