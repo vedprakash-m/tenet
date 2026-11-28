@@ -263,11 +263,16 @@
         "areas": {
           "type": "integer",
           "minimum": 0
+        },
+        "documentation_tokens": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "required": [
         "source_lines",
-        "areas"
+        "areas",
+        "documentation_tokens"
       ]
     },
     "layout": {

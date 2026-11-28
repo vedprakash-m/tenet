@@ -112,6 +112,81 @@ test("onboard recognizes Python and Go modules and scans their real tests", asyn
   assert.ok(result.findings.some(({ kind }) => kind === "skipped-tests"));
 });
 
+test("[AC-E4] [F-16] documentation tokens select separate layout and [AC-E5] [F-18] keeps a docs unit", async (t) => {
+  const repo = await tmpRepo("docs-heavy-layout");
+  t.after(repo.cleanup);
+  await repo.write("src/app.ts", "export const app = true;\n");
+  await repo.write("lib/shared.ts", "export const shared = true;\n");
+  await repo.write("docs/guide.md", "# Guide\n\n" + "documentation ".repeat(3_700));
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "docs-heavy"]);
+
+  const result = await onboard({ cwd: repo.path, inventoryOnly: true });
+  assert.equal(result.inventory.layout, "separate");
+  assert.ok(result.inventory.size.documentation_tokens >= 12_000);
+  assert.ok(result.inventory.units.some(({ id, paths }) =>
+    id === "docs" && paths.includes("docs")));
+
+  const human = await cli(["onboard", "--inventory-only"], repo.path);
+  assert.equal(human.code, 0, human.stderr);
+  assert.match(human.stdout, /Layout: separate \(because documentation reached 12,000 estimated tokens\)/);
+  assert.match(human.stdout, /^Units:$/m);
+  assert.match(human.stdout, /^- docs: docs$/m);
+
+  const override = await cli(["onboard", "--inventory-only", "--layout", "one-file"], repo.path);
+  assert.equal(override.code, 0, override.stderr);
+  assert.match(override.stdout, /Layout: one-file \(because --layout one-file was requested\)/);
+});
+
+test("[AC-E4] [F-16] Tenet specification outputs do not count as project documentation", async (t) => {
+  const repo = await tmpRepo("onboard-own-specs");
+  t.after(repo.cleanup);
+  await repo.write("src/app.ts", "export const app = true;\n");
+  await repo.write("tenet/intent.md", "x".repeat(50_000));
+  await repo.write("tenet/vision.md", "x".repeat(50_000));
+  await repo.write(
+    "tenet/blessed/tenet__vision.md/vision.md",
+    "x".repeat(50_000),
+  );
+  await repo.write(
+    "tenet/packets/CP-TEST/definition.md",
+    "x".repeat(50_000),
+  );
+  await repo.write(
+    "tenet/ledger/L-9999-record.md",
+    "x".repeat(50_000),
+  );
+  await repo.write("tenet.yaml", `standard: 0.1.0-alpha.0
+level: observe
+paths:
+  records: tenet
+specs:
+  documents:
+    - {path: vision.md, level: L0}
+`);
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "large Tenet specs"]);
+
+  const result = await onboard({ cwd: repo.path, inventoryOnly: true });
+  assert.equal(result.inventory.size.documentation_tokens, 0);
+  assert.equal(result.inventory.layout, "one-file");
+});
+
+test("[AC-E5] [F-18] the docs unit keeps root files by path instead of using the repository root", async (t) => {
+  const repo = await tmpRepo("onboard-root-doc");
+  t.after(repo.cleanup);
+  await repo.write("src/app.ts", "export const app = true;\n");
+  await repo.write("README.md", "Project documentation\n".repeat(3_000));
+  await repo.write("docs/guide.md", "Nested documentation\n".repeat(3_000));
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "root and nested docs"]);
+
+  const result = await onboard({ cwd: repo.path });
+  const docs = result.inventory.units.find(({ id }) => id === "docs");
+  assert.deepEqual(docs?.paths, ["README.md", "docs"]);
+  assert.equal(docs?.paths.includes("."), false);
+});
+
 test("[AC-D2] [R2-12] assignments carry kind and generic interview question sets", async (t) => {
   const repo = await tmpRepo("onboard-questions");
   t.after(repo.cleanup);

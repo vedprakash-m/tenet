@@ -302,6 +302,17 @@ export const onboardText = {
   readCounts: (revision: string, read: number, skipped: number) => `Read ${read} files at ${revision} and skipped ${skipped}.`,
   firstFindings: (findings: string) => `First findings: ${findings}`,
   assignment: "Drafting assignment: .tenet/onboard/assignment.json",
+  layoutOverride: (layout: string, override: string, alternate: string) =>
+    `Layout: ${layout} (because --layout ${override} was requested). Use \`--layout ${alternate}\` to change it.`,
+  layout: (layout: string, reason: string, alternate: string) =>
+    `Layout: ${layout} (because ${reason}). Use \`--layout ${alternate}\` to change it.`,
+  layoutReasonSourceLines: "source lines reached 20,000",
+  layoutReasonAreas: "owner areas reached 4",
+  layoutReasonDocumentation: "documentation reached 12,000 estimated tokens",
+  layoutReasonBelowThresholds:
+    "source lines, owner areas and documentation are below the separate thresholds",
+  units: "Units:",
+  unit: (id: string, paths: string[]) => `- ${id}: ${paths.join(", ")}`,
   deadPath: (file: string, target: string) => `${file} links missing path ${target}`,
   skippedTests: (count: number, file: string) => `${count} skipped or focused test(s) in ${file}`,
   ownersUnmatched: (pattern: string) => `CODEOWNERS pattern ${pattern} matches no tracked files`,

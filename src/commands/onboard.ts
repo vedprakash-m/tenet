@@ -38,6 +38,37 @@ function archiveHint(value: Awaited<ReturnType<typeof prepareOnboard>>["value"])
     : null;
 }
 
+function layoutLine(
+  value: Awaited<ReturnType<typeof prepareOnboard>>["value"],
+  override: string | undefined,
+): string {
+  const layout = value.inventory.layout;
+  const alternate = layout === "one-file" ? "separate" : "one-file";
+  if (override) {
+    return onboardText.layoutOverride(layout, override, alternate);
+  }
+  const reasons = [];
+  if (value.inventory.size.source_lines >= 20_000) {
+    reasons.push(onboardText.layoutReasonSourceLines);
+  }
+  if (value.inventory.size.areas >= 4) reasons.push(onboardText.layoutReasonAreas);
+  if (value.inventory.size.documentation_tokens >= 12_000) {
+    reasons.push(onboardText.layoutReasonDocumentation);
+  }
+  const reason = reasons.length > 0
+    ? reasons.join(" and ")
+    : onboardText.layoutReasonBelowThresholds;
+  return onboardText.layout(layout, reason, alternate);
+}
+
+function unitLines(value: Awaited<ReturnType<typeof prepareOnboard>>["value"]): string[] {
+  if (value.inventory.units.length === 0) return [];
+  return [
+    onboardText.units,
+    ...value.inventory.units.map(({ id, paths }) => onboardText.unit(id, paths)),
+  ];
+}
+
 async function draftingPrompt(cwd: string): Promise<string> {
   const packageRoot = path.resolve(fileURLToPath(new URL("../../", import.meta.url)));
   const shippedSkill = path.join(packageRoot, "kit", "skills", "draft-specs", "SKILL.md");
@@ -112,6 +143,8 @@ export function makeOnboardCommand(deps: OnboardDeps) {
         }
         const hint = archiveHint(value);
         if (hint) output.push(hint);
+        output.push(layoutLine(value, typeof layout === "string" ? layout : undefined));
+        output.push(...unitLines(value));
         output.push(onboardText.assignment);
         output.push(await draftingPrompt(cwd));
         return { value: output.join("\n"), findings: diagnostics };

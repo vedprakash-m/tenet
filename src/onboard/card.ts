@@ -6,6 +6,7 @@ import { fail } from "../core/output.js";
 import { validate } from "../core/schema.js";
 import { loadPolicy } from "../policy/index.js";
 import { resolveCitations } from "../specs/citations.js";
+import { citationParts } from "../specs/anchors.js";
 import { isOpenSpecItem, parseDoc, specMatter, type ParsedDoc } from "../specs/parse.js";
 import type { Assignment, Inventory } from "../types/generated.js";
 import { isDraftOutput, validateSpecMatter, writeSpecMatter } from "../specs/front-matter.js";
@@ -25,7 +26,13 @@ const skipLabels: Readonly<Record<string, string>> = {
 
 export const onboardingCardText = {
   title: (revision: string) => `### Tenet onboarding · drafted from ${revision} · nothing is in force until you bless it`,
-  read: (items: string, skipped: string) => `Read: ${items} · Skipped: ${skipped}`,
+  read: (items: string, skipped: string) => `Available to the drafter: ${items} · Skipped: ${skipped}`,
+  cited: (count: number) => `Cited: ${count} distinct file${count === 1 ? "" : "s"}`,
+  intro: "  intro",
+  checklist: (count: number) =>
+    `  checklist (${count} ${count === 1 ? "item" : "items"})`,
+  tableNoRequirements: (heading: string) =>
+    `  ${heading} · table, no requirements`,
   nothing: "none",
   citations: (count: number) => `✓ ${count} ${count === 1 ? "citation resolves" : "citations resolve"} (file and lines exist)`,
   broken: (count: number, total: number) => `! ${count} of ${total} citations need attention`,
@@ -78,14 +85,38 @@ function sourceList(inventory: Inventory): string {
     countFiles(inventory.tests.length, "test"),
     countFiles(inventory.sources.files.filter(({ kind }) => kind === "instructions").length, "instruction"),
   ];
-  const skipped = [...new Set(inventory.sources.skipped.map(({ reason }) => skipLabels[reason] ?? reason))];
+  const skipCounts = new Map<string, number>();
+  for (const { reason } of inventory.sources.skipped) {
+    const label = skipLabels[reason] ?? reason;
+    skipCounts.set(label, (skipCounts.get(label) ?? 0) + 1);
+  }
+  const skipped = [...skipCounts.entries()].map(([reason, count]) =>
+    `${reason} ${count}`);
   return onboardingCardText.read(groups.join(", "), skipped.join(", ") || onboardingCardText.nothing);
+}
+
+function checklistItems(section: { text: string }): number {
+  return section.text.split(/\r?\n/).filter((line) =>
+    /^\s*[-*+]\s+\[[ xX]\]/.test(line)).length;
+}
+
+function hasTable(section: { text: string }): boolean {
+  const lines = section.text.split(/\r?\n/);
+  return lines.some((line, index) =>
+    /^\s*\|.*\|\s*$/.test(line) &&
+    index + 1 < lines.length &&
+    /^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[index + 1] ?? ""));
 }
 
 function composeCard(inventory: Inventory, docs: ParsedDoc[], read: (file: string) => string | null, updated: string[], next: string): string {
   const governed = docs.flatMap((doc) => doc.sections.filter(isGovernedSection));
   const lines = [onboardingCardText.title(inventory.revision.slice(0, 7)), sourceList(inventory)];
   const cites = governed.flatMap(statements).flatMap((item) => item.cites);
+  const citedFiles = new Set(cites.flatMap((cite) => {
+    const parsed = citationParts(cite);
+    return parsed ? [parsed.path] : [];
+  }));
+  lines.push(onboardingCardText.cited(citedFiles.size));
   const findings = docs.flatMap((doc) => resolveCitations({ ...doc, sections: doc.sections.filter(isGovernedSection) }, read));
   lines.push(onboardingCardText.citations(cites.length - findings.length));
   if (findings.length) lines.push(onboardingCardText.broken(findings.length, cites.length));
@@ -104,10 +135,34 @@ function composeCard(inventory: Inventory, docs: ParsedDoc[], read: (file: strin
     lines.push(onboardingCardText.questions(questions.length));
     for (const item of questions) lines.push(onboardingCardText.openItem(item.id, item.text));
   }
-  lines.push(onboardingCardText.sections(governed.reduce((minutes, section) => minutes + readingMinutes(section.text), 0)));
-  if (!governed.length) lines.push(onboardingCardText.noSections);
-  for (const section of governed) {
+  const displayedSections = docs.flatMap((doc) =>
+    doc.sections
+      .filter(isGovernedSection)
+      .map((section) => ({ doc, section })));
+  const reviewed = displayedSections.filter(({ section }) =>
+    section.slug !== "_preamble" && section.slug !== "completeness-checklist");
+  lines.push(onboardingCardText.sections(reviewed.reduce((minutes, { section }) =>
+    minutes + readingMinutes(section.text), 0)));
+  if (!displayedSections.length) lines.push(onboardingCardText.noSections);
+  let currentFile: string | undefined;
+  for (const { doc, section } of displayedSections) {
+    if (currentFile !== doc.path) {
+      currentFile = doc.path;
+      lines.push(doc.path);
+    }
+    if (section.slug === "_preamble") {
+      lines.push(onboardingCardText.intro);
+      continue;
+    }
+    if (section.slug === "completeness-checklist") {
+      lines.push(onboardingCardText.checklist(checklistItems(section)));
+      continue;
+    }
     const measured = measureStatements(section);
+    if (hasTable(section) && measured.length === 0) {
+      lines.push(onboardingCardText.tableNoRequirements(section.heading || section.slug));
+      continue;
+    }
     const origins = ["asked", "documented", "observed", "inferred", "unlabelled"].flatMap((origin) => {
       const count = measured.filter((item) => (item.origin ?? "unlabelled") === origin).length;
       return count ? [`${count} ${origin}`] : [];

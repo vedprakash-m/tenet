@@ -184,9 +184,18 @@ function topFolder(file: string): string {
   return file.includes("/") ? file.slice(0, file.indexOf("/")) : ".";
 }
 
-function draftingUnits(layout: Layout, owners: Owner[], source: InventorySource[]): Inventory["units"] {
+function docsPath(file: string): string {
+  return file.includes("/") ? file.slice(0, file.indexOf("/")) : file;
+}
+
+function draftingUnits(
+  layout: Layout,
+  owners: Owner[],
+  source: InventorySource[],
+  documents: InventorySource[],
+): Inventory["units"] {
   if (layout === "one-file") return [{ id: "root", paths: ["."], views: [...views] }];
-  const units = owners.length ? owners.map(({ pattern }) => {
+  const codeUnits = owners.length ? owners.map(({ pattern }) => {
     const prefix = pattern.replace(/^[/*]+|[/*]+$/g, "") || ".";
     const match = ownerMatcher(pattern);
     return { id: prefix === "." ? "root" : prefix.replaceAll("/", "-"), paths: [prefix],
@@ -195,17 +204,23 @@ function draftingUnits(layout: Layout, owners: Owner[], source: InventorySource[
     id: root === "." ? "root" : root,
     paths: [root], lines: source.reduce((sum, file) => sum + (topFolder(file.path) === root ? file.lines : 0), 0),
   }));
-  while (units.length > 1) {
-    const small = units.findIndex((unit) => unit.lines < 2000);
+  while (codeUnits.length > 1) {
+    const small = codeUnits.findIndex((unit) => unit.lines < 2000);
     if (small === -1) break;
-    const target = units[small === 0 ? 1 : small - 1];
-    const removed = units[small];
+    const target = codeUnits[small === 0 ? 1 : small - 1];
+    const removed = codeUnits[small];
     if (!target || !removed) break;
     target.paths.push(...removed.paths);
     target.lines += removed.lines;
-    units.splice(small, 1);
+    codeUnits.splice(small, 1);
   }
-  return units.map(({ id, paths }) => ({ id, paths, views: [...views] }));
+  const docsOutsideCode = documents.filter((file) =>
+    !codeUnits.some((unit) => unit.paths.some((root) => within(root, file.path))));
+  const docsPaths = [...new Set(docsOutsideCode.map(({ path: filename }) =>
+    docsPath(filename)))].sort(ascii);
+  const units = codeUnits.map(({ id, paths }) => ({ id, paths, views: [...views] }));
+  if (docsPaths.length > 0) units.push({ id: "docs", paths: docsPaths, views: [...views] });
+  return units;
 }
 
 export function object(value: unknown): Record<string, unknown> {
@@ -278,14 +293,33 @@ function ciRows(files: InventorySource[]): Inventory["ci"] {
   });
 }
 
+function recordsFolder(policy: TenetYaml): string {
+  const records = (policy.paths?.records ?? "tenet").replaceAll("\\", "/").replace(/\/+$/, "");
+  return records;
+}
+
 export async function inventoryFacts(snapshot: RepositorySnapshot, policy: TenetYaml, override?: Layout): Promise<Facts> {
   const { files, skipped } = await collect(snapshot, policy);
   const source = files.filter((file) => file.kind !== "test" && language(file.path) !== undefined);
   const codeowners = [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"].map((name) => files.find((file) => file.path === name)).find(Boolean);
   const owners = ownersFrom(codeowners);
-  const size = { source_lines: source.reduce((sum, file) => sum + file.lines, 0), areas: owners.length };
-  const layout = override ?? (size.source_lines >= 20_000 || size.areas >= 4 ? "separate" : "one-file");
   const documents = files.filter(({ kind }) => kind === "doc" || kind === "adr");
+  const records = recordsFolder(policy);
+  const projectDocuments = documents.filter(({ path: filename }) =>
+    filename !== records && !filename.startsWith(`${records}/`));
+  const size = {
+    source_lines: source.reduce((sum, file) => sum + file.lines, 0),
+    areas: owners.length,
+    documentation_tokens: Math.ceil(projectDocuments.reduce((sum, file) =>
+      sum + file.text.length, 0) / 4),
+  };
+  const layout = override ?? (
+    size.source_lines >= 20_000 ||
+    size.areas >= 4 ||
+    size.documentation_tokens >= 12_000
+      ? "separate"
+      : "one-file"
+  );
   const dates = await snapshot.dates(documents.map(({ path: filename }) => filename));
   const docs = documents.map((file) => {
     const { title, sections } = headings(file.text);
@@ -303,7 +337,7 @@ export async function inventoryFacts(snapshot: RepositorySnapshot, policy: Tenet
       ci: ciRows(files),
       size,
       layout,
-      units: draftingUnits(layout, owners, source),
+      units: draftingUnits(layout, owners, source, projectDocuments),
     },
   };
 }
