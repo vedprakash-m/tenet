@@ -71,7 +71,8 @@
       "ci": [],
       "size": {
         "source_lines": 3,
-        "areas": 0
+        "areas": 0,
+        "documentation_tokens": 11
       },
       "layout": "one-file",
       "units": [

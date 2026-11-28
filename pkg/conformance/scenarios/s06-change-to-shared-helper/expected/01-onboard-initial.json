@@ -128,7 +128,8 @@
       "ci": [],
       "size": {
         "source_lines": 4017,
-        "areas": 2
+        "areas": 2,
+        "documentation_tokens": 19
       },
       "layout": "separate",
       "units": [
@@ -149,6 +150,19 @@
           "id": "src-billing",
           "paths": [
             "src/billing"
+          ],
+          "views": [
+            "vision",
+            "requirements",
+            "design",
+            "experience",
+            "plan"
+          ]
+        },
+        {
+          "id": "docs",
+          "paths": [
+            "kit"
           ],
           "views": [
             "vision",
@@ -208,6 +222,19 @@
           "id": "src-billing",
           "paths": [
             "src/billing"
+          ],
+          "views": [
+            "vision",
+            "requirements",
+            "design",
+            "experience",
+            "plan"
+          ]
+        },
+        {
+          "id": "docs",
+          "paths": [
+            "kit"
           ],
           "views": [
             "vision",
