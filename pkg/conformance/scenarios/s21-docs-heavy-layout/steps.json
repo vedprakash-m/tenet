@@ -4,7 +4,6 @@
   "spec_refs": [
     "tenet/packets/CP-0068-dogfood-fixes-0.2.0/definition.md#e--round-1-items-deferred-for-012-l-0041-now-020"
   ],
-  "pending": "Waiting for CP-0068 Group E Track 3 (AC-E4, AC-E5 docs layout threshold and docs unit)",
   "steps": [
     {
       "id": "01-init",

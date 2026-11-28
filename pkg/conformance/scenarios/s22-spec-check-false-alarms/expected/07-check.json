@@ -1,10 +1,6 @@
 {
   "ok": true,
   "command": "check",
-  "errors": {
-    "$assert": "size",
-    "value": 0
-  },
   "result": {
     "summary": {
       "errors": 0,

@@ -59,7 +59,8 @@
     "ci": [],
     "size": {
       "source_lines": 20000,
-      "areas": 0
+      "areas": 0,
+      "documentation_tokens": 0
     },
     "layout": "separate",
     "units": [

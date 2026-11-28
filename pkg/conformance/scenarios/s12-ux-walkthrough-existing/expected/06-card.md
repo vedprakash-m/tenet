@@ -1,9 +1,11 @@
 ### Tenet onboarding · drafted from cf8e94d · nothing is in force until you bless it
-Read: README.md, docs/architecture.md, 2 ADRs, 1 source file, 1 test file, 0 instruction files · Skipped: none
+Available to the drafter: README.md, docs/architecture.md, 2 ADRs, 1 source file, 1 test file, 0 instruction files · Skipped: none
+Cited: 1 distinct file
 ✓ 1 citation resolves (file and lines exist)
 Conflicts (settle these first)
   ! CF-1 README says two retries; src/retry.ts retries once.
 Sections (about 2 minutes)
+tenet/intent.md
   Vision · 1 statement · 1 asked · 1 min
   Requirements · 1 statement · 1 observed · 1 min
 Updated the draft revision in:

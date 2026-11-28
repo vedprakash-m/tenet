@@ -97,7 +97,8 @@
     ],
     "size": {
       "source_lines": 1,
-      "areas": 1
+      "areas": 1,
+      "documentation_tokens": 21
     },
     "layout": "one-file",
     "units": [

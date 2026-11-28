@@ -3,7 +3,7 @@
   "command": "onboard",
   "version": "{{version}}",
   "result": {
-    "card": "### Tenet onboarding · drafted from 175926e · nothing is in force until you bless it\nRead: README.md, 1 source file, 1 test file, 0 instruction files · Skipped: none\n✓ 2 citations resolve (file and lines exist)\nSections (about 2 minutes)\n  Vision · 1 statement · 1 documented · 1 min\n  Requirements · 1 statement · 1 observed · 1 min\nUpdated the draft revision in:\n  tenet/intent.md\nCommit these files with the setup changes.\n→ Commit your changes, then rerun tenet onboard --card.\n",
+    "card": "### Tenet onboarding · drafted from 175926e · nothing is in force until you bless it\nAvailable to the drafter: README.md, 1 source file, 1 test file, 0 instruction files · Skipped: none\nCited: 2 distinct files\n✓ 2 citations resolve (file and lines exist)\nSections (about 2 minutes)\ntenet/intent.md\n  Vision · 1 statement · 1 documented · 1 min\n  Requirements · 1 statement · 1 observed · 1 min\nUpdated the draft revision in:\n  tenet/intent.md\nCommit these files with the setup changes.\n→ Commit your changes, then rerun tenet onboard --card.\n",
     "drafted_at_rev": "b7cbdb9395ddea3fae2373f4c153159b9f9baf99"
   },
   "errors": []
