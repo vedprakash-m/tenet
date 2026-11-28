@@ -1,0 +1,34 @@
+{
+  "ok": true,
+  "command": "onboard",
+  "result": {
+    "assignment": {
+      "layout": "separate",
+      "units": {
+        "$assert": "contains",
+        "value": [
+          {
+            "id": "docs",
+            "paths": {
+              "$assert": "or",
+              "options": [
+                {
+                  "$assert": "contains",
+                  "value": ["docs"]
+                },
+                {
+                  "$assert": "contains",
+                  "value": ["docs/"]
+                },
+                {
+                  "$assert": "contains",
+                  "value": ["docs/guide-a.md"]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

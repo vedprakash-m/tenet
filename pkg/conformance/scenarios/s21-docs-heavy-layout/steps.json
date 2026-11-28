@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "scenario": "s21-docs-heavy-layout",
+  "spec_refs": [
+    "tenet/packets/CP-0068-dogfood-fixes-0.2.0/definition.md#e--round-1-items-deferred-for-012-l-0041-now-020"
+  ],
+  "pending": "Waiting for CP-0068 Group E Track 3 (AC-E4, AC-E5 docs layout threshold and docs unit)",
+  "steps": [
+    {
+      "id": "01-init",
+      "kind": "cli",
+      "args": ["init", "--yes", "--offline", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/01-ok.json"
+    },
+    {
+      "id": "02-stage-init",
+      "kind": "git",
+      "args": ["add", "-A"]
+    },
+    {
+      "id": "03-commit-init",
+      "kind": "git",
+      "args": ["commit", "-m", "Initialize tenet"]
+    },
+    {
+      "id": "04-onboard-separate-json",
+      "kind": "cli",
+      "args": ["onboard", "--inventory-only", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/04-separate.json"
+    },
+    {
+      "id": "05-onboard-separate-text",
+      "kind": "cli",
+      "args": ["onboard", "--inventory-only"],
+      "expectExitCode": 0,
+      "expectedProjection": "expected/05-separate-text.json"
+    },
+    {
+      "id": "06-onboard-one-file-override",
+      "kind": "cli",
+      "args": ["onboard", "--inventory-only", "--layout", "one-file", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/06-one-file.json"
+    }
+  ]
+}

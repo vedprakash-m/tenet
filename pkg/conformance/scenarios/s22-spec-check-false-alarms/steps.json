@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "scenario": "s22-spec-check-false-alarms",
+  "spec_refs": [
+    "tenet/packets/CP-0068-dogfood-fixes-0.2.0/definition.md#e--round-1-items-deferred-for-012-l-0041-now-020"
+  ],
+  "pending": "Waiting for CP-0068 Group E Track 4 (AC-E8, AC-E9, AC-E11 metadata block scope, checklists, and inferred warning)",
+  "steps": [
+    {
+      "id": "01-init",
+      "kind": "cli",
+      "args": ["init", "--yes", "--offline", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/01-ok.json"
+    },
+    {
+      "id": "02-stage-init",
+      "kind": "git",
+      "args": ["add", "-A"]
+    },
+    {
+      "id": "03-commit-init",
+      "kind": "git",
+      "args": ["commit", "-m", "Initialize tenet"]
+    },
+    {
+      "id": "04-onboard-inventory",
+      "kind": "cli",
+      "args": ["onboard", "--inventory-only", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/01-ok.json"
+    },
+    {
+      "id": "05-write-spec-with-scope-checklist-inferred",
+      "kind": "write",
+      "files": {
+        "tenet/intent.md": "## Vision\n- V-1 Reliable calls never drop silently. {origin: asked}\n\n## Requirements\n- R-1 Out of scope: direct database writes from handlers. {origin: observed; cites: src/retry.ts:1-3; serves: V-1}\n- R-2 Fallback retry uses jittered backoff. {origin: inferred; cites: src/retry.ts:1-3; serves: V-1}\n\n## Design\nRetry runs synchronously inside the caller wrapper (`src/retry.ts:1-3`).\n\n## Experience\nCallers observe at most one retry delay on timeout.\n\n## Plan\nVerify single-retry behavior in retry tests.\n\n## Completeness checklist\n- [x] Every observed statement cites source files and line ranges\n- [ ] Owner review pending for inferred assumptions\n"
+      }
+    },
+    {
+      "id": "06-fix-keeps-checklist-untouched",
+      "kind": "cli",
+      "args": ["fix", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/01-ok.json",
+      "expectedFilesInclude": {
+        "tenet/intent.md": ["- [x] Every observed statement cites source files and line ranges", "- [ ] Owner review pending for inferred assumptions"]
+      }
+    },
+    {
+      "id": "07-check-false-alarms-and-inferred-warning",
+      "kind": "cli",
+      "args": ["check", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/07-check.json"
+    }
+  ]
+}
