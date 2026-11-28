@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "command": "onboard",
+  "result": {
+    "assignment": {
+      "layout": "one-file"
+    }
+  }
+}

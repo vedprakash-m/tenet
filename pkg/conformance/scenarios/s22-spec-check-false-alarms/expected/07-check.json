@@ -1,0 +1,53 @@
+{
+  "ok": true,
+  "command": "check",
+  "errors": {
+    "$assert": "size",
+    "value": 0
+  },
+  "result": {
+    "summary": {
+      "errors": 0,
+      "warnings": 1
+    },
+    "findings": {
+      "$assert": "all",
+      "checks": [
+        {
+          "$assert": "none",
+          "value": {
+            "code": "TN-SPEC-REQ-META"
+          }
+        },
+        {
+          "$assert": "none",
+          "value": {
+            "code": "TN-SPEC-MISSING-ID"
+          }
+        },
+        {
+          "$assert": "contains",
+          "value": [
+            {
+              "severity": "warning",
+              "file": "tenet/intent.md",
+              "message": {
+                "$assert": "all",
+                "checks": [
+                  {
+                    "$assert": "includes",
+                    "value": "inferred"
+                  },
+                  {
+                    "$assert": "includes",
+                    "value": "R-2"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

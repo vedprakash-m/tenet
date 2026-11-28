@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "scenario": "s23-remove-plan",
+  "spec_refs": [
+    "tenet/packets/CP-0068-dogfood-fixes-0.2.0/definition.md#e--round-1-items-deferred-for-012-l-0041-now-020"
+  ],
+  "pending": "Waiting for CP-0068 Group E Track 1 (AC-E2 remove plan, TTY prompt, and --yes flag)",
+  "steps": [
+    {
+      "id": "01-init",
+      "kind": "cli",
+      "args": ["init", "--yes", "--offline", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/01-ok.json"
+    },
+    {
+      "id": "02-stage-init",
+      "kind": "git",
+      "args": ["add", "-A"]
+    },
+    {
+      "id": "03-commit-init",
+      "kind": "git",
+      "args": ["commit", "-m", "Initialize tenet"]
+    },
+    {
+      "id": "04-remove-without-tty-or-yes-fails",
+      "kind": "cli",
+      "args": ["remove"],
+      "expectExitCodes": [1, 2],
+      "expectedTextIncludes": ["remove"]
+    },
+    {
+      "id": "05-setup-intact-after-refusal",
+      "kind": "cli",
+      "args": ["check", "--json"],
+      "expectExitCode": 0,
+      "expectedFilesInclude": {
+        "tenet.yaml": ["standard:"],
+        "AGENTS.md": ["Tenet"]
+      }
+    },
+    {
+      "id": "06-remove-with-yes",
+      "kind": "cli",
+      "args": ["remove", "--yes", "--json"],
+      "expectExitCode": 0,
+      "expectedJsonMatch": "expected/06-remove.json"
+    }
+  ]
+}

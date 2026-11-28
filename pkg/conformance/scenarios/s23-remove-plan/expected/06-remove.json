@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "command": "remove",
+  "result": {
+    "removed": {
+      "$assert": "contains",
+      "value": [
+        {
+          "path": "tenet.yaml"
+        },
+        {
+          "path": "tenet.lock"
+        },
+        {
+          "path": "AGENTS.md"
+        }
+      ]
+    },
+    "kept": {
+      "$assert": "contains",
+      "value": []
+    }
+  }
+}
