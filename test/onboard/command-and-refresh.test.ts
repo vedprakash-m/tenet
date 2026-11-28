@@ -62,7 +62,7 @@ R-18 A human edit stays.
   repo.git(["add", "api/service.ts"]);
   repo.git(["commit", "-qm", "change API"]);
   const changed = await onboard(options, deps);
-  assert.deepEqual(changed.inventory.units.map(({ id }) => id), ["api", "cli"]);
+  assert.deepEqual(changed.inventory.units.map(({ id }) => id), ["api", "cli", "docs"]);
   assert.deepEqual(changed.assignment.units.map(({ id }) => id), ["api"]);
   assert.equal(calls.length, 2);
   assert.deepEqual(calls.map((entry) => path.resolve(entry)), [repo.path, repo.path]);
@@ -110,6 +110,32 @@ test("onboard recognizes Python and Go modules and scans their real tests", asyn
   ]);
   assert.deepEqual(result.inventory.tests.map(({ runner, cases }) => [runner, cases]), [["go", 1], ["pytest", 1]]);
   assert.ok(result.findings.some(({ kind }) => kind === "skipped-tests"));
+});
+
+test("[AC-E4] [F-16] documentation tokens select separate layout and [AC-E5] [F-18] keeps a docs unit", async (t) => {
+  const repo = await tmpRepo("docs-heavy-layout");
+  t.after(repo.cleanup);
+  await repo.write("src/app.ts", "export const app = true;\n");
+  await repo.write("lib/shared.ts", "export const shared = true;\n");
+  await repo.write("docs/guide.md", "# Guide\n\n" + "documentation ".repeat(3_700));
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "docs-heavy"]);
+
+  const result = await onboard({ cwd: repo.path, inventoryOnly: true });
+  assert.equal(result.inventory.layout, "separate");
+  assert.ok(result.inventory.size.documentation_tokens >= 12_000);
+  assert.ok(result.inventory.units.some(({ id, paths }) =>
+    id === "docs" && paths.includes("docs")));
+
+  const human = await cli(["onboard", "--inventory-only"], repo.path);
+  assert.equal(human.code, 0, human.stderr);
+  assert.match(human.stdout, /Layout: separate \(because documentation reached 12,000 estimated tokens\)/);
+  assert.match(human.stdout, /^Units:$/m);
+  assert.match(human.stdout, /^- docs: docs$/m);
+
+  const override = await cli(["onboard", "--inventory-only", "--layout", "one-file"], repo.path);
+  assert.equal(override.code, 0, override.stderr);
+  assert.match(override.stdout, /Layout: one-file \(because --layout one-file was requested\)/);
 });
 
 test("[AC-D2] [R2-12] assignments carry kind and generic interview question sets", async (t) => {

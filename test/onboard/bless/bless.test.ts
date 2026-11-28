@@ -295,11 +295,13 @@ test("onboard --card counts sources and origins, records the draft commit, and r
   assert.equal(card.drafted_at_rev, draft);
   assert.equal(card.card, [
     `### Tenet onboarding · drafted from ${inventoryRef.slice(0, 7)} · nothing is in force until you bless it`,
-    "Read: 1 source file, 0 test files, 0 instruction files · Skipped: none",
+    "Available to the drafter: 1 source file, 0 test files, 0 instruction files · Skipped: none",
+    "Cited: 1 distinct file",
     "✓ 1 citation resolves (file and lines exist)",
     "Conflicts (settle these first)",
     "  ! CF-1 Sources disagree.",
     "Sections (about 1 minute)",
+    "tenet/intent.md",
     "  Requirements · 1 statement · 1 observed · 1 min",
     "Updated the draft revision in:",
     "  tenet/intent.md",
@@ -335,6 +337,45 @@ test("onboard --card counts sources and origins, records the draft commit, and r
   }
   const validateResult = ajv.compile(JSON.parse(await readFile("kit/schemas/results/onboard.json", "utf8")));
   assert.equal(validateResult(result), true, JSON.stringify(validateResult.errors));
+});
+
+test("[AC-E12] [F-31] [AC-E13] [F-33] the card groups special sections and counts source availability and citations", async (t) => {
+  const repo = await setup(t);
+  await repo.write("README.md", "# Project notes\n");
+  await repo.write(".env.local", "TOKEN=local\n");
+  await repo.write("secret.pem", "private\n");
+  const inventoryRef = commit(repo, "add card sources");
+  const io = fakeTty();
+  assert.equal(await run(["--json", "onboard", "--inventory-only"], {
+    cwd: repo.path, ...io, checkEnvironment: false,
+  }), 0);
+  await repo.write(filename, spec(`
+Introductory text.
+
+## Requirements
+- R-1 Retry once. {origin: observed; cites: src/retry.ts:1, README.md:1}
+
+## Completeness checklist
+- [ ] Confirm owners
+- [x] Confirm layout
+
+## Support matrix
+| Platform | Support |
+|---|---|
+| Windows | yes |
+`));
+  commit(repo, "draft special sections");
+
+  const card = await onboardingCard({ cwd: repo.path });
+  assert.match(card, new RegExp(`drafted from ${inventoryRef.slice(0, 7)}`));
+  assert.match(card, /Available to the drafter: README.md, 1 source file/);
+  assert.match(card, /Cited: 2 distinct files/);
+  assert.match(card, /Skipped: \.env\* 1, credentials 1/);
+  assert.match(card, /tenet\/intent\.md\n  intro/);
+  assert.match(card, /  Requirements · 1 statement · 1 observed · 1 min/);
+  assert.match(card, /  checklist \(2 items\)/);
+  assert.match(card, /  Support matrix · table, no requirements/);
+  assert.doesNotMatch(card, /intro.*min|checklist.*min/);
 });
 
 test("onboarding card refuses to pin a draft that differs from HEAD", async (t) => {

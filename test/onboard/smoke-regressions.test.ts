@@ -124,6 +124,7 @@ test("installed skills and manifest-owned files stay out of docs, findings, and 
   assert.deepEqual(inventory.docs.map(({ path }) => path), [edited, intent]);
   assert.deepEqual(findings.filter(({ kind }) => kind === "dead-path").map(({ path }) => path), [edited]);
   const card = await onboardingCard({ cwd: repo.path });
-  const readLine = card.split("\n").find((line) => line.startsWith("Read:"));
-  assert.equal(readLine, "Read: docs/maintainer.md, tenet/intent.md, 0 source files, 0 test files, 0 instruction files · Skipped: none");
+  const readLine = card.split("\n").find((line) => line.startsWith("Available to the drafter:"));
+  assert.equal(readLine, "Available to the drafter: docs/maintainer.md, tenet/intent.md, 0 source files, 0 test files, 0 instruction files · Skipped: none");
+  assert.match(card, /^Cited: 0 distinct files$/m);
 });

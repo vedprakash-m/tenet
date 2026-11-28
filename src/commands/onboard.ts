@@ -37,6 +37,35 @@ function archiveHint(value: Awaited<ReturnType<typeof prepareOnboard>>["value"])
     : null;
 }
 
+function layoutLine(
+  value: Awaited<ReturnType<typeof prepareOnboard>>["value"],
+  override: string | undefined,
+): string {
+  const layout = value.inventory.layout;
+  if (override) {
+    return `Layout: ${layout} (because --layout ${override} was requested). Use \`--layout ${layout === "one-file" ? "separate" : "one-file"}\` to change it.`;
+  }
+  const reasons = [];
+  if (value.inventory.size.source_lines >= 20_000) reasons.push("source lines reached 20,000");
+  if (value.inventory.size.areas >= 4) reasons.push("owner areas reached 4");
+  if (value.inventory.size.documentation_tokens >= 12_000) {
+    reasons.push("documentation reached 12,000 estimated tokens");
+  }
+  const reason = reasons.length > 0
+    ? reasons.join(" and ")
+    : "source lines, owner areas and documentation are below the separate thresholds";
+  return `Layout: ${layout} (because ${reason}). Use \`--layout ${layout === "one-file" ? "separate" : "one-file"}\` to change it.`;
+}
+
+function unitLines(value: Awaited<ReturnType<typeof prepareOnboard>>["value"]): string[] {
+  if (value.inventory.units.length === 0) return [];
+  return [
+    "Units:",
+    ...value.inventory.units.map(({ id, paths }) =>
+      `- ${id}: ${paths.join(", ")}`),
+  ];
+}
+
 async function draftingPrompt(cwd: string): Promise<string> {
   const packageRoot = path.resolve(fileURLToPath(new URL("../../", import.meta.url)));
   const shippedSkill = path.join(packageRoot, "kit", "skills", "draft-specs", "SKILL.md");
@@ -113,6 +142,8 @@ export function makeOnboardCommand(deps: OnboardDeps) {
         }
         const hint = archiveHint(value);
         if (hint) output.push(hint);
+        output.push(layoutLine(value, typeof layout === "string" ? layout : undefined));
+        output.push(...unitLines(value));
         output.push(onboardText.assignment);
         output.push(await draftingPrompt(cwd));
         return { value: output.join("\n"), findings: diagnostics };

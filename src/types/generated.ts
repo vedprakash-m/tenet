@@ -231,6 +231,7 @@ export type Inventory = {
   size: {
   source_lines: number;
   areas: number;
+  documentation_tokens: number;
 };
   layout: "one-file" | "separate";
   units: Array<{

@@ -58,7 +58,8 @@
   ],
   "size": {
     "source_lines": 48,
-    "areas": 1
+    "areas": 1,
+    "documentation_tokens": 25
   },
   "layout": "separate",
   "units": [
