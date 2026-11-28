@@ -18,11 +18,7 @@
     },
     "kept": {
       "$assert": "contains",
-      "value": [
-        {
-          "path": "tenet"
-        }
-      ]
+      "value": []
     }
   }
 }

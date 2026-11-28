@@ -1,6 +1,6 @@
 {
   "stdoutMatches": [
-    "Layout:\\s*separate\\b",
+    "Layout:\\s*separate\\s*\\(because",
     "\\bdocs\\b"
   ]
 }
