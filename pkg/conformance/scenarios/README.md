@@ -16,7 +16,7 @@ Each scenario folder contains:
   - `verify`: evaluates a `VerifyEvent` (`workflow_run`, `edited`, or `pull_request` closed) with bundle/JUnit inputs and renders the proof card Markdown.
 - `expected/` — exact JSON results (`expectedJson`), partial structural assertions (`expectedJsonMatch` with `$assert` projections where exact rendering is left open), log lines, tree equivalence snapshots, and rendered `.md` cards.
 
-## Scenarios (23 folders: 20 live, 3 pending CP-0068 Group E)
+## Scenarios (23 folders: 21 live, 2 pending CP-0068 Group E)
 
 | Scenario | Contract bullet | Surfaces | Spec lines exercised | Expected files |
 |---|---|---|---|---|
@@ -42,4 +42,4 @@ Each scenario folder contains:
 | [s20-first-setup-protected-files](s20-first-setup-protected-files/steps.json) | Initial Tenet setup is exempt from protected-file flagging with an informational note, while non-manifest protected paths and later PRs still flag | `cli`, `git`, `write` | `CP-0068` AC-B1, `OD-13 A` (`definition.md`) | `expected/01-ok.json`, `expected/05-first-setup-only.json`, `expected/09-setup-plus-codeowners.json`, `expected/13-later-pr.json`, `expected/13-no-first-setup-note.json` |
 | [s21-docs-heavy-layout](s21-docs-heavy-layout/steps.json) | Pending (`CP-0068`): small code with > 48,000 documentation characters chooses `separate` with a `docs` unit, overridable via `--layout one-file` | `cli`, `git` | `CP-0068` AC-E4, AC-E5 (`definition.md`) | `expected/01-ok.json`, `expected/04-separate.json`, `expected/05-separate-text.json`, `expected/06-one-file.json` |
 | [s22-spec-check-false-alarms](s22-spec-check-false-alarms/steps.json) | Pending (`CP-0068`): prose `Out of scope:` and filled completeness checklists produce no false errors; one `origin: inferred` statement emits one warning | `cli`, `git`, `write` | `CP-0068` AC-E8, AC-E9, AC-E11 (`definition.md`) | `expected/01-ok.json`, `expected/07-check.json` |
-| [s23-remove-plan](s23-remove-plan/steps.json) | Pending (`CP-0068`): `remove` fails non-interactively without `--yes`, leaves files untouched, and succeeds with `--yes` | `cli`, `git` | `CP-0068` AC-E2 (`definition.md`) | `expected/01-ok.json`, `expected/06-remove.json` |
+| [s23-remove-plan](s23-remove-plan/steps.json) | `remove` fails non-interactively without `--yes`, leaves files untouched, and succeeds with `--yes` | `cli`, `git` | `CP-0068` AC-E2 (`definition.md`) | `expected/01-ok.json`, `expected/06-remove.json` |
