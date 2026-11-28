@@ -1,6 +1,6 @@
 <!-- Summary of what changed and why. -->
 
-<!-- tenet:begin v0.1.1 -->
+<!-- tenet:begin v0.1.2 -->
 <!--
 ## Acceptance
 Implements: <requirement IDs>

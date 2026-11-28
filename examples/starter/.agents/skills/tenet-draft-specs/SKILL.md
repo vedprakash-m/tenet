@@ -10,7 +10,7 @@ Follow these steps in order when onboarding a repository to Tenet:
    Run `tenet onboard` and read `.tenet/onboard/assignment.json`.
 
 2. **Interview the Owner.**
-   Ask the Owner the interview questions for `assignment.project_kind` (at most 10 questions, grouped cleanly; if `project_kind` is unlisted, ask generic questions covering purpose, primary users, never-dos and priorities). Record every answer in `.tenet/onboard/interview.json` under `{questions: [{id, text, answer, answered_at}]}` with UTC timestamps.
+   Ask at most `assignment.question_limit` questions in total. Take them from `assignment.questions.project_kind` first, then fill the remaining count from `assignment.questions.generic`. Never repeat a question. Record every answer in `.tenet/onboard/interview.json` under `{questions: [{id, text, answer, answered_at}]}` with UTC timestamps.
 
 3. **Draft each unit in order.**
    For each drafting unit in `.tenet/onboard/assignment.json`, in order (or, in an empty repository with no source files or docs, draft purely from `asked` interview answers and `"undecided, needs the Owner"` without inventing `observed` or `documented` statements):
@@ -24,13 +24,13 @@ Follow these steps in order when onboarding a repository to Tenet:
    - From existing instruction files (inventory kind `instructions`, such as `copilot-instructions.md`, `CLAUDE.md`, `GEMINI.md`, or editor rules): turn project rules into requirements (`origin: documented`, `scope: global`, citing the file) and working rules into a `## Working rules` design section, without copying anything that is a secret or a personal detail.
 
 4. **Normalize IDs and verify citations.**
-   Run `tenet fix`, then `tenet check`, and fix every citation finding until checks pass on the draft.
+   Don't write YAML front matter by hand. Run `tenet fix` to add it, then run `tenet check` and fix every citation finding until checks pass on the draft.
 
 5. **Run a self-check pass.**
    Review each drafted statement against its citation. List any statement whose citation does not support it, then either correct the statement/citation or mark it `origin: inferred`. Label this pass in the pull request as a **self-check** (an independent review requires a separate `spec-reviewer` assignment).
 
-6. **Commit and render the onboarding card.**
-   Commit the drafted specifications (never commit `.tenet/onboard/`), run `tenet onboard --card` (which records `drafted_at_rev`), and open one pull request named **"Set up Tenet"** with the generated card as its description.
+6. **Report readiness and give the next commands.**
+   Tell the user the draft is ready. Give these commands in the README's quick-start order: `tenet fix`, `tenet check`, and `tenet onboard --card`. Commit or open a pull request only if the user asked you to. Never commit `.tenet/onboard/`.
 
 **Rules:**
 - Never bless a section or edit blessing front-matter fields or `{records}/blessed/`.
