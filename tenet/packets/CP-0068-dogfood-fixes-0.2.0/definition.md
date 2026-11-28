@@ -56,7 +56,33 @@ A medium model ran 0.1.1 on a private existing project as a new user, blind to t
 
 ### E · Round 1 items deferred "for 0.1.2" (L-0041, now 0.2.0)
 
-F-05, F-16, F-18, F-22, F-24 to F-28, F-31, F-33, F-57 and F-06's reordering. The coordinator gives each item a synthetic description when it is assigned.
+F-05, F-16, F-18, F-22, F-24 to F-28, F-31, F-33, F-57 and F-06's reordering. The descriptions below are synthetic. Parts that later work already fixed are left out: the `AGENTS.md` half of F-16 (AC-C1), F-22's questions (AC-D2), F-28's budget warning (`TN-BUDGET-WARN`) and F-57's list of removed files (AC-C2). Items marked **proposal** change what a command promises, so their spec text needs the Owner's blessing.
+
+**Install and command line**
+- **AC-E1 (F-06):** **`init` checks the registry before it asks to continue.** The package-integrity lookup runs before the plan is confirmed. If it fails, the plan says so and offers the local-integrity choice (the same as `--offline`) instead of failing after the user agrees. The cause is one line; npm's full error appears only with `--verbose`. When npm's configured registry is not the public one, the plan says that Tenet checks the public registry on purpose, and why.
+- **AC-E2 (F-57) · proposal:** **`remove` shows its plan and asks first,** as `init` does: *Will delete* and *Will keep*, each with its paths, then *Continue? [y/N]*. `--yes` skips the question. Without a terminal and without `--yes`, it stops with its own no-terminal message, which names `remove`. A file Tenet created whole (for example a pull-request template it added) is listed as *delete (Tenet created it)*; a file it only edited is listed as *remove the Tenet block*.
+- **AC-E3 (F-05):** **`--version` and `--help` start fast.** They load no command module. A test proves this by checking which modules are loaded, not by timing. Every help description follows one style: a sentence that starts with a capital letter and has no final period.
+
+**Onboarding layout and units**
+- **AC-E4 (F-16) · proposal:** **Documentation counts toward the layout.** The layout is `separate` when source lines reach 20,000, owner areas reach 4, or the repository's documentation (`doc` and `adr` files in the inventory) reaches 12,000 estimated tokens (characters ÷ 4). 12,000 is the largest default document budget, so such documentation can't fit one document. The human output says why: *"Layout: one-file (because …). Use `--layout separate` to change it."*
+- **AC-E5 (F-18):** **A `separate` layout always covers the documentation.** Documentation outside every code unit goes in a `docs` unit, so no unit list leaves out where the intent is written. The human output lists each unit with its paths.
+
+**Drafting skill and kit**
+- **AC-E6 (F-22, the rest):** **Shipped kit files cite only shipped files.** No file under `kit/` points an agent at Tenet's own unshipped specifications (such as `contracts.md` or `onboarding.md`). Each one points at the shipped templates instead. A test checks every file under `kit/`.
+- **AC-E7 (F-24):** **One owner for the setup commit.** The drafting skill's last step doesn't commit or open a pull request unless the user asked the agent to. It tells the user the draft is ready and gives the next commands, which match the README and *Getting started*.
+
+**Specification checks and `fix`**
+- **AC-E8 (F-25):** **Metadata keys are read only from the trailing `{…}` block.** Prose such as *"Out of scope: …"* or *"scope: …"* before the block is never `TN-SPEC-REQ-META`. When a real metadata error is found, the message names the token that caused it.
+- **AC-E9 (F-26):** **Completeness checklists aren't requirements.** `- [ ]` and `- [x]` lines under a *Completeness checklist* heading are never `TN-SPEC-MISSING-ID`, in any view, and `fix` never gives them IDs. A filled-in copy of every shipped template passes `check`.
+- **AC-E10 (F-27):** **`fix` says what it changes and keeps the user's style.**
+  - `--dry-run` prints one line for each change in each file, for example *"vision.md: add IDs to 5 statements; add section digests"*. `--diff` prints a unified diff.
+  - Human output is text, never raw JSON; `--json` gives JSON.
+  - Front matter keeps the YAML style it was written in (flow or block), and `fix` changes only the fields it has to.
+- **AC-E11 (F-28) · proposal:** **Inferred statements are a warning.** `check` gives one warning for each file that has `origin: inferred` statements: *"<n> inferred statement(s) need review before blessing"*, with their IDs. It is a new code, added to the contracts and messages specification. The docs say plainly that a citation check confirms the cited lines exist, not that they support the statement.
+
+**Onboarding card**
+- **AC-E12 (F-31):** **The card's section list is grouped by document.** Each file's sections appear under its name. The preamble is shown as *intro*, and a completeness checklist as *checklist (<n> items)*. Neither counts toward unlabelled statements or the review-time estimate. A table with no IDs is shown as *table, no requirements*, not *0 statements*.
+- **AC-E13 (F-33):** **The card says what the drafter could read.** `Read:` becomes `Available to the drafter:`, and the skipped files show a count for each reason. A separate `Cited:` line counts the files the draft actually cites.
 
 ## Independent scenarios
 
@@ -65,7 +91,10 @@ These are written from this definition, before the builder starts or apart from 
 - `s17-draft-without-front-matter`: draft, `check`, `fix`, card, bless (AC-A1 to A5);
 - `s18-invented-front-matter-shape`: a list `sections` and a string `tenet`; every command gives the same `TN-SCHEMA` (AC-A1, A4);
 - `s19-non-test-exit-not-skip`: AC-B2;
-- `s20-first-setup-protected-files`: AC-B1.
+- `s20-first-setup-protected-files`: AC-B1;
+- `s21-docs-heavy-layout`: a repository with little code and a lot of documentation (AC-E4, AC-E5);
+- `s22-spec-check-false-alarms`: prose with *scope:*, a filled-in template checklist and an inferred statement (AC-E8, AC-E9, AC-E11);
+- `s23-remove-plan`: `remove` shows its plan, refuses without a terminal, and runs with `--yes` (AC-E2).
 
 ## Done when
 
