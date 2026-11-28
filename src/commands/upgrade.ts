@@ -1,3 +1,4 @@
+import { commandHelp } from "../core/cli-help.js";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { CommandSpec } from "../core/commands.js";
@@ -31,9 +32,7 @@ function commandFinding(error: unknown): Finding {
 export function makeUpgradeCommand(dependencies: UpgradeDependencies = {}): CommandSpec {
   const upgrade = dependencies.upgrade ?? runUpgrade;
   return {
-    name: "upgrade",
-    description: "Upgrade Tenet-owned files to the installed version",
-    usage: "tenet upgrade",
+    ...commandHelp.upgrade,
     async run(context) {
       if (context.args.length > 0) {
         const words = message("TN-USAGE-UPGRADE", {

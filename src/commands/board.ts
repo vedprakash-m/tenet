@@ -1,13 +1,11 @@
+import { commandHelp } from "../core/cli-help.js";
 import type { CommandContext } from "../core/commands.js";
 import { message } from "../core/messages.js";
 import { fail } from "../core/output.js";
 import { board, renderSpecsBoard } from "../views/specs-board.js";
 
 const command = {
-	name: "board",
-	description: "Show specification state and spec debt",
-	usage: "tenet board [--all]",
-	options: [{ flags: "--all" }],
+	...commandHelp.board,
 	async run(context: CommandContext) {
 		if (context.args.length > 0) {
 			const words = message("TN-USAGE-BOARD", {

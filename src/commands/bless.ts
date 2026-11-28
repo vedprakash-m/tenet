@@ -1,13 +1,11 @@
+import { commandHelp } from "../core/cli-help.js";
 import type { CommandSpec } from "../core/commands.js";
 import { message } from "../core/messages.js";
 import { fail } from "../core/output.js";
 import { blessText, runBless } from "../onboard/bless.js";
 
 export const blessCommand: CommandSpec = {
-  name: "bless",
-  description: blessText.description,
-  usage: "tenet bless [doc] [section]",
-  options: ["--doc <path>", "--section <slug>"],
+  ...commandHelp.bless,
   async run(context) {
     const docFlag = context.options["--doc"];
     const sectionFlag = context.options["--section"];

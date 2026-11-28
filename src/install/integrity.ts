@@ -7,6 +7,7 @@ import { message } from "../core/messages.js";
 import { fail } from "../core/output.js";
 import type { PreflightOptions } from "./types.js";
 
+const publicRegistry = "https://registry.npmjs.org/";
 const integrityPattern = /^sha512-[A-Za-z0-9+/]{86}==$/;
 
 export type ReleaseIntegrity = {
@@ -172,7 +173,7 @@ async function registryIntegrity(
     `${packageName}@${version}`,
     "dist.integrity",
     "--json",
-    "--registry=https://registry.npmjs.org/",
+    "--registry=" + publicRegistry,
   ];
   const { status, stdout, stderr } = await run(args, { cwd });
   if (status !== 0) {
@@ -180,7 +181,7 @@ async function registryIntegrity(
     registryUnavailable(
       packageName,
       version,
-      stderr.trim() || `npm exited ${String(status)}`,
+      [stderr.trimEnd(), stdout.trimEnd()].filter(Boolean).join("\n") || `npm exited ${String(status)}`,
       command,
     );
   }
@@ -202,10 +203,20 @@ export function localIntegrityWarning(packageName: string, version: string, offl
     "CI workflows cannot verify it until the package is published and re-pinned with `tenet upgrade`.";
 }
 
-type IntegrityDependencies = {
+export type IntegrityDependencies = {
   registry?: (packageName: string, version: string) => Promise<string | null>;
   npmView?: NpmViewRunner;
 };
+
+export async function usesCustomRegistry(cwd: string, run: NpmViewRunner = runNpmView): Promise<boolean> {
+  const injected = process.env.TENET_TEST_REGISTRY_INTEGRITY !== undefined ||
+    process.env.TENET_TEST_REGISTRY_ERROR !== undefined;
+  const config = process.env.npm_config_registry ?? process.env.NPM_CONFIG_REGISTRY;
+  const configured = config ?? (injected && run === runNpmView ? undefined : await run(
+    ["config", "get", "registry"], { cwd },
+  ).then(({ status, stdout }) => status === 0 ? stdout.trim() : undefined).catch(() => undefined));
+  return Boolean(configured && configured.replace(/\/+$/, "") !== publicRegistry.slice(0, -1));
+}
 
 export async function releaseIntegrity(
   options: PreflightOptions,

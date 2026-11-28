@@ -239,6 +239,8 @@ An upgrade never changes level or turns a rule beyond `observe`; authority, perm
 
 **Remove.** `tenet remove` deletes exactly what `init` recorded: created files, added blocks and host entries. Specifications and records stay. If branch protection requires Tenet, it tells you to remove that rule.
 
+**Proposal (CP-0068 AC-E2).** Before removing anything, list paths under *Will delete* and *Will keep*, then ask *Continue? [y/N]*. Use *delete (Tenet created it)* for a whole file and *remove the Tenet block* for a managed block. `--yes` skips the question and is required without a terminal.
+
 ## Part 5: the agent's side
 
 The [`AGENTS.md` block](tech-spec/agents.md) is under 1,500 tokens. It locates specs and explains context, pull requests, rules, prohibitions and stopping. Builders only propose changes above L3.

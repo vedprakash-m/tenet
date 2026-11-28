@@ -4,6 +4,7 @@ import { preflight } from "./preflight.js";
 import { manifestJson, sha256Bytes } from "./manifest.js";
 import { applyPlan, planWriteSet, resumePendingPlan } from "./writes.js";
 import type { InitOptions, InitResult, PreflightOptions } from "./types.js";
+import type { ReleaseIntegrity } from "./integrity.js";
 import { localProfileRoot } from "./environment.js";
 
 async function isComplete(cwd: string, plan: Awaited<ReturnType<typeof planWriteSet>>): Promise<boolean> {
@@ -27,7 +28,7 @@ async function isComplete(cwd: string, plan: Awaited<ReturnType<typeof planWrite
   }
 }
 
-export async function init(options: InitOptions = {}): Promise<InitResult> {
+export async function init(options: InitOptions = {}, preparedIntegrity?: ReleaseIntegrity): Promise<InitResult> {
   const preflightOptions: PreflightOptions = { ...options };
   const result = await preflight(preflightOptions);
   const cwd = path.resolve(options.cwd ?? process.cwd());
@@ -53,7 +54,9 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
     offline: options.offline === true,
   });
   if (resumed) return { ...resumed, findings: [...result.findings, ...resumed.findings] };
-  const plan = await planWriteSet(result, { ...options, command: "init" });
+  const plan = await planWriteSet(result, {
+    ...options, command: "init", ...(preparedIntegrity ? { preparedIntegrity } : {}),
+  });
   const findings = [
     ...result.findings,
     ...(plan.integrity_warning

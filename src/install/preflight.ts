@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 import { parseDocument } from "yaml";
 import { git } from "../core/git.js";
 import { message } from "../core/messages.js";
-import { fail } from "../core/output.js";
+import { errorFinding, fail, type Finding } from "../core/output.js";
+import { releaseIntegrity, usesCustomRegistry, type IntegrityDependencies, type ReleaseIntegrity } from "./integrity.js";
 import { compareUtf16, detectHosts } from "./hosts.js";
 import { localProfileRoots, windowsCommandShimRequired } from "./environment.js";
 import type {
@@ -629,3 +630,22 @@ export async function preflight(options: PreflightOptions = {}): Promise<Preflig
 }
 
 export const preflightInit = preflight;
+
+export async function preflightInitIntegrity(options: PreflightOptions, dependencies: IntegrityDependencies = {}): Promise<
+  { customRegistry: boolean; release: ReleaseIntegrity; finding?: never } |
+  { customRegistry: boolean; release?: never; finding: Finding }
+> {
+  const cwd = path.resolve(options.cwd ?? process.cwd());
+  const version = options.environment?.installedVersion;
+  const hasPin = version !== undefined && options.environment?.registry?.releases?.[version]?.integrity !== undefined;
+  const customRegistry = !options.offline && version !== "0.0.0" && !hasPin &&
+    process.env.TENET_INSTALL_INTEGRITY === undefined && !dependencies.registry &&
+    await usesCustomRegistry(cwd, dependencies.npmView);
+  try {
+    return { customRegistry, release: await releaseIntegrity({ ...options, cwd }, dependencies) };
+  } catch (error) {
+    const finding = errorFinding(error);
+    if (finding?.code !== "TN-ENV-REGISTRY") throw error;
+    return { customRegistry, finding };
+  }
+}

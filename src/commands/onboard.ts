@@ -1,3 +1,4 @@
+import { commandHelp } from "../core/cli-help.js";
 import { message, onboardText } from "../core/messages.js";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -52,9 +53,7 @@ async function draftingPrompt(cwd: string): Promise<string> {
 
 export function makeOnboardCommand(deps: OnboardDeps) {
   return {
-    name: "onboard",
-    description: onboardText.description,
-    options: ["--inventory-only", "--refresh", "--layout <layout>", "--card", "--pr <number>"],
+    ...commandHelp.onboard,
     async handler({ cwd, args, options, json }: OnboardCommandContext) {
       const layout = options["--layout"];
       const prOption = options["--pr"];

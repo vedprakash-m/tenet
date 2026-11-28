@@ -1,3 +1,4 @@
+import { commandHelp } from "../core/cli-help.js";
 
 import { message } from "../core/messages.js";
 import { fail } from "../core/output.js";
@@ -19,16 +20,7 @@ function list(value: string | boolean | string[] | undefined): string[] | undefi
 }
 
 const command = {
-  name: "context",
-  description: "Select specification context (--paths a,b or repeated --paths)",
-  usage: "tenet context [--paths <paths...>] [--ids <ids>] [--query <text>] [--include-drafts] [--budget-tokens <n>]",
-  options: [
-    { flags: "--paths <paths...>", description: "Paths, comma-separated or repeat --paths" },
-    { flags: "--ids <ids>" },
-    { flags: "--query <text>" },
-    { flags: "--include-drafts" },
-    { flags: "--budget-tokens <n>" },
-  ],
+  ...commandHelp.context,
   async run(commandContext: CommandContext) {
     if (commandContext.args.length > 0) {
       const words = message("TN-USAGE-CONTEXT", {

@@ -1,3 +1,4 @@
+import { commandHelp } from "../core/cli-help.js";
 import { createInterface } from "node:readline";
 import { existsSync } from "node:fs";
 import path from "node:path";
@@ -5,7 +6,8 @@ import type { CommandContext, CommandSpec } from "../core/commands.js";
 import { message } from "../core/messages.js";
 import { errorFinding, fail, version, type Finding } from "../core/output.js";
 import { init as runInit } from "../install/init.js";
-import { preflight as runPreflight } from "../install/preflight.js";
+import { preflight as runPreflight, preflightInitIntegrity } from "../install/preflight.js";
+import { releaseIntegrity } from "../install/integrity.js";
 import type {
   InitOptions,
   InitResult,
@@ -18,6 +20,7 @@ import type {
 type InitDependencies = {
   init?: typeof runInit;
   preflight?: typeof runPreflight;
+  integrity?: typeof preflightInitIntegrity;
   terminal?: boolean;
 };
 
@@ -181,11 +184,9 @@ function successText(value: InitResult, offline: boolean, hasTestCheck: boolean)
 export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpec {
   const inspect = dependencies.preflight ?? runPreflight;
   const install = dependencies.init ?? runInit;
+  const inspectIntegrity = dependencies.integrity ?? preflightInitIntegrity;
   return {
-    name: "init",
-    description: "Install Tenet in the current repository",
-    usage: "tenet init [--yes] [--host <name>] [--local-hosts] [--vendor] [--force]",
-    options: ["--yes", "--host <name>", "--local-hosts", "--vendor", "--force"],
+    ...commandHelp.init,
     async run(context) {
       if (context.args.length > 0) {
         return {
@@ -197,6 +198,7 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
         return { findings: [noTty()] };
       }
 
+      let lines: ReturnType<typeof createInterface> | undefined;
       try {
         const rawHosts = context.options["--host"];
         const selectedHosts = rawHosts === undefined
@@ -227,7 +229,6 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
         let prepared = await inspect(options);
         if (prepared.diagnostics.length > 0) return { findings: prepared.diagnostics };
         const answers: PreflightAnswers = {};
-        let lines: ReturnType<typeof createInterface> | undefined;
         let next: AsyncIterator<string> | undefined;
         const ask = async (label: string): Promise<string | null> => {
           context.stdout.write(label);
@@ -291,27 +292,52 @@ export function makeInitCommand(dependencies: InitDependencies = {}): CommandSpe
               );
             }
           }
+        } else {
+          context.stdout.write(preflightText(prepared) + "\n");
+        }
+
+        // A scripted resume already has the confirmed integrity in its saved plan.
+        const resuming = yes && existsSync(path.join(context.cwd, ".tenet", "manifest.pending.json"));
+        const integrity = resuming ? undefined : await inspectIntegrity(options);
+        if (integrity?.customRegistry) {
+          context.stdout.write("Tenet checks the public npm registry for the published package integrity that CI verifies.\n");
+        }
+        let release = integrity?.release;
+        let offline = options.offline === true;
+        if (integrity?.finding) {
+          const { detail, ...finding } = integrity.finding;
+          if (yes) return { findings: [context.verbose ? integrity.finding : finding] };
+          context.stdout.write(finding.message + "\n");
+          if (context.verbose && detail) context.stdout.write("detail: " + detail + "\n");
+          const fallback = await ask("Record local package integrity instead (same as `--offline`)? [y/N] ");
+          if (fallback === null) return { findings: [noTty()] };
+          if (!answerBoolean(fallback, false)) answers.continue = false;
+          else {
+            offline = true;
+            release = await releaseIntegrity({ ...options, offline });
+          }
+        }
+        if (!yes && answers.continue !== false) {
           const answer = await ask("Continue? [Y/n] ");
           if (answer === null) return { findings: [noTty()] };
           answers.continue = answerBoolean(answer, true);
-          lines.close();
-          lines = undefined;
-        } else {
-          context.stdout.write(`${preflightText(prepared)}\n`);
         }
+        lines?.close();
 
-        const value = await install({ ...options, answers });
-        if (!context.offline) {
+        const value = await install({ ...options, offline, answers }, release);
+        if (!offline) {
           for (const finding of value.findings) {
             if (finding.kind === "local-integrity") context.stderr.write(`Warning: ${finding.message}\n`);
           }
         }
         if (!context.json) {
-          context.stdout.write(`${successText(value, context.offline, prepared.facts.runner !== null)}\n`);
+          context.stdout.write(`${successText(value, offline, prepared.facts.runner !== null)}\n`);
         }
         return { result: context.json ? value : null, findings: [] };
       } catch (error) {
         return { findings: [handled(error)] };
+      } finally {
+        lines?.close();
       }
     },
   };

@@ -1,7 +1,8 @@
 import { readFileSync, type Dirent } from "node:fs";
 import { lstat, mkdir, readFile, readdir, rename } from "node:fs/promises";
 import path from "node:path";
-import { parse, stringify } from "yaml";
+import { isDeepStrictEqual } from "node:util";
+import { parse } from "yaml";
 import { confine, writeAtomic } from "../core/fs.js";
 import { catFileBatch, git } from "../core/git.js";
 import { jcs } from "../core/hash.js";
@@ -9,18 +10,24 @@ import { loadPolicy } from "../policy/index.js";
 import type { Policy } from "../policy/types.js";
 import { citationParts, relocate } from "./anchors.js";
 import { flags, matchRenamed } from "./flags.js";
-import { draftOutputPaths, inventoryRevision, readSpecMatter, validateSpecMatter } from "./front-matter.js";
+import { draftOutputPaths, inventoryRevision, readSpecMatter, repairSpecMatter, validateSpecMatter } from "./front-matter.js";
 import { ladder, type LadderEntry } from "./ladder.js";
 import { itemLine, parseDoc, sectionLocation, type SpecSection } from "./parse.js";
 
 export type FixOptions = {
   cwd?: string;
   dryRun?: boolean;
+  onChange?: (change: FixChange) => void;
 };
 
 export type FixResult = {
   changes: Array<{ path: string; action: string }>;
 };
+
+export type FixChange = {
+  path: string;
+  summary: string;
+} & ({ before: string; after: string } | { renamedFrom: string });
 
 type Front = {
   tenet: Record<string, unknown>;
@@ -59,10 +66,6 @@ function readSyncReader(cwd: string): (filename: string) => string | null {
   };
 }
 
-function compose(front: Front, body: string): string {
-  return `---\n${stringify(front, { lineWidth: 0 }).trimEnd()}\n---\n${body.replace(/^\n/, "")}`;
-}
-
 function inferredDoc(filename: string): string {
   const name = path.posix.basename(filename, ".md");
   const allowed = new Set(["intent", "vision", "requirements", "design", "experience", "plan", "prd", "tech-spec", "ux-spec"]);
@@ -87,7 +90,7 @@ function docLevel(policy: Policy, filename: string): string {
   return policy.specs.documents.find((document) => document.path === relative)?.level ?? (relative === "intent.md" ? "L1" : "L2");
 }
 
-function frontFor(entry: LadderEntry, current: Partial<Front> | null, policy: Policy, revision: string): Front {
+function frontFor(entry: LadderEntry, current: Partial<Front> | null, policy: Policy, revision: string | undefined): Front {
   return {
     ...current,
     tenet: {
@@ -96,10 +99,10 @@ function frontFor(entry: LadderEntry, current: Partial<Front> | null, policy: Po
       level: docLevel(policy, entry.path),
       version: "0.1",
       owner: docOwner(policy, entry.path),
-      drafted_from: revision,
+      ...(revision ? { drafted_from: revision } : {}),
       ...current?.tenet,
     },
-    sections: current?.sections ?? {},
+    sections: structuredClone(current?.sections ?? {}),
   };
 }
 
@@ -480,6 +483,31 @@ function removeOrphans(front: Front, doc: ReturnType<typeof parseDoc>): void {
   }
 }
 
+function repairSummary(
+  before: string, after: string, ids: { added: number; renumbered: number } | undefined, citations: boolean,
+): string {
+  const oldFront = readSpecMatter(before).data as Partial<Front> | null;
+  const newFront = readSpecMatter(after).data as Front;
+  const statements = (count: number) => count === 1 ? "1 statement" : count + " statements";
+  const notes = [];
+  if (ids?.added) notes.push("add IDs to " + statements(ids.added));
+  if (ids?.renumbered) notes.push("renumber IDs on " + statements(ids.renumbered));
+  if (citations) notes.push("repair citations");
+  const digests = Object.entries(newFront.sections).filter(([slug, section]) =>
+    oldFront?.sections?.[slug]?.digest !== section.digest);
+  if (digests.some(([slug]) => !oldFront?.sections?.[slug]?.digest)) notes.push("add section digests");
+  if (digests.some(([slug]) => oldFront?.sections?.[slug]?.digest)) notes.push("update section digests");
+  const metadata = (front: Partial<Front> | null) => Object.fromEntries(
+    Object.entries(front?.sections ?? {}).map(([slug, section]) => {
+      const { digest, ...rest } = section;
+      return [slug, rest];
+    }),
+  );
+  if (!isDeepStrictEqual(oldFront?.tenet, newFront.tenet) ||
+    !isDeepStrictEqual(metadata(oldFront), metadata(newFront))) notes.push("repair front matter");
+  return notes.join("; ") || "repair specification";
+}
+
 export async function fix(options: FixOptions = {}): Promise<FixResult> {
   const cwd = path.resolve(options.cwd ?? process.cwd());
   const policy = await loadPolicy({ cwd });
@@ -543,6 +571,8 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
   const headTime = Number.parseInt((await git(["show", "-s", "--format=%ct", head || "HEAD"], { cwd }).catch(() => "0")).trim(), 10) || 0;
   const perFile = new Map<string, string>();
   const copyMoves: BlessedCopyMove[] = [];
+  const idChanges = new Map<string, { added: number; renumbered: number }>();
+  const citationChanges = new Set<string>();
   for (const entry of entries) {
     const original = await readFile(path.join(cwd, ...entry.path.split("/")), "utf8");
     const matter = readSpecMatter(original);
@@ -551,13 +581,15 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
     // Keep mechanical edits available for pre-existing records with incomplete blessing metadata.
     if (finding && !repairable && (assigned || !legacyBlessing)) throw finding;
     const front = matter.data as Partial<Front> | null;
+    const ids = { added: 0, renumbered: 0 };
+    idChanges.set(entry.path, ids);
     let text = original;
     text = assignMissingIds(
       text,
       parseDoc(entry.path, text, { prefix }),
       prefix,
-      () => nextRequirement++,
-      () => nextVision++,
+      () => { ids.added += 1; return nextRequirement++; },
+      () => { ids.added += 1; return nextVision++; },
     );
     let parsedAfterIds = parseDoc(entry.path, text, { prefix });
     for (const problem of parsedAfterIds.problems) {
@@ -571,6 +603,7 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
       const match = /Duplicate specification ID ([A-Z][A-Z0-9]*(?:-[A-Z]+)?-\d+)\./.exec(problem.message);
       const id = match?.[1];
       if (!id) continue;
+      ids.renumbered += 1;
       text = replaceId(
         text,
         problem.line,
@@ -579,11 +612,12 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
       );
     }
     parsedAfterIds = parseDoc(entry.path, text, { prefix });
-    const revision = (assigned ? sourceRevision : undefined) ?? (head || "working-tree");
+    const revision = assigned ? sourceRevision ?? (head || "working-tree") : repairable ? head || "working-tree" : undefined;
     const completeFront = frontFor(entry, front, policy, revision);
     const renamed = moveRenames(completeFront, parsedAfterIds.sections);
     copyMoves.push(...planBlessedCopyMoves(completeFront, renamed));
-    let bodyAfter = readSpecMatter(text).body;
+    const bodyBefore = readSpecMatter(text).body;
+    let bodyAfter = bodyBefore;
     const read = readSyncReader(cwd);
     for (const section of parsedAfterIds.sections) {
       const metadata = completeFront.sections[section.slug] ?? {};
@@ -592,15 +626,25 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
         : {};
       bodyAfter = normalizeCitationsInBody(bodyAfter, anchors, read);
     }
-    const reparsed = parseDoc(entry.path, compose(completeFront, bodyAfter), { prefix });
+    if (bodyBefore !== bodyAfter) citationChanges.add(entry.path);
+    const reparsed = parseDoc(entry.path, repairSpecMatter(matter, completeFront, bodyAfter), { prefix });
     removeOrphans(completeFront, reparsed);
     setSections(completeFront, reparsed, cwd);
-    const repaired = compose(completeFront, bodyAfter);
+    const repaired = repairSpecMatter(matter, completeFront, bodyAfter);
     const checked = validateSpecMatter(entry.path, readSpecMatter(repaired));
     if (checked.finding && (assigned || !checked.legacyBlessing)) throw checked.finding;
     perFile.set(entry.path, repaired);
   }
 
+  const renumbered = new Set<string>();
+  const renumber = (occurrence: IdOccurrence, text: string, id: string) => {
+    const updated = replaceOccurrenceId(text, occurrence, id, prefix);
+    if (updated === text) return;
+    perFile.set(occurrence.path, updated);
+    renumbered.add(occurrence.path);
+    const counts = idChanges.get(occurrence.path);
+    if (counts) counts.renumbered += 1;
+  };
   const byId = new Map<string, IdOccurrence[]>();
   for (const occurrence of [...requirementIds, ...visionIds]) {
     const list = byId.get(occurrence.id) ?? [];
@@ -614,15 +658,7 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
       for (const occurrence of list.filter((item) => item.state !== "blessed")) {
         const text = perFile.get(occurrence.path);
         if (!text) continue;
-        perFile.set(
-          occurrence.path,
-          replaceOccurrenceId(
-            text,
-            occurrence,
-            id.startsWith("V-") ? `V-${nextVision++}` : `${prefix}-${nextRequirement++}`,
-            prefix,
-          ),
-        );
+        renumber(occurrence, text, id.startsWith("V-") ? `V-${nextVision++}` : `${prefix}-${nextRequirement++}`);
       }
       continue;
     }
@@ -630,15 +666,7 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
     for (const occurrence of ordered.slice(1)) {
       const text = perFile.get(occurrence.path);
       if (!text) continue;
-      perFile.set(
-        occurrence.path,
-        replaceOccurrenceId(
-          text,
-          occurrence,
-          id.startsWith("V-") ? `V-${nextVision++}` : `${prefix}-${nextRequirement++}`,
-          prefix,
-        ),
-      );
+      renumber(occurrence, text, id.startsWith("V-") ? `V-${nextVision++}` : `${prefix}-${nextRequirement++}`);
     }
   }
   for (const occurrence of [...requirementIds, ...visionIds]) {
@@ -652,15 +680,7 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
     if (conflicting.length === 0 || (!otherBlessed && !currentIsNewer)) continue;
     const text = perFile.get(occurrence.path);
     if (!text) continue;
-    perFile.set(
-      occurrence.path,
-      replaceOccurrenceId(
-        text,
-        occurrence,
-        occurrence.id.startsWith("V-") ? `V-${nextVision++}` : `${prefix}-${nextRequirement++}`,
-        prefix,
-      ),
-    );
+    renumber(occurrence, text, occurrence.id.startsWith("V-") ? `V-${nextVision++}` : `${prefix}-${nextRequirement++}`);
   }
 
   await applyBlessedCopyMoves(copyMoves, cwd, Boolean(options.dryRun));
@@ -668,12 +688,31 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
     path: move.to,
     action: "move-blessed-copy",
   }));
+  for (const move of copyMoves) {
+    options.onChange?.({ path: move.to, summary: "move blessed copy from " + move.from, renamedFrom: move.from });
+    options.onChange?.({ path: move.sidecarTo, summary: "move anchors from " + move.sidecarFrom, renamedFrom: move.sidecarFrom });
+  }
   for (const entry of entries) {
     const filename = entry.path;
     const before = await readFile(path.join(cwd, ...filename.split("/")), "utf8");
-    const candidate = perFile.get(filename);
-    if (candidate === undefined || candidate === before) continue;
+    let candidate = perFile.get(filename);
+    if (candidate === undefined) continue;
+    if (renumbered.has(filename)) {
+      const matter = readSpecMatter(candidate);
+      const front = structuredClone(matter.data as Front);
+      setSections(front, parseDoc(filename, candidate, { prefix }), cwd);
+      candidate = repairSpecMatter(matter, front, matter.body);
+    }
+    const newline = before.match(/\r\n|\r|\n/)?.[0];
+    if (newline && newline !== "\n") candidate = candidate.replaceAll("\n", newline);
+    if (candidate === before) continue;
     changes.push({ path: filename, action: "repair" });
+    if (options.onChange) {
+      options.onChange({
+        path: filename, before, after: candidate,
+        summary: repairSummary(before, candidate, idChanges.get(filename), citationChanges.has(filename)),
+      });
+    }
     if (!options.dryRun) await writeAtomic(path.join(cwd, ...filename.split("/")), candidate);
   }
 

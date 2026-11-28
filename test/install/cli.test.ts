@@ -182,7 +182,7 @@ test("dist CLI runs init, repeat init, doctor, upgrade and remove", async (t) =>
   const manifest = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8")) as { version: string };
   assert.equal((upgrade.envelope.result as { from: string }).from, manifest.version);
 
-  const remove = run(repo.path, "remove");
+  const remove = run(repo.path, "remove", "--yes");
   assert.equal(remove.child.status, 0, remove.child.stdout);
   assert.equal((remove.envelope.result as { reminder: string | null }).reminder !== null, true);
   await assert.rejects(readFile(path.join(repo.path, "tenet.lock")));
@@ -469,7 +469,7 @@ test("init onboard remove restores the repository including generated directorie
   assert.equal(installed.child.status, 0, installed.child.stderr);
   const onboarded = run(repo.path, "onboard", "--inventory-only");
   assert.equal(onboarded.child.status, 0, onboarded.child.stderr);
-  const removed = run(repo.path, "remove");
+  const removed = run(repo.path, "remove", "--yes");
   assert.equal(removed.child.status, 0, removed.child.stderr);
 
   assert.deepEqual(await tree(repo.path), before);
@@ -538,7 +538,7 @@ test("real node-service fixture initializes, is idempotent and removes exactly",
     local_keys: unknown[];
   }), { created: [], blocks: [], keys: [], local_keys: [] });
 
-  const removed = invoke("remove");
+  const removed = invoke("remove", "--yes");
   assert.equal(removed.child.status, 0, removed.child.stderr);
   assert.deepEqual(await tree(repo.path), original);
   assert.deepEqual(await tree(home), homeBefore);

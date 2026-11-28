@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
-import { parseDocument } from "yaml";
+import { isDeepStrictEqual } from "node:util";
+import { Document, isCollection, isMap, isNode, parseDocument, type YAMLMap } from "yaml";
 import { confine } from "../core/fs.js";
 import { message } from "../core/messages.js";
 import { fail, type Finding } from "../core/output.js";
@@ -9,6 +10,7 @@ import type { Assignment, Inventory } from "../types/generated.js";
 export type SpecMatter = {
   body: string;
   bodyLine: number;
+  source: string | null;
   yaml: ReturnType<typeof parseDocument> | null;
   data: unknown;
   problem: string | null;
@@ -17,24 +19,98 @@ export type SpecMatter = {
 export function readSpecMatter(text: string): SpecMatter {
   const normalized = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
   const lines = normalized.split("\n");
-  const empty = { body: normalized, bodyLine: 1, yaml: null, data: null };
+  const empty = { body: normalized, bodyLine: 1, source: null, yaml: null, data: null };
   if (lines[0]?.trim() !== "---") return { ...empty, problem: null };
   const end = lines.findIndex((line, index) => index > 0 && line.trim() === "---");
   if (end < 0) return { ...empty, problem: "the closing YAML delimiter is missing" };
 
   const body = lines.slice(end + 1).join("\n");
   const bodyLine = end + 2;
-  const yaml = parseDocument(lines.slice(1, end).join("\n"), { merge: false, uniqueKeys: true });
-  if (yaml.errors.length) return { body, bodyLine, yaml, data: null, problem: "the YAML could not be parsed" };
+  const source = lines.slice(1, end).join("\n");
+  const yaml = parseDocument(source, { merge: false, uniqueKeys: true });
+  if (yaml.errors.length) return { body, bodyLine, source, yaml, data: null, problem: "the YAML could not be parsed" };
   try {
-    return { body, bodyLine, yaml, data: yaml.toJS({ maxAliasCount: 100 }), problem: null };
+    return { body, bodyLine, source, yaml, data: yaml.toJS({ maxAliasCount: 100 }), problem: null };
   } catch {
-    return { body, bodyLine, yaml, data: null, problem: "the YAML could not be read" };
+    return { body, bodyLine, source, yaml, data: null, problem: "the YAML could not be read" };
   }
 }
 
-export function writeSpecMatter(yaml: NonNullable<SpecMatter["yaml"]>, body: string): string {
+export function writeSpecMatter(yaml: Pick<Document, "toString">, body: string): string {
   return "---\n" + yaml.toString({ lineWidth: 0 }) + "---\n" + body;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function updateMap(doc: Document, map: YAMLMap, before: Record<string, unknown>, after: Record<string, unknown>): void {
+  for (const key of Object.keys(before)) {
+    if (!Object.hasOwn(after, key)) map.delete(key);
+  }
+  for (const [key, value] of Object.entries(after)) {
+    if (isDeepStrictEqual(before[key], value)) continue;
+    const node = map.get(key, true);
+    if (isMap(node) && isRecord(before[key]) && isRecord(value)) {
+      updateMap(doc, node, before[key], value);
+    } else if (isCollection(node)) {
+      const replacement = doc.createNode(value);
+      if (isCollection(replacement) && node.flow !== undefined) replacement.flow = node.flow;
+      map.set(key, replacement);
+    } else {
+      map.set(key, value);
+    }
+  }
+}
+
+type YamlEdit = { start: number; end: number; value: string };
+
+function yamlEdits(
+  before: unknown, after: unknown, oldNode: unknown, newNode: unknown, source: string, rendered: string,
+): YamlEdit[] | null {
+  if (isDeepStrictEqual(before, after)) return [];
+  if (isMap(oldNode) && isMap(newNode) && isRecord(before) && isRecord(after) &&
+    Object.keys(before).length === Object.keys(after).length &&
+    Object.keys(before).every((key) => Object.hasOwn(after, key))) {
+    const children = Object.keys(before).map((key) =>
+      yamlEdits(before[key], after[key], oldNode.get(key, true), newNode.get(key, true), source, rendered));
+    if (children.every((child) => child !== null)) return children.flat();
+  }
+  // A block collection needs its original indentation. Let the enclosing map
+  // supply it when a scalar changes to a block or a block changes to a scalar.
+  const oldBlock = isCollection(oldNode) && !oldNode.flow;
+  const newBlock = isCollection(newNode) && !newNode.flow;
+  const oldRange = isNode(oldNode) ? oldNode.range : undefined;
+  const newRange = isNode(newNode) ? newNode.range : undefined;
+  if (!oldRange || !newRange || oldBlock !== newBlock) return null;
+  const [start, end] = oldRange;
+  const [from, to] = newRange;
+  let value = rendered.slice(from, to);
+  if (oldBlock && value.includes("\n")) {
+    const width = (text: string, offset: number) => offset - text.lastIndexOf("\n", offset - 1) - 1;
+    const shift = width(source, start) - width(rendered, from);
+    if (shift > 0) value = value.replace(/\n(?=.)/g, "\n" + " ".repeat(shift));
+    else if (shift < 0) value = value.replace(new RegExp("\\n {" + -shift + "}", "g"), "\n");
+  }
+  return [{ start, end, value }];
+}
+
+export function repairSpecMatter(matter: SpecMatter, data: Record<string, unknown>, body: string): string {
+  if (matter.source === null || !matter.yaml || !isRecord(matter.data) || !isMap(matter.yaml.contents)) {
+    return writeSpecMatter(new Document(data), body);
+  }
+  if (isDeepStrictEqual(matter.data, data)) return "---\n" + matter.source + "\n---\n" + body;
+  const doc = matter.yaml.clone();
+  if (!isMap(doc.contents)) throw new Error("Expected a specification front-matter map.");
+  updateMap(doc, doc.contents, matter.data, data);
+  const rendered = doc.toString({ lineWidth: 0 }).trimEnd();
+  const updated = parseDocument(rendered);
+  const changes = yamlEdits(matter.data, data, matter.yaml.contents, updated.contents, matter.source, rendered);
+  let source = changes === null ? rendered : matter.source;
+  for (const { start, end, value } of (changes ?? []).sort((a, b) => b.start - a.start)) {
+    source = source.slice(0, start) + value + source.slice(end);
+  }
+  return "---\n" + source + "\n---\n" + body;
 }
 
 const repairableRequired = /^\/(?:tenet(?:\/(?:spec|doc|level|version|owner))?|sections(?:\/[^/]+\/(?:state|digest|flags))?)$/;

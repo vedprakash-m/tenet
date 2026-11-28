@@ -38,6 +38,11 @@ function context(overrides: Record<string, unknown> = {}) {
   };
 }
 
+const fixtureIntegrity = async () => ({
+  customRegistry: false,
+  release: { package: "fixture", version: "0.1", integrity: "fixture" },
+});
+
 const plan = {
   created: ["tenet.yaml"],
   blocks: [{ path: "AGENTS.md", kind: "markdown" as const }],
@@ -94,6 +99,7 @@ test("init command prompts, collects answers and returns the exact install resul
   };
   let received: Record<string, unknown> | undefined;
   const command = makeInitCommand({
+    integrity: fixtureIntegrity,
     terminal: true,
     preflight: preflightWithCount as never,
     init: async (options) => {
@@ -134,6 +140,7 @@ test("[AC-C3] [R2-05] init without a terminal names init and its recovery step",
 
 test("init preflight text lists local host keys exactly", async () => {
   const command = makeInitCommand({
+    integrity: fixtureIntegrity,
     terminal: false,
     preflight: async () => ({
       plan: {
@@ -179,6 +186,7 @@ test("[AC-C4] [R2-06] [AB-D10] [F-09] init plan decides create or edit and gives
     blocks: [{ path: "AGENTS.md", kind: "markdown" as const }],
   };
   const command = makeInitCommand({
+    integrity: fixtureIntegrity,
     terminal: true,
     preflight: async () => ({
       plan: setupPlan,
@@ -239,6 +247,7 @@ test("init command asks before authorizing local host edits", async () => {
     },
   });
   const command = makeInitCommand({
+    integrity: fixtureIntegrity,
     terminal: true,
     preflight: preflight as never,
     init: async (options) => {
@@ -261,6 +270,7 @@ test("init command asks before authorizing local host edits", async () => {
 
 test("[AB-B4] [F-12] init explains every Claude Code host write in its plan", async () => {
   const command = makeInitCommand({
+    integrity: fixtureIntegrity,
     terminal: false,
     preflight: async () => ({
       plan: {
@@ -309,6 +319,7 @@ test("[AB-B4] [F-21] init passes repeated --host selections and explains a host-
   let preflightHosts: unknown;
   let initHosts: unknown;
   const command = makeInitCommand({
+    integrity: fixtureIntegrity,
     terminal: false,
     preflight: async (options) => {
       preflightHosts = options.hosts;
@@ -356,6 +367,7 @@ test("[AB-B4] [F-21] init passes repeated --host selections and explains a host-
 
 test("init command turns policy failures into canonical findings", async () => {
   const command = makeInitCommand({
+    integrity: fixtureIntegrity,
     preflight: async () => ({
       plan: null,
       findings: [],
@@ -401,8 +413,8 @@ test("upgrade, remove and doctor wrappers preserve their public results", async 
   ];
   const upgrade = await makeUpgradeCommand({ upgrade: async () => upgradeValue })
     .run?.(context()) as { result: unknown };
-  const remove = await makeRemoveCommand({ remove: async () => removeValue })
-    .run?.(context()) as { result: unknown };
+  const remove = await makeRemoveCommand({ remove: async () => removeValue, preview: async () => removeValue })
+    .run?.(context({ options: { "--yes": true } })) as { result: unknown };
   const doctor = await makeDoctorCommand({
     doctor: async () => ({ checks, findings: [], exitCode: 0 }),
   }).run?.(context()) as { result: unknown; exitCode: number };
@@ -425,7 +437,7 @@ test("[AC-C2] [R2-21] remove human output lists deleted files and kept interview
       reminder: null,
     }),
   });
-  const request = context({ json: false });
+  const request = context({ json: false, options: { "--yes": true } });
   const output = await command.run?.(request);
   assert.deepEqual(output, { result: null, findings: [] });
   assert.match(request.captures.stdout.text(),

@@ -79,6 +79,8 @@ Conflict resolutions use `resolution:` on `CF` items (`Resolution:` accepted on 
 - the pull-request template block (GitHub) and the `.gitignore` and `.gitattributes` blocks
 - the host skills and MCP entries selected below; the plan lists every created or edited path with its short purpose
 
+**Proposal (CP-0068 AC-E1).** `init` checks package integrity during preflight. A failed registry lookup gives a one-line cause and, in a terminal, offers local integrity before final confirmation. Full npm output requires `--verbose`. `--yes` requires explicit `--offline` to proceed after a transport error. When npm uses another registry, the plan explains that Tenet checks public npm for the published integrity CI verifies.
+
 `.tenet/manifest.json`: `{schema_version, version, created: [{path, sha256}], blocks: [{path, kind: markdown|yaml, marker, previous_block?, prefix_sep?}], keys: [{path, pointer, previous, installed, previous_raw?}]}` (repo-relative only). Windows outside-repo edits go only in git-ignored `.tenet/manifest.local.json` (`{schema_version: 1, profile_roots, keys: [{host, path, pointer, previous, installed, previous_raw?}]}`). `.tenet/manifest.pending.json` holds the full plan (ALG-12). Markdown markers: `<!-- tenet:begin v<version> -->` … `<!-- tenet:end -->`; YAML markers: `# tenet:begin` … `# tenet:end`. Owned JSON keys: `/mcpServers/tenet`, `/servers/tenet` in `.vscode/mcp.json`; preserve previous value and optional `previous_raw`.
 
 | Host marker | Writes |

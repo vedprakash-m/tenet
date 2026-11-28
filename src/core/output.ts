@@ -82,7 +82,8 @@ export function exitCodeFor(findings: Finding[]): 0 | 1 | 2 | 3 | 4 {
   if (codes.some((code) =>
     code.startsWith("TN-USAGE-") ||
     code === "TN-BLESS-NO-TTY" ||
-    code === "TN-INIT-NO-TTY",
+    code === "TN-INIT-NO-TTY" ||
+    code === "TN-REMOVE-NO-TTY",
   )) return 2;
   if (
     codes.some((code) =>

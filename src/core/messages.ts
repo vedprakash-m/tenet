@@ -24,6 +24,10 @@ export const messageTemplates = {
     "message": "Interactive terminal required to bless specifications.",
     "fix": "Run `tenet bless` in an interactive terminal session."
   },
+  "TN-REMOVE-NO-TTY": {
+    message: "`tenet remove` needs an interactive terminal to confirm its plan.",
+    fix: "Run it in a terminal, or pass `--yes` to accept the plan.",
+  },
   "TN-INIT-NO-TTY": {
     "message": "`tenet init` needs an interactive terminal to confirm its plan.",
     "fix": "Run it in a terminal, or pass `--yes` to accept the plan."
