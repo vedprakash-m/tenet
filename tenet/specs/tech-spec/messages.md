@@ -81,7 +81,8 @@ sections:
 | `TN-SPEC-DUP-SECTION` | Duplicate section slug {slug}. | Rename or merge the repeated {slug} heading. |
 | `TN-SPEC-MISSING-ID` | Specification line needs an ID. | Run `tenet fix` or prefix the line with an unused ID. |
 | `TN-SPEC-NO-FRONT` | Specification file has no YAML front matter. | Run `tenet fix` to add the front matter. |
-| `TN-SPEC-REQ-META` | Requirement metadata is malformed: check closing braces, allowed keys, and origin. | Fix the `{…}` metadata block with allowed keys and valid origin. |
+| `TN-SPEC-INFERRED` | {n} inferred statement(s) need review before blessing: {ids}. | Review {ids}, then change their origin or keep them labelled inferred. |
+| `TN-SPEC-REQ-META` | Requirement metadata has an invalid token `{token}`: check closing braces, allowed keys, and origin. | Fix `{token}` in the `{…}` metadata block with allowed keys and valid origin. |
 | `TN-SPEC-UNCOVERED-VISION` | Blessed vision item {id} is not served by a blessed requirement or listed under ## Not yet in scope. | Add serves: {id} to a blessed requirement or list {id} under a blessed ## Not yet in scope section. |
 | `TN-SPEC-VISION-WAITS-FOR-PRD` | {count} vision {items} for a blessed requirement; bless the PRD next | Run `tenet bless --doc prd` for separate files or `tenet bless --section requirements` for one file. |
 | `TN-SUBJ-DIRTY` | Working tree has uncommitted changes. | Commit or stash local changes before running `tenet {command}`. |

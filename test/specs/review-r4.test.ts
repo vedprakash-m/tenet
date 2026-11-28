@@ -101,13 +101,22 @@ test("r4 B2 fenced examples remain section text but do not become items", () => 
   assert.equal(parsed.problems.length, 0);
 });
 
-test("r4 B3 metadata markers outside braces remain malformed", () => {
+test("r4 B3 metadata markers outside trailing braces stay prose", () => {
   const parsed = parseDoc("intent.md", specification([
     "- R-1 Keep it. origin: asked {serves: V-1}",
   ]));
-  assert.deepEqual(parsed.problems.map((problem) => [problem.code, problem.line]), [
-    ["TN-SPEC-REQ-META", 6],
-  ]);
+  assert.equal(parsed.problems.length, 0);
+  assert.equal(parsed.sections[0]?.requirements[0]?.text, "Keep it. origin: asked");
+});
+
+test("[AC-E8] [R2-25] Out of scope prose before trailing metadata is not a metadata key", () => {
+  const parsed = parseRequirement(
+    "- R-1 Out of scope: X. {origin: asked; serves: V-P1}",
+  );
+  assert.equal("code" in parsed, false);
+  assert.equal(parsed.text, "Out of scope: X.");
+  assert.equal(parsed.origin, "asked");
+  assert.equal(parsed.serves?.[0], "V-P1");
 });
 
 test("trailing metadata is parsed outside inline code only", () => {
@@ -138,6 +147,15 @@ test("trailing metadata is parsed outside inline code only", () => {
   );
   assert.equal("code" in malformed, true);
   assert.equal(malformed.code, "TN-SPEC-REQ-META");
+});
+
+test("[AC-E9] [R2-26] completeness checklist lines are not requirements", () => {
+  const parsed = parseDoc("intent.md", specification([
+    "## Completeness checklist",
+    "- [ ] Choose a format.",
+    "- [x] Keep the current format.",
+  ], { level: "L1", state: "draft" }));
+  assert.equal(parsed.problems.some((problem) => problem.code === "TN-SPEC-MISSING-ID"), false);
 });
 
 test("technical prose braces do not turn non-requirement bullets into missing IDs", () => {

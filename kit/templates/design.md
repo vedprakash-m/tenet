@@ -9,7 +9,7 @@ sections:
 ---
 # <Project> technical specification
 
-> Level L2 · Version 0.1 · Implements `tenet/specs/prd.md` · Owner: `<owner>` · Budget: 12,000 tokens
+> Level L2 · Version 0.1 · Implements `kit/templates/requirements.md` · Owner: `<owner>` · Budget: 12,000 tokens
 
 ## Architecture
 
@@ -23,7 +23,7 @@ Module boundaries:
 
 ## Working rules
 
-<!-- Imported from existing instruction files during onboarding (`onboarding.md §1`) or authored for this project. -->
+<!-- Imported from existing instruction files during onboarding or authored for this project. -->
 
 - Keep changes small and verify every changed path with tests before opening a pull request.
 

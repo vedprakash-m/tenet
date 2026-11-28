@@ -46,6 +46,7 @@ const rules = {
   "TN-SCHEMA": null,
   "TN-SPEC-BLESSED-COPY": null,
   "TN-SPEC-DUP-ID": null,
+  "TN-SPEC-INFERRED": null,
   "TN-SPEC-UNCOVERED-VISION": null,
   "TN-SPEC-VISION-WAITS-FOR-PRD": null,
   "TN-SPEC-REQ-META": null,
@@ -335,6 +336,18 @@ async function checkSections(
     findings.push(...localProblems(entry));
     const { finding } = validateSpecMatter(entry.path, specMatter(entry.doc));
     if (finding) findings.push(finding);
+    const inferred = [...entry.doc.sections.flatMap((section) =>
+      [...section.requirements, ...section.vision_items]
+        .filter((item) => item.origin === "inferred")
+        .map((item) => item.id))]
+      .filter((id, index, ids) => ids.indexOf(id) === index)
+      .sort();
+    if (inferred.length > 0) {
+      findings.push(makeFinding("TN-SPEC-INFERRED", "warning", entry.path, null, {
+        n: String(inferred.length),
+        ids: inferred.join(", "),
+      }));
+    }
     for (const section of entry.doc.sections) {
       if (section.state !== "blessed") continue;
       const raw = sectionRecord(entry.doc.front, section.slug);
@@ -362,7 +375,7 @@ async function checkSections(
     })));
     for (const { item } of [...requirementsOf(entry.doc), ...visionOf(entry.doc)]) {
       if (item.origin === null) {
-        findings.push(makeFinding("TN-SPEC-REQ-META", "error", entry.path, itemLine(item), {}));
+        findings.push(makeFinding("TN-SPEC-REQ-META", "error", entry.path, itemLine(item), { token: "origin" }));
       }
     }
   }

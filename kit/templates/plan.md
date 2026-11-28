@@ -8,7 +8,7 @@ sections:
 ---
 # <Project> plan
 
-> Level L2 · Version 0.1 · Implements `tenet/specs/prd.md` · Owner: `<owner>` · Budget: 6,000 tokens
+> Level L2 · Version 0.1 · Implements `kit/templates/requirements.md` · Owner: `<owner>` · Budget: 6,000 tokens
 
 ## Milestones
 

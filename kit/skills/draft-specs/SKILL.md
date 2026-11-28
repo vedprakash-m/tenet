@@ -29,8 +29,8 @@ Follow these steps in order when onboarding a repository to Tenet:
 5. **Run a self-check pass.**
    Review each drafted statement against its citation. List any statement whose citation does not support it, then either correct the statement/citation or mark it `origin: inferred`. Label this pass in the pull request as a **self-check** (an independent review requires a separate `spec-reviewer` assignment).
 
-6. **Commit and render the onboarding card.**
-   Commit the drafted specifications (never commit `.tenet/onboard/`), run `tenet onboard --card` (which records `drafted_at_rev`), and open one pull request named **"Set up Tenet"** with the generated card as its description.
+6. **Report readiness and give the next commands.**
+   Tell the user the draft is ready. Give these commands in the README's quick-start order: `tenet fix`, `tenet check`, and `tenet onboard --card`. Commit or open a pull request only if the user asked you to. Never commit `.tenet/onboard/`.
 
 **Rules:**
 - Never bless a section or edit blessing front-matter fields or `{records}/blessed/`.

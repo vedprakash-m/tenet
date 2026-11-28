@@ -21,6 +21,16 @@ const frontMatter = (text: string): unknown => {
   return match ? parse(match[1]) : undefined;
 };
 
+async function filesUnder(directory: string): Promise<string[]> {
+  const result: string[] = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const full = path.join(directory, entry.name);
+    if (entry.isDirectory()) result.push(...await filesUnder(full));
+    else result.push(full);
+  }
+  return result;
+}
+
 const specTemplates = ["intent", "vision", "requirements", "design", "experience", "plan"];
 
 test("every specification template's front matter is valid at the starter stage (before tenet fix)", async () => {
@@ -68,6 +78,15 @@ test("[AB-B4] [F-12] skills use installed names and stay within their 2,000-toke
   assert.match(drafting, /Ask at most `assignment\.question_limit` questions in total/);
   assert.match(drafting, /project_kind` first, then fill the remaining count from `assignment\.questions\.generic`/);
   assert.match(drafting, /Never repeat a question/);
+});
+
+test("[AC-E7] [R2-24] drafting skill reports readiness and commits only when asked", async () => {
+  const drafting = await read("skills", "draft-specs", "SKILL.md");
+  assert.match(drafting, /Tell the user the draft is ready/i);
+  assert.match(drafting, /Commit or open a pull request only if the user asked/i);
+  assert.match(drafting, /tenet fix/);
+  assert.match(drafting, /tenet check/);
+  assert.match(drafting, /tenet onboard --card/);
 });
 
 test("[AC-D1] [R2-02] [AB-D1] [F-01] release docs include a working Windows checksum command", async (t) => {
@@ -119,6 +138,15 @@ test("[AC-D1] [R2-02] [AB-D1] [F-01] release docs include a working Windows chec
       { cwd, encoding: "utf8", shell: false, windowsHide: true },
     );
     assert.equal(child.status, 0, child.stderr || child.stdout);
+  }
+});
+
+test("[AC-E6] [R2-22] kit files cite only shipped files", async () => {
+  for (const filename of await filesUnder(kit)) {
+    const text = await readFile(filename, "utf8");
+    if (path.relative(kit, filename).replace(/\\/g, "/").startsWith("defaults/")) continue;
+    assert.doesNotMatch(text, /tenet\/specs\//);
+    assert.doesNotMatch(text, /(?:contracts|onboarding|algorithms|agents)\.md/);
   }
 });
 

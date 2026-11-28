@@ -262,12 +262,17 @@ function assignMissingIds(
 ): string {
   const lines = bodyLines(text);
   for (const section of doc.sections) {
+    if (/^Completeness checklist$/i.test(section.heading.trim())) continue;
     if (!lineScope(section)) continue;
     const location = sectionLocation(section);
     const vision = section.level === "L0" || section.slug === "vision" || /\bvision\b/i.test(section.heading);
     for (let index = 0; index < section.text.replace(/\n$/, "").split("\n").length; index += 1) {
       const physical = location.start + index;
       const source = lines[physical - 1] ?? "";
+      if (
+        /^Completeness checklist$/i.test(section.heading.trim()) &&
+        /^\s*[-*+]\s+\[[ xX]\]\s+/.test(source)
+      ) continue;
       if (!/^\s*[-*+]\s+(?:\[[ xX]\]\s+)?/.test(source)) continue;
       const cleaned = source.trim().replace(/^[-*+]\s+(?:\[[ xX]\]\s+)?/, "");
       const expected = vision ? /^V-(?:[A-Z]+)?\d+\b/ : new RegExp(`^${prefix}-\\d+\\b`);

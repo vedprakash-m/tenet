@@ -317,7 +317,7 @@ test("reports malformed requirements and missing IDs at physical lines", () => {
       assert.equal(parsed.problems[0]?.message, "Specification line needs an ID.");
       assert.equal(
         parsed.problems[1]?.fix,
-        "Fix the `{…}` metadata block with allowed keys and valid origin.",
+        "Fix `closing braces` in the `{…}` metadata block with allowed keys and valid origin.",
       );
 });
 
