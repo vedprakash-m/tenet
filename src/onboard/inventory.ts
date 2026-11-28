@@ -293,13 +293,9 @@ function ciRows(files: InventorySource[]): Inventory["ci"] {
   });
 }
 
-function ownSpecificationPaths(policy: TenetYaml): Set<string> {
+function recordsFolder(policy: TenetYaml): string {
   const records = (policy.paths?.records ?? "tenet").replaceAll("\\", "/").replace(/\/+$/, "");
-  const paths = new Set<string>([`${records}/intent.md`]);
-  for (const document of policy.specs?.documents ?? []) {
-    paths.add(path.posix.join(records, document.path.replaceAll("\\", "/")));
-  }
-  return paths;
+  return records;
 }
 
 export async function inventoryFacts(snapshot: RepositorySnapshot, policy: TenetYaml, override?: Layout): Promise<Facts> {
@@ -308,8 +304,9 @@ export async function inventoryFacts(snapshot: RepositorySnapshot, policy: Tenet
   const codeowners = [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"].map((name) => files.find((file) => file.path === name)).find(Boolean);
   const owners = ownersFrom(codeowners);
   const documents = files.filter(({ kind }) => kind === "doc" || kind === "adr");
-  const ownSpecs = ownSpecificationPaths(policy);
-  const projectDocuments = documents.filter(({ path: filename }) => !ownSpecs.has(filename));
+  const records = recordsFolder(policy);
+  const projectDocuments = documents.filter(({ path: filename }) =>
+    filename !== records && !filename.startsWith(`${records}/`));
   const size = {
     source_lines: source.reduce((sum, file) => sum + file.lines, 0),
     areas: owners.length,

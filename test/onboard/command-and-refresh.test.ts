@@ -144,6 +144,18 @@ test("[AC-E4] [F-16] Tenet specification outputs do not count as project documen
   await repo.write("src/app.ts", "export const app = true;\n");
   await repo.write("tenet/intent.md", "x".repeat(50_000));
   await repo.write("tenet/vision.md", "x".repeat(50_000));
+  await repo.write(
+    "tenet/blessed/tenet__vision.md/vision.md",
+    "x".repeat(50_000),
+  );
+  await repo.write(
+    "tenet/packets/CP-TEST/definition.md",
+    "x".repeat(50_000),
+  );
+  await repo.write(
+    "tenet/ledger/L-9999-record.md",
+    "x".repeat(50_000),
+  );
   await repo.write("tenet.yaml", `standard: 0.1.0-alpha.0
 level: observe
 paths:
