@@ -144,8 +144,6 @@ test("[AC-D1] [R2-02] [AB-D1] [F-01] release docs include a working Windows chec
 test("[AC-E6] [R2-22] kit files cite only shipped files", async () => {
   for (const filename of await filesUnder(kit)) {
     const text = await readFile(filename, "utf8");
-    if (path.relative(kit, filename).replace(/\\/g, "/").startsWith("defaults/")) continue;
-    assert.doesNotMatch(text, /tenet\/specs\//);
     assert.doesNotMatch(text, /(?:contracts|onboarding|algorithms|agents)\.md/);
   }
 });

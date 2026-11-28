@@ -17,7 +17,7 @@ In scope: checkout payment execution and retry policy. Out of scope: ledger reco
 
 ## Requirements
 
-<!-- Requirements may be list items OR table rows whose first column is `ID`, per the shipped specification templates. -->
+<!-- Requirements may be list items OR table rows whose first column is `ID`. -->
 
 - R-1 A payment request that times out is retried once, never twice. {origin: observed; cites: src/checkout/retry.ts:10-22; serves: V-V1, V-P1}
 - R-2 Raw card numbers are never written to application logs. {origin: asked; serves: V-B1; scope: global}
