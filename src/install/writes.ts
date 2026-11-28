@@ -40,11 +40,12 @@ import type {
   WriteSet,
 } from "./types.js";
 import { localProfileRoot, localProfileRoots } from "./environment.js";
-import { localIntegrityWarning, releaseIntegrity } from "./integrity.js";
+import { localIntegrityWarning, releaseIntegrity, type ReleaseIntegrity } from "./integrity.js";
 
 export type WritePlanOptions = PreflightOptions & {
   force?: boolean;
   command?: "init" | "upgrade";
+  preparedIntegrity?: ReleaseIntegrity;
 };
 
 export type ApplyPlanOptions = {
@@ -657,7 +658,7 @@ export async function planWriteSet(
   }
   const cwd = path.resolve(options.cwd ?? preflight.facts.repository.cwd);
   const plan = clonePlan(preflight.plan);
-  const releaseInfo = await releaseIntegrity(options, {}, options.command ?? "init");
+  const releaseInfo = options.preparedIntegrity ?? await releaseIntegrity(options, {}, options.command ?? "init");
   const kitPath = path.resolve(options.environment?.kitPath ?? installedKitPath());
   const allKitFiles = await kitFiles(kitPath);
   const digest = await kitDigest(allKitFiles);

@@ -1,3 +1,4 @@
+import { commandHelp } from "../core/cli-help.js";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -276,8 +277,7 @@ async function verify(context: VerifyCommandContext) {
 }
 
 export const verifyCommand = {
-  name: "verify", description: "Run checks, collect a bundle, or record CI proof.",
-  options: ["--run-checks", "--bundle", "--record", "--local"],
+  ...commandHelp.verify,
   network: (options: Record<string, string | boolean | string[]>) => options["--local"] !== true,
   handler: verify,
 };

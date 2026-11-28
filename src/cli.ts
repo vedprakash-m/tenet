@@ -2,11 +2,16 @@
 import { realpathSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { commandHelp, commandUsage, usage, type CommandHelp } from "./core/cli-help.js";
 import { git } from "./core/git.js";
 import { message } from "./core/messages.js";
 import { errorFinding, exitCodeFor, fail, result, version, type Finding } from "./core/output.js";
-import { serveMcp } from "./mcp/index.js";
-export { serveMcp };
+import type { serveMcp as serveMcpImplementation } from "./mcp/index.js";
+
+export const serveMcp: typeof serveMcpImplementation = async (options) => {
+  const { serveMcp } = await import("./mcp/index.js");
+  return serveMcp(options);
+};
 
 export type Writable = {
   write(value: string | Uint8Array): unknown;
@@ -141,9 +146,7 @@ async function loadCommands(): Promise<void> {
     commands.upgradeCommand, commands.verifyCommand,
   ]) registerCommand(spec as CommandSpec);
   registerCommand({
-    name: "mcp",
-    description: "Serve the Tenet MCP tools over stdio",
-    usage: "tenet mcp",
+    ...commandHelp.mcp,
     async run(context) {
       if (context.args.length > 0 || context.json || context.quiet || context.verbose) {
         const detail = context.args.length > 0
@@ -157,49 +160,6 @@ async function loadCommands(): Promise<void> {
     },
   });
   loadedCommands = true;
-}
-
-function usage(): string {
-  const commands = [...new Set(registry.values())]
-    .map((spec) => `  ${spec.name.padEnd(18)} ${spec.description ?? ""}`.trimEnd())
-    .sort();
-  return [
-    "Tenet",
-    "",
-    "Usage: tenet [global options] <command> [options]",
-    "",
-    "Global options:",
-    "  --cwd <path>    Run in another repository",
-    "  --json          Write one JSON envelope to stdout",
-    "  --quiet         Suppress successful human output",
-    "  --verbose       Show additional human output",
-    "  --offline       Work without the network: skip registry lookups, or refuse commands that need it",
-    "  --version       Print the installed version",
-    "  --help, -h      Print this help",
-    "",
-    ...(commands.length > 0 ? ["Commands:", ...commands, ""] : []),
-  ].join("\n");
-}
-
-function commandUsage(spec: CommandSpec): string {
-  const options = (spec.options ?? []).map((option) => {
-    const flags = typeof option === "string" ? option : option.flags;
-    const description = typeof option === "string" ? "" : option.description;
-    return `  ${flags.padEnd(20)} ${description ?? ""}`.trimEnd();
-  });
-  return [
-    `Usage: ${spec.usage ?? `tenet ${spec.name}`}`,
-    "",
-    spec.description ?? "",
-    ...(options.length > 0 ? ["", "Options:", ...options] : []),
-    "",
-    "Global options:",
-    "  --cwd <path>    Run in another repository",
-    "  --json          Write one JSON envelope to stdout",
-    "  --quiet         Suppress successful human output",
-    "  --verbose       Show additional human output",
-    "  --offline       Work without the network: skip registry lookups, or refuse commands that need it",
-  ].join("\n");
 }
 
 type ParsedOption = {
@@ -374,18 +334,19 @@ function parseGlobal(
 
 export async function run(argv: readonly string[], input: CliIo = {}): Promise<0 | 1 | 2 | 3 | 4> {
   const io = defaultIo(input);
-  await loadCommands();
   try {
     const parsed = parseGlobal([...argv], { cwd: io.cwd });
     io.cwd = parsed.cwd;
     let command = parsed.special ?? (parsed.argv[0] ?? "");
     let spec: CommandSpec | undefined;
+    let help: CommandHelp | undefined;
     let commandArgs: { args: string[]; options: CommandContext["options"] } | undefined;
     if (parsed.special === "help" && parsed.argv.length > 0) {
       command = parsed.argv[0] ?? command;
-      spec = registry.get(command);
+      help = registry.get(command) ?? Object.entries(commandHelp).find(([name]) => name === command)?.[1];
     }
     if (parsed.special === null && parsed.argv.length > 0) {
+      await loadCommands();
       spec = registry.get(command);
       if (!spec) {
         const finding = fail("TN-USAGE-COMMAND", `Unknown command: ${command}`, "Run tenet --help.");
@@ -402,7 +363,7 @@ export async function run(argv: readonly string[], input: CliIo = {}): Promise<0
       return 2;
     }
 
-    if (spec?.checkEnvironment !== false) {
+    if ((spec ?? help)?.checkEnvironment !== false) {
       const environment = await environmentFindings(io);
       if (environment.length > 0) {
         if (parsed.json) emitJson(io.stdout, command || "tenet", null, environment);
@@ -417,8 +378,9 @@ export async function run(argv: readonly string[], input: CliIo = {}): Promise<0
       return 0;
     }
     if (parsed.special === "help" || parsed.argv.length === 0) {
-      const text = spec ? commandUsage(spec) : usage();
-      if (parsed.json) emitJson(io.stdout, spec?.name ?? "help", { text }, []);
+      const extensions = [...registry.values()].filter(({ name }) => !Object.hasOwn(commandHelp, name));
+      const text = help ? commandUsage(help) : usage(extensions);
+      if (parsed.json) emitJson(io.stdout, help?.name ?? "help", { text }, []);
       else line(io.stdout, text);
       return 0;
     }

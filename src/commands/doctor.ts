@@ -1,3 +1,4 @@
+import { commandHelp } from "../core/cli-help.js";
 import type { CommandSpec } from "../core/commands.js";
 import { message } from "../core/messages.js";
 import { errorFinding, fail } from "../core/output.js";
@@ -8,10 +9,7 @@ type DoctorDependencies = { doctor?: typeof doctorEvaluation };
 export function makeDoctorCommand(dependencies: DoctorDependencies = {}): CommandSpec {
   const evaluate = dependencies.doctor ?? doctorEvaluation;
   return {
-    name: "doctor",
-    description: "Check the Tenet installation and required tools",
-    usage: "tenet doctor",
-    checkEnvironment: false,
+    ...commandHelp.doctor,
     async run(context) {
       if (context.args.length > 0) {
         const words = message("TN-USAGE-DOCTOR", {

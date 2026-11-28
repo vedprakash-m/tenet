@@ -1,12 +1,11 @@
+import { commandHelp } from "../core/cli-help.js";
 import type { CommandSpec } from "../core/commands.js";
 import { message } from "../core/messages.js";
 import { fail } from "../core/output.js";
 import { split } from "../specs/split.js";
 
 export const splitCommand: CommandSpec = {
-  name: "split",
-  description: "Move a specification section into a part",
-  usage: "tenet split <document> <section>",
+  ...commandHelp.split,
   async run(context) {
     const [document, section] = context.args;
     if (!document || !section || context.args.length !== 2) {
