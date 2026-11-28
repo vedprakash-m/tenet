@@ -23,7 +23,7 @@ Module boundaries:
 
 ## Working rules
 
-<!-- Imported from existing instruction files during onboarding (`onboarding.md §1`) or authored for this project. -->
+<!-- Imported from existing instruction files during onboarding or authored for this project. -->
 
 - Keep changes small and verify every changed path with tests before opening a pull request.
 

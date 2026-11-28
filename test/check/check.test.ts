@@ -484,6 +484,31 @@ test("check owns duplicate IDs once and paths skip cross-document duplicates", a
   }
 });
 
+test("[AC-E9] [R2-26] fix never adds IDs to completeness checklist lines", async () => {
+  const repo = await tmpRepo("fix-checklist");
+  try {
+    await seed(repo);
+    await repo.write("tenet/intent.md", [
+      "---",
+      "tenet: {spec: 1, doc: intent, level: L1}",
+      "sections:",
+      "  completeness-checklist:",
+      "    state: draft",
+      "---",
+      "## Completeness checklist",
+      "- [ ] Choose a format.",
+      "- [x] Keep the current format.",
+      "",
+    ].join("\n"));
+    await fix({ cwd: repo.path });
+    const text = await readFile(path.join(repo.path, "tenet", "intent.md"), "utf8");
+    assert.equal(text.includes("- [ ] R-"), false);
+    assert.equal(text.includes("- [x] R-"), false);
+  } finally {
+    await repo.cleanup();
+  }
+});
+
 test("fix assigns IDs, front matter and digests idempotently", async () => {
   const repo = await tmpRepo("fix-id");
   try {
@@ -815,6 +840,25 @@ test("[AB-D10] [F-17] path-scoped check renders human text without JSON", async 
   }
 });
 
+test("[AC-E11] [R2-28] inferred statements produce one warning per file", async () => {
+  const repo = await tmpRepo("check-inferred");
+  try {
+    await seed(repo);
+    await repo.write("tenet/specs/prd.md", spec(
+      "tenet/specs/prd.md",
+      "requirements",
+      "- R-2 Likely behavior. {origin: inferred}",
+    ));
+    const result = await check({ cwd: repo.path });
+    const warning = result.findings.filter((finding) => finding.code === "TN-SPEC-INFERRED");
+    assert.equal(warning.length, 1);
+    assert.equal(warning[0]?.severity, "warning");
+    assert.match(warning[0]?.message ?? "", /1 inferred statement\(s\).*R-2/);
+  } finally {
+    await repo.cleanup();
+  }
+});
+
 test("direct check keeps citation diagnostics as errors", async () => {
   const repo = await tmpRepo("check-citation-mode");
   try {
@@ -1038,8 +1082,8 @@ test("check meets cold and warm 500-document timing with batched Git calls", asy
         rule: null,
         file,
         line: requirementLine,
-        message: "Requirement metadata is malformed: check closing braces, allowed keys, and origin.",
-        fix: "Fix the `{…}` metadata block with allowed keys and valid origin.",
+        message: "Requirement metadata has an invalid token `origin`: check closing braces, allowed keys, and origin.",
+        fix: "Fix `origin` in the `{…}` metadata block with allowed keys and valid origin.",
       }));
       const assertComplete = (result: Awaited<ReturnType<typeof check>>) => {
         assert.deepEqual(result, {

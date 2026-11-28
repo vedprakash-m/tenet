@@ -69,8 +69,8 @@ const messageByCode: Record<string, [string, string]> = {
     "Run `tenet fix` or prefix the line with an unused ID.",
   ],
   "TN-SPEC-REQ-META": [
-    "Requirement metadata is malformed: check closing braces, allowed keys, and origin.",
-    "Fix the `{…}` metadata block with allowed keys and valid origin.",
+    "Requirement metadata has an invalid token `{token}`: check closing braces, allowed keys, and origin.",
+    "Fix `{token}` in the `{…}` metadata block with allowed keys and valid origin.",
   ],
 };
 
@@ -207,32 +207,30 @@ function parseMetadata(
   let text = (idMatch[2] ?? "").trim();
   let metadata: Record<string, string> | undefined;
   const range = metadataRange(text);
-  if (range?.kind === "malformed") return requirementMetadataFinding();
+  if (range?.kind === "malformed") return requirementMetadataFinding("closing braces");
   if (range?.kind === "block") {
     const { open, close } = range;
     metadata = {};
     const body = text.slice(open + 1, close);
     text = text.slice(0, open).trim();
-    if (/(?:^|\s)(?:origin|cites|serves|scope|adopted_by|adopted by)\s*:/.test(outsideInlineCode(text))) {
-      return requirementMetadataFinding();
-    }
     for (const field of body.split(";")) {
       const pair = /^([^:]+):([\s\S]*)$/.exec(field.trim());
-      if (!pair) return requirementMetadataFinding();
+      if (!pair) return requirementMetadataFinding(field.trim() || "field");
       const key = pair[1]?.trim().toLowerCase().replace(/\s+/g, "_");
       const value = pair[2]?.trim() ?? "";
       if (!key || !["origin", "cites", "serves", "scope", "adopted_by"].includes(key)) {
-        return requirementMetadataFinding();
+        return requirementMetadataFinding(key || "unknown");
       }
       metadata[key] = value;
     }
-  } else if (/(?:^|\s)(?:origin|cites|serves|scope|adopted_by|adopted by)\s*:/.test(outsideInlineCode(text))) {
-    return requirementMetadataFinding();
+  } else {
+    const outside = /(?:^|\s)(origin|cites|serves|scope|adopted_by|adopted by)\s*:/.exec(outsideInlineCode(text));
+    if (outside?.[1]) return requirementMetadataFinding(outside[1].replace(/\s+/g, "_"));
   }
 
   let origin = initial.origin ?? null;
   if (metadata?.origin !== undefined) {
-    if (!isOrigin(metadata.origin)) return requirementMetadataFinding();
+    if (!isOrigin(metadata.origin)) return requirementMetadataFinding("origin");
     origin = metadata.origin;
   }
   const cites = initial.cites ?? metadataList(metadata?.cites);
@@ -242,8 +240,8 @@ function parseMetadata(
   return { id, text, origin, cites, serves, scope, adopted_by: adopted };
 }
 
-function requirementMetadataFinding(): Finding {
-  return finding("TN-SPEC-REQ-META", null, null);
+function requirementMetadataFinding(token = "closing braces or allowed keys"): Finding {
+  return finding("TN-SPEC-REQ-META", null, null, { token });
 }
 
 function escapeRegExp(value: string): string {
@@ -526,6 +524,10 @@ function parseStatements(
   for (let index = 0; index < lines.length; index += 1) {
     const source = lines[index] ?? "";
     const line = location.start + index;
+    if (
+      /^Completeness checklist$/i.test(section.heading.trim()) &&
+      /^\s*[-*+]\s+\[[ xX]\]\s+/.test(source)
+    ) continue;
     if (fence) {
       if (fenceEnd(source, fence)) fence = null;
       continue;
