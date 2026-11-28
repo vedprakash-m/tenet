@@ -12,6 +12,8 @@
 
 A small project can keep several levels in a single `intent.md`. Ownership follows the section's level. Requirements have IDs, origins and links to the vision. Observed and documented statements cite sources. Asked statements record a person's answer or adoption. Inferred statements stay flagged until reviewed.
 
+A citation check confirms that the cited lines exist, not that they support the statement.
+
 ## Blessing and authority
 
 A blessing is an authorized person's decision to put a section in force. Whether the text is right remains their judgment. The recorded blessing shows who gave it and is advisory. Drafts and unblessed edits can be reviewed as hints. The last blessed text stays in force until a replacement is blessed. A changed citation asks for review. A person can confirm the existing text against changed sources in the blessing workflow. A section can be left for later while other sections are blessed.

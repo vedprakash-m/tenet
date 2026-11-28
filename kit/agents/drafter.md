@@ -64,7 +64,7 @@ Draft the five logical specification views (`vision`, `requirements`, `design`, 
 
 ## Outputs
 
-- Drafted specification documents at the exact output paths in `assignment.json`, following `contracts.md §3` and `onboarding.md §1`
+- Drafted specification documents at the exact output paths in `assignment.json`, following the shipped templates in `kit/templates/`
 - `.tenet/onboard/interview.json` with every asked question and answer
 
 ## Rules

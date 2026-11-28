@@ -236,9 +236,13 @@ export const messageTemplates = {
     "message": "Specification file has no YAML front matter.",
     "fix": "Run `tenet fix` to add the front matter."
   },
+  "TN-SPEC-INFERRED": {
+    "message": "{n} inferred statement(s) need review before blessing: {ids}.",
+    "fix": "Review {ids}, then change their origin or keep them labelled inferred."
+  },
   "TN-SPEC-REQ-META": {
-    "message": "Requirement metadata is malformed: check closing braces, allowed keys, and origin.",
-    "fix": "Fix the `{…}` metadata block with allowed keys and valid origin."
+    "message": "Requirement metadata has an invalid token `{token}`: check closing braces, allowed keys, and origin.",
+    "fix": "Fix `{token}` in the `{…}` metadata block with allowed keys and valid origin."
   },
   "TN-SPEC-VISION-WAITS-FOR-PRD": {
     "message": "{count} vision {items} for a blessed requirement; bless the PRD next",
