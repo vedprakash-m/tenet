@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "x-created-directories": [
     ".tenet/cache",
     ".tenet/onboard",
@@ -10,7 +10,7 @@
   "created": [
     {
       "path": ".agents/skills/tenet-draft-specs/SKILL.md",
-      "sha256": "46a53dd2b0a90992221a7ea543f99781be76399aca98cccb67a572b5d6c9d725"
+      "sha256": "abcfdd2f2bc29fbb6f3531618dae28f54dda1282eee9cafcb8c1272318a2e909"
     },
     {
       "path": ".agents/skills/tenet-review-with-findings/SKILL.md",
@@ -22,31 +22,31 @@
     },
     {
       "path": ".gitattributes",
-      "sha256": "06038bb17844d4d7dab3745325a853cad92623abc64e1acfa98c8a0eb5f34356"
+      "sha256": "e0b0cafc27435a1cbcb990273b1e8272de7c2ca536149ae910cecbc59ac509c6"
     },
     {
       "path": ".github/pull_request_template.md",
-      "sha256": "410ae00c95e9cff3809023c9a11cdb7294b35e4073369fb50de6bf7bbd63a93a"
+      "sha256": "57fe85b2cec284a8c733d897fe88d8ce2b73250f207e0f9ceeb8d51da7d62956"
     },
     {
       "path": ".github/workflows/tenet-tests.yml",
-      "sha256": "e15f3a55fd6560e14cf935fb85e59c88817798f05f278540b287dee469fdf9f3"
+      "sha256": "70c17a3bb4bedeffc3eb4378dab0ecf0322618d30cd58d15ed283f529ec70efa"
     },
     {
       "path": ".github/workflows/tenet.yml",
-      "sha256": "a61daa8de50515571df5312add6911087155e0d8ccf819e8dfe70040a31e0dac"
+      "sha256": "24682356fa8e3fd39bcf954df680d1dd1776538e025afeac601a62e24999de00"
     },
     {
       "path": ".gitignore",
-      "sha256": "b34625591b1938316459605a0433362f905d5b8e72a4fea757e0606d490bce4a"
+      "sha256": "792b9bf6a120c6800550d6ff1f70acf12742ae65a0b7219d48ce51aae38847ea"
     },
     {
       "path": "AGENTS.md",
-      "sha256": "ebca14647ce5640be40b8d3b4e35221849037ad3c1f849f5741eb0873405478c"
+      "sha256": "f75cbb93277ccf225385019b90f12a485c3d6250e09ea012f3307c1433dad652"
     },
     {
       "path": "tenet.lock",
-      "sha256": "97956f37e041972bf7e507af38f52ccaee44a518772caab9944fa3b2db80c896"
+      "sha256": "b06c64a9d8cd17586a479eaa8adb878e0b865145975ed61d765a2f22c1941bf2"
     },
     {
       "path": "tenet.yaml",
@@ -57,28 +57,28 @@
     {
       "path": ".gitattributes",
       "kind": "yaml",
-      "marker": "# tenet:begin v0.1.1",
+      "marker": "# tenet:begin v0.1.2",
       "previous_block": "# tenet:begin v0.0.0\n.agents/skills/tenet-draft-specs/SKILL.md text eol=lf\n.agents/skills/tenet-review-with-findings/SKILL.md text eol=lf\n.agents/skills/tenet-work-a-change/SKILL.md text eol=lf\n.gitattributes text eol=lf\n.github/pull_request_template.md text eol=lf\n.github/workflows/tenet-tests.yml text eol=lf\n.github/workflows/tenet.yml text eol=lf\n.gitignore text eol=lf\n.tenet/manifest.json text eol=lf\nAGENTS.md text eol=lf\ntenet.lock text eol=lf\ntenet.yaml text eol=lf\ntenet/intent.md text eol=lf\n# tenet:end",
       "prefix_sep": ""
     },
     {
       "path": ".github/pull_request_template.md",
       "kind": "markdown",
-      "marker": "<!-- tenet:begin v0.1.1 -->",
+      "marker": "<!-- tenet:begin v0.1.2 -->",
       "previous_block": null,
       "prefix_sep": ""
     },
     {
       "path": ".gitignore",
       "kind": "yaml",
-      "marker": "# tenet:begin v0.1.1",
+      "marker": "# tenet:begin v0.1.2",
       "previous_block": null,
       "prefix_sep": ""
     },
     {
       "path": "AGENTS.md",
       "kind": "markdown",
-      "marker": "<!-- tenet:begin v0.1.1 -->",
+      "marker": "<!-- tenet:begin v0.1.2 -->",
       "previous_block": "<!-- tenet:begin v0.0.0 -->\n## Working with Tenet\n\nThis repository's intent lives in specifications: tenet/vision.md (L0), tenet/specs/prd.md (L1), tenet/specs/tech-spec.md (L2), tenet/specs/ux-spec.md (L2), tenet/specs/plan.md (L2).\nBlessed text is the source of truth. Drafts are hints only.\n\nBefore you change code:\n1. Get context for the paths you will touch: the MCP tool `tenet_context`, or\n   `tenet context --paths <paths>`. Read every blessed requirement it returns,\n   including the global rules. If it lists omitted IDs, ask for them by ID.\n2. A requirement flagged `edited` or `sources-changed` still applies as blessed.\n   Say so in your pull request if your change depends on it.\n\nEvery pull request:\n- Has a `## Acceptance` section: an `Implements: R-12, R-14` line, then\n  one line per item, `- [AB-1] what must hold`. Number items from 1 in each pull\n  request. (A packet keeps this block in its `definition.md`.)\n- Tags each test that shows an item: `tenet_<ID with underscores>` in the test name, or the `tenet.case` property.\n  A test that should keep proving a requirement also carries `[R-12]`.\n- Never deletes, skips or weakens a test to make a check pass. If a test is wrong,\n  explain why in the pull request.\n\nSpecifications:\n- To change the L0–L2 documents listed above, edit the specification file in this pull request\n  and say why. The edit is a proposal: the blessed text stays in force until its\n  owner blesses the change. Never bless.\n- A change to `tenet.yaml` (for example a new check) is also a proposal: make it\n  in this pull request and say why; it counts once the Owner approves it.\n- Never edit `tenet/blessed/`, blessing fields in front matter, `tenet.lock`\n  or Tenet's workflows.\n\nWorking rules:\n- State your assumptions. If the task can be read more than one way, say so and ask; don't choose silently.\n- Make the smallest change that meets the acceptance items. No features, options or abstractions nobody asked for.\n- Touch only what the task needs. Match the existing style. Don't tidy unrelated code; mention it instead.\n- Remove only what your own change made unused.\n- Before you start, say how each step will be checked; finish only when it is.\n- Write plain words: say what you mean, without flourish.\n\nStop and write your question in the pull request when a requirement conflicts\nwith the task, the same check fails three times, or passing would need a changed\ntest, acceptance item or specification.\n<!-- tenet:end -->",
       "prefix_sep": ""
     }

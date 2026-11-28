@@ -1,4 +1,4 @@
-# Tenet package pin: 0.1.1
+# Tenet package pin: 0.1.2
 name: Tenet tests
 on:
   pull_request: {types: [opened, synchronize, reopened, ready_for_review]}

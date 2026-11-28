@@ -2,6 +2,37 @@
 
 All changes to the standard and kit. Each release lists added, changed, deprecated and removed rules, and the migrations it ships (PRD R-004).
 
+## 0.1.2
+
+### Added
+
+- `tenet fix` writes the specification front matter for a draft that has none, and `--diff` previews its changes as a patch. `--dry-run` prints one summary line per change.
+- `check` warns once per file about statements still marked `origin: inferred` (`TN-SPEC-INFERRED`), naming their IDs.
+- `remove` shows *Will delete* and *Will keep* and asks before it changes anything. `--yes` skips the question; without a terminal it stops with `TN-REMOVE-NO-TTY`.
+- The drafting assignment carries its interview questions, for the project's kind and in general, capped by `question_limit`.
+- The inventory reports `size.documentation_tokens`. A `separate` layout gets a `docs` unit for documentation outside the code units.
+- README and Getting started show a PowerShell checksum command next to `sha256sum`.
+
+### Changed
+
+- `check`, `fix`, `onboard --card`, `bless` and `board` share one front-matter validator. A draft with no front matter gives `TN-SPEC-NO-FRONT`, and invalid fields give `TN-SCHEMA` with each failing JSON Pointer and how to fix it. `bless` checks front matter before its first question.
+- The drafting skill tells the agent to run `tenet fix` instead of writing front matter, and not to commit or open a pull request unless asked.
+- The pull request that first adds Tenet isn't flagged for changing Tenet's own protected files.
+- `skip-added` counts only skips inside test files. A process exit in a script is not a test skip.
+- The inventory's `dead-path` finding counts only references that look like paths. Metadata keys are read only from a statement's trailing `{…}` block, and completeness checklists are not requirements.
+- Onboarding skips `archive/`, `.archive/` and `old/` folders by default and lists them with the reason `archive`.
+- The layout is `separate` at 20,000 source lines, 4 owner areas, or 12,000 estimated tokens of project documentation. Tenet's own records don't count. `onboard` prints the layout, the reason and each unit's paths.
+- The onboarding card groups sections by file, shows the preamble as *intro* and a checklist as *checklist (n items)*, and says what the drafter could read and how many files it cited.
+- `init` checks the registry before asking to continue, and offers local integrity when the lookup fails. Without a terminal it says it needs one to confirm its plan. Its plan gives a purpose for every path.
+- `remove` also deletes generated state under `.tenet/` and keeps `.tenet/onboard/interview.json`.
+- `fix` keeps flow or block front matter as written and changes only what it must.
+- `--version` and `--help` load no command code. Help descriptions share one style.
+- Shipped kit files cite only shipped files.
+
+### Migrations
+
+- `tenet upgrade` rewrites the `AGENTS.md` block so it no longer depends on the onboarding layout, and updates the shipped skills. A same-version upgrade after onboarding changes nothing.
+
 ## 0.1.1
 
 ### Added

@@ -1,7 +1,7 @@
-<!-- tenet:begin v0.1.1 -->
+<!-- tenet:begin v0.1.2 -->
 ## Working with Tenet
 
-This repository's intent lives in specifications: tenet/intent.md (L1).
+This repository's intent lives in specifications: tenet/intent.md (L1) for one-file projects, tenet/vision.md (L0), tenet/specs/prd.md (L1), tenet/specs/tech-spec.md (L2), tenet/specs/ux-spec.md (L2), tenet/specs/plan.md (L2).
 Blessed text is the source of truth. Drafts are hints only.
 
 Before you change code:
