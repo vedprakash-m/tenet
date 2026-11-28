@@ -184,6 +184,10 @@ function topFolder(file: string): string {
   return file.includes("/") ? file.slice(0, file.indexOf("/")) : ".";
 }
 
+function docsPath(file: string): string {
+  return file.includes("/") ? file.slice(0, file.indexOf("/")) : file;
+}
+
 function draftingUnits(
   layout: Layout,
   owners: Owner[],
@@ -213,7 +217,7 @@ function draftingUnits(
   const docsOutsideCode = documents.filter((file) =>
     !codeUnits.some((unit) => unit.paths.some((root) => within(root, file.path))));
   const docsPaths = [...new Set(docsOutsideCode.map(({ path: filename }) =>
-    topFolder(filename)))].sort(ascii);
+    docsPath(filename)))].sort(ascii);
   const units = codeUnits.map(({ id, paths }) => ({ id, paths, views: [...views] }));
   if (docsPaths.length > 0) units.push({ id: "docs", paths: docsPaths, views: [...views] });
   return units;
@@ -289,16 +293,27 @@ function ciRows(files: InventorySource[]): Inventory["ci"] {
   });
 }
 
+function ownSpecificationPaths(policy: TenetYaml): Set<string> {
+  const records = (policy.paths?.records ?? "tenet").replaceAll("\\", "/").replace(/\/+$/, "");
+  const paths = new Set<string>([`${records}/intent.md`]);
+  for (const document of policy.specs?.documents ?? []) {
+    paths.add(path.posix.join(records, document.path.replaceAll("\\", "/")));
+  }
+  return paths;
+}
+
 export async function inventoryFacts(snapshot: RepositorySnapshot, policy: TenetYaml, override?: Layout): Promise<Facts> {
   const { files, skipped } = await collect(snapshot, policy);
   const source = files.filter((file) => file.kind !== "test" && language(file.path) !== undefined);
   const codeowners = [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"].map((name) => files.find((file) => file.path === name)).find(Boolean);
   const owners = ownersFrom(codeowners);
   const documents = files.filter(({ kind }) => kind === "doc" || kind === "adr");
+  const ownSpecs = ownSpecificationPaths(policy);
+  const projectDocuments = documents.filter(({ path: filename }) => !ownSpecs.has(filename));
   const size = {
     source_lines: source.reduce((sum, file) => sum + file.lines, 0),
     areas: owners.length,
-    documentation_tokens: Math.ceil(documents.reduce((sum, file) =>
+    documentation_tokens: Math.ceil(projectDocuments.reduce((sum, file) =>
       sum + file.text.length, 0) / 4),
   };
   const layout = override ?? (
@@ -325,7 +340,7 @@ export async function inventoryFacts(snapshot: RepositorySnapshot, policy: Tenet
       ci: ciRows(files),
       size,
       layout,
-      units: draftingUnits(layout, owners, source, documents),
+      units: draftingUnits(layout, owners, source, projectDocuments),
     },
   };
 }

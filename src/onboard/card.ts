@@ -28,6 +28,11 @@ export const onboardingCardText = {
   title: (revision: string) => `### Tenet onboarding · drafted from ${revision} · nothing is in force until you bless it`,
   read: (items: string, skipped: string) => `Available to the drafter: ${items} · Skipped: ${skipped}`,
   cited: (count: number) => `Cited: ${count} distinct file${count === 1 ? "" : "s"}`,
+  intro: "  intro",
+  checklist: (count: number) =>
+    `  checklist (${count} ${count === 1 ? "item" : "items"})`,
+  tableNoRequirements: (heading: string) =>
+    `  ${heading} · table, no requirements`,
   nothing: "none",
   citations: (count: number) => `✓ ${count} ${count === 1 ? "citation resolves" : "citations resolve"} (file and lines exist)`,
   broken: (count: number, total: number) => `! ${count} of ${total} citations need attention`,
@@ -146,16 +151,16 @@ function composeCard(inventory: Inventory, docs: ParsedDoc[], read: (file: strin
       lines.push(doc.path);
     }
     if (section.slug === "_preamble") {
-      lines.push("  intro");
+      lines.push(onboardingCardText.intro);
       continue;
     }
     if (section.slug === "completeness-checklist") {
-      lines.push(`  checklist (${checklistItems(section)} items)`);
+      lines.push(onboardingCardText.checklist(checklistItems(section)));
       continue;
     }
     const measured = measureStatements(section);
     if (hasTable(section) && measured.length === 0) {
-      lines.push(`  ${section.heading || section.slug} · table, no requirements`);
+      lines.push(onboardingCardText.tableNoRequirements(section.heading || section.slug));
       continue;
     }
     const origins = ["asked", "documented", "observed", "inferred", "unlabelled"].flatMap((origin) => {

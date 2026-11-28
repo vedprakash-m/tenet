@@ -42,27 +42,29 @@ function layoutLine(
   override: string | undefined,
 ): string {
   const layout = value.inventory.layout;
+  const alternate = layout === "one-file" ? "separate" : "one-file";
   if (override) {
-    return `Layout: ${layout} (because --layout ${override} was requested). Use \`--layout ${layout === "one-file" ? "separate" : "one-file"}\` to change it.`;
+    return onboardText.layoutOverride(layout, override, alternate);
   }
   const reasons = [];
-  if (value.inventory.size.source_lines >= 20_000) reasons.push("source lines reached 20,000");
-  if (value.inventory.size.areas >= 4) reasons.push("owner areas reached 4");
+  if (value.inventory.size.source_lines >= 20_000) {
+    reasons.push(onboardText.layoutReasonSourceLines);
+  }
+  if (value.inventory.size.areas >= 4) reasons.push(onboardText.layoutReasonAreas);
   if (value.inventory.size.documentation_tokens >= 12_000) {
-    reasons.push("documentation reached 12,000 estimated tokens");
+    reasons.push(onboardText.layoutReasonDocumentation);
   }
   const reason = reasons.length > 0
     ? reasons.join(" and ")
-    : "source lines, owner areas and documentation are below the separate thresholds";
-  return `Layout: ${layout} (because ${reason}). Use \`--layout ${layout === "one-file" ? "separate" : "one-file"}\` to change it.`;
+    : onboardText.layoutReasonBelowThresholds;
+  return onboardText.layout(layout, reason, alternate);
 }
 
 function unitLines(value: Awaited<ReturnType<typeof prepareOnboard>>["value"]): string[] {
   if (value.inventory.units.length === 0) return [];
   return [
-    "Units:",
-    ...value.inventory.units.map(({ id, paths }) =>
-      `- ${id}: ${paths.join(", ")}`),
+    onboardText.units,
+    ...value.inventory.units.map(({ id, paths }) => onboardText.unit(id, paths)),
   ];
 }
 

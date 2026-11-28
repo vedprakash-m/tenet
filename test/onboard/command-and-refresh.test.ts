@@ -62,7 +62,7 @@ R-18 A human edit stays.
   repo.git(["add", "api/service.ts"]);
   repo.git(["commit", "-qm", "change API"]);
   const changed = await onboard(options, deps);
-  assert.deepEqual(changed.inventory.units.map(({ id }) => id), ["api", "cli", "docs"]);
+  assert.deepEqual(changed.inventory.units.map(({ id }) => id), ["api", "cli"]);
   assert.deepEqual(changed.assignment.units.map(({ id }) => id), ["api"]);
   assert.equal(calls.length, 2);
   assert.deepEqual(calls.map((entry) => path.resolve(entry)), [repo.path, repo.path]);
@@ -136,6 +136,43 @@ test("[AC-E4] [F-16] documentation tokens select separate layout and [AC-E5] [F-
   const override = await cli(["onboard", "--inventory-only", "--layout", "one-file"], repo.path);
   assert.equal(override.code, 0, override.stderr);
   assert.match(override.stdout, /Layout: one-file \(because --layout one-file was requested\)/);
+});
+
+test("[AC-E4] [F-16] Tenet specification outputs do not count as project documentation", async (t) => {
+  const repo = await tmpRepo("onboard-own-specs");
+  t.after(repo.cleanup);
+  await repo.write("src/app.ts", "export const app = true;\n");
+  await repo.write("tenet/intent.md", "x".repeat(50_000));
+  await repo.write("tenet/vision.md", "x".repeat(50_000));
+  await repo.write("tenet.yaml", `standard: 0.1.0-alpha.0
+level: observe
+paths:
+  records: tenet
+specs:
+  documents:
+    - {path: vision.md, level: L0}
+`);
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "large Tenet specs"]);
+
+  const result = await onboard({ cwd: repo.path, inventoryOnly: true });
+  assert.equal(result.inventory.size.documentation_tokens, 0);
+  assert.equal(result.inventory.layout, "one-file");
+});
+
+test("[AC-E5] [F-18] the docs unit keeps root files by path instead of using the repository root", async (t) => {
+  const repo = await tmpRepo("onboard-root-doc");
+  t.after(repo.cleanup);
+  await repo.write("src/app.ts", "export const app = true;\n");
+  await repo.write("README.md", "Project documentation\n".repeat(3_000));
+  await repo.write("docs/guide.md", "Nested documentation\n".repeat(3_000));
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "root and nested docs"]);
+
+  const result = await onboard({ cwd: repo.path });
+  const docs = result.inventory.units.find(({ id }) => id === "docs");
+  assert.deepEqual(docs?.paths, ["README.md", "docs"]);
+  assert.equal(docs?.paths.includes("."), false);
 });
 
 test("[AC-D2] [R2-12] assignments carry kind and generic interview question sets", async (t) => {

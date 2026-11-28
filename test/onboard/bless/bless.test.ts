@@ -357,7 +357,6 @@ Introductory text.
 
 ## Completeness checklist
 - [ ] Confirm owners
-- [x] Confirm layout
 
 ## Support matrix
 | Platform | Support |
@@ -373,9 +372,11 @@ Introductory text.
   assert.match(card, /Skipped: \.env\* 1, credentials 1/);
   assert.match(card, /tenet\/intent\.md\n  intro/);
   assert.match(card, /  Requirements · 1 statement · 1 observed · 1 min/);
-  assert.match(card, /  checklist \(2 items\)/);
+  assert.match(card, /  checklist \(1 item\)/);
   assert.match(card, /  Support matrix · table, no requirements/);
   assert.doesNotMatch(card, /intro.*min|checklist.*min/);
+  assert.equal(onboardingCardText.checklist(1), "  checklist (1 item)");
+  assert.equal(onboardingCardText.checklist(2), "  checklist (2 items)");
 });
 
 test("onboarding card refuses to pin a draft that differs from HEAD", async (t) => {
