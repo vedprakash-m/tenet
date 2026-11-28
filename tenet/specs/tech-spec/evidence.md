@@ -104,7 +104,7 @@ Separately, the attest job observes **whether merging requires the Tenet status*
 
 ## 5. Weakening (ALG-09)
 
-- **Test files:** `**/*.{test,spec}.{ts,tsx,js,jsx,mjs,cjs}`, `**/test_*.py`, `**/*_test.py`, `**/*_test.go`, `**/*Test.java`, `**/tests/**/*.rs`. **Proposal · CP-0068 AC-B2.** Add repo-relative globs from `checks.<name>.x-test-files` in the target policy to those conventions.
+- **Test files:** `**/*.{test,spec}.{ts,tsx,js,jsx,mjs,cjs}`, `**/test_*.py`, `**/*_test.py`, `**/*_test.go`, `**/*Test.java`, `**/tests/**/*.rs`. **CP-0068 AC-B2 (L-0045).** Add repo-relative globs from `checks.<name>.x-test-files` in the target policy to those conventions.
 - **Declarations:** `(?:^|[^\w$.])(?:it|test)(?:\.each\([^)]*\))?\s*\(`, `^\s*def\s+test_\w*\s*\(`, `^\s*func\s+Test\w*\s*\(`, `\bt\.Run\s*\(`, `^\s*@Test\b` (method on a following line) and `^\s*#\[test\]` (`fn` on a following line).
 
 Over `git diff -M -U0 <base>..<tested>`:

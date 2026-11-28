@@ -33,7 +33,7 @@ A medium model ran 0.1.1 on a private existing project as a new user, blind to t
 ### B · Checks that would become false blocks in 0.2.0 (R2-15, R2-18, R2-09)
 
 - **AC-B1:** **First-time setup isn't flagged.** When the base commit has no Tenet setup (no `tenet.yaml`), the pull request that adds it isn't flagged for changing Tenet's own protected files. The card shows one note instead: *"First-time setup: protected Tenet files are expected in this pull request."* The exemption covers only paths that `init`'s manifest lists; any other protected path is still flagged. Every later pull request is checked as today.
-  - This is a **specification proposal**: it changes what `protect` means for the first pull request.
+  - This changes what `protect` means for the first pull request (OD-13, L-0043; spec text approved in L-0045).
 - **AC-B2:** **"Skip added" counts only real test skips.** Weakening detection reports `skip-added` only for skip constructs inside test files, as classified by the configured checks or by conventional test paths.
   - A process exit in code that isn't a test, such as `sys.exit(1)` or `process.exit(1)`, is never a skip.
   - Tests cover Python, JavaScript and Go.
