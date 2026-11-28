@@ -92,7 +92,7 @@ sections:
 | `TN-USAGE-REF` | The git ref is invalid. | Pass a repository ref. |
 | `TN-WEAK-*` | Possible test weakening ({finding}) in {file}: {names}. | Restore removed tests or remove skip markers in {file}, or ask for a waiver. |
 
-**Proposal · CP-0068 AC-A4–A5.** For specification front matter, `TN-SCHEMA` lists each failing JSON Pointer and the expected shape. It directs the user to `tenet fix` for missing fields, or to correct invalid fields first. Card diagnostics direct the user to commit the repaired draft before retrying.
+**CP-0068 AC-A4–A5 (L-0045).** For specification front matter, `TN-SCHEMA` lists each failing JSON Pointer and the expected shape. It directs the user to `tenet fix` for missing fields, or to correct invalid fields first. Card diagnostics direct the user to commit the repaired draft before retrying.
 
 ## 3. Alpha.1 message templates
 
